@@ -31,6 +31,11 @@ export function roomWindows(room) {
     case 'quarters': return [{ x0: 2.15, x1: 2.75, y0: CEIL + 26, y1: CEIL + 44, round: true }];
     case 'galley': return [{ x0: 2.85, x1: 3.35, y0: CEIL + 18, y1: CEIL + 34, round: true }];
     case 'hydro': return [{ x0: 3.0, x1: 9.2, y0: CEIL + 4, y1: CEIL + 20 }];
+    // interior rooms: a virtual window, a wall screen carrying an exterior camera
+    case 'engineering': return [{ x0: 6.7, x1: 8.0, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-STERN' }];
+    case 'lifesupport': return [{ x0: 2.0, x1: 3.5, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-DORSAL' }];
+    case 'storage': return [{ x0: 3.9, x1: 5.4, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-PORT' }];
+    case 'workshop': return [{ x0: 4.6, x1: 6.1, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-STBD' }];
     default: return [];
   }
 }
@@ -81,7 +86,7 @@ function drawShell(ctx, rc) {
   // windows: cut through to space
   for (const win of roomWindows(room)) {
     const x0 = rc.M(win.x0), x1 = rc.M(win.x1);
-    rect(ctx, mul(th.trim, 0.9), x0 - 3, win.y0 - 3, x1 - x0 + 6, win.y1 - win.y0 + 6);
+    rect(ctx, win.screen ? [28, 30, 34] : mul(th.trim, 0.9), x0 - 3, win.y0 - 3, x1 - x0 + 6, win.y1 - win.y0 + 6);
     if (win.round) {
       const cx = (x0 + x1) / 2, cy = (win.y0 + win.y1) / 2, r = (x1 - x0) / 2;
       ctx.save(); ctx.beginPath(); ctx.ellipse(cx, cy, r, (win.y1 - win.y0) / 2, 0, 0, Math.PI * 2); ctx.clip();
@@ -91,7 +96,12 @@ function drawShell(ctx, rc) {
       ctx.clearRect(x0, win.y0, x1 - x0, win.y1 - win.y0);
       for (let x = x0 + 64; x < x1 - 8; x += 64) rect(ctx, th.trim, x - 1, win.y0, 3, win.y1 - win.y0); // mullions
     }
-    rc.windows.push({ x0, x1, y0: win.y0, y1: win.y1 });
+    if (win.screen) {
+      // it is a screen, not glass: scanlines over the picture and a tiny camera tag
+      for (let y = win.y0; y < win.y1; y += 2) rect(ctx, [0, 0, 0], x0, y, x1 - x0, 1, 0.22);
+      rect(ctx, [120, 220, 170], x0 + 1, win.y1 - 2, 3, 1, 0.8);
+    }
+    rc.windows.push({ x0, x1, y0: win.y0, y1: win.y1, screen: win.screen || null });
   }
   // doors in the back wall
   for (const e of data.nav.endpoints) {

@@ -104,6 +104,7 @@ export function registerRoomPicks(rc, k) {
   rc.lamps.forEach((l, i) => picks.add({ id: `lamp:${room}:${i}`, x: l.x - 9, y: CEIL - 4, w: 18, h: 6, info: () => ({ name: 'Ceiling light', sub: data.rooms[room].name, lines: [['Level', pct(state.ship.power.lightLevel ?? 1)], ['Power', state.ship.power.mode]] }) }));
   rc.windows.forEach((win, i) => picks.add({ id: `win:${room}:${i}`, x: win.x0, y: win.y0, w: win.x1 - win.x0, h: win.y1 - win.y0, info: () => {
     const v = viewSubject(state, data);
+    if (win.screen) return { name: 'Viewscreen', sub: data.rooms[room].name, lines: [['Feed', `${win.screen} (exterior camera)`], ['Showing', v.name ? `${v.name} (${v.kind})` : v.kind]] };
     return { name: 'Window', sub: data.rooms[room].name, lines: [['Outside', v.name ? `${v.name} (${v.kind})` : v.kind], ['Interest', pct(v.interest)]] };
   } }));
   if (k) {
