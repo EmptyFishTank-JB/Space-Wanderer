@@ -1,7 +1,7 @@
 // Simulation snapshots in localStorage (or any getItem/setItem store).
 // The previous snapshot is kept as a backup slot so a write interrupted by a
 // closing tab can never lose the traveler.
-import { STATE_VERSION, initMemory } from '../sim/state.js';
+import { STATE_VERSION, initMemory, defaultOutfit } from '../sim/state.js';
 import { initSpace } from '../space/init.js';
 import { getSystem } from '../space/system.js';
 
@@ -43,6 +43,16 @@ export function migrate(state, version, data = null) {
       state.space.systemName = sys.name;
       state.space.starClass = sys.star.cls;
     }
+  }
+  if (version < 4) {
+    // idle life: a bladder, and clothes that change each morning
+    const tr = state.traveler;
+    if (tr.needs.bladder === undefined) tr.needs.bladder = 0.3;
+    if (!tr.outfit) tr.outfit = defaultOutfit();
+    const h = tr.history;
+    if (h.lastToiletT === undefined) h.lastToiletT = state.t - 3 * 3600;
+    if (h.lastDressDay === undefined) h.lastDressDay = -1;
+    if (h.laundry === undefined) h.laundry = 0;
   }
   state.version = STATE_VERSION;
   return state;

@@ -64,6 +64,21 @@ const ROOM_HINTS = {
   corridor_fore: ['lean_railing', 'check_panel'], corridor_aft: ['lean_railing', 'check_panel'],
 };
 
+// rooms with a 'mid' station worth wandering through
+const TINKER_OBJECTS = ['pocket watch', 'puzzle box', 'model ship', 'old radio', 'music box', 'brass compass'];
+const STROLL_ROOMS = ['corridor_fore', 'corridor_aft', 'hydro', 'lifesupport', 'storage', 'workshop', 'engineering'];
+
+/** Tomorrow's clothes: not the same top as today, warmer when the ship runs cold, shorts when it runs warm. */
+function pickOutfit(s, w, prev) {
+  if (!w) return prev;
+  const heat = s.ship.thermal.heat;
+  const pick = (list, ok) => { const c = list.filter(ok); const pool = c.length ? c : list; return pool[Math.floor(rand(s.rng) * pool.length)]; };
+  const top = pick(w.tops, (t) => t.id !== prev.top && (heat < 0.35 ? true : !t.warm));
+  const bottom = pick(w.bottoms, (b) => (b.shorts ? heat > 0.45 || rand(s.rng) < 0.2 : true));
+  const shoes = pick(w.shoes, () => true);
+  return { top: top.id, bottom: bottom.id, shoes: shoes.id, socks: w.socks[Math.floor(rand(s.rng) * w.socks.length)], underwear: w.underwear[Math.floor(rand(s.rng) * w.underwear.length)] };
+}
+
 const ALGAE_STORE_KCAL = 30000;
 const FAB_TARGET = { parts: 12, filters: 4, cartridges: 3, seals: 10 };
 
@@ -225,6 +240,7 @@ const CORE_ACTIONS = {
     complete(s) {
       const got = useWater(s, 0.4);
       s.traveler.needs.thirst = clamp(s.traveler.needs.thirst - 0.45 * (got / 0.4));
+      s.traveler.needs.bladder = clamp(s.traveler.needs.bladder + 0.1 * (got / 0.4));
       s.ship.water.grey += got * 0.8;
       s.ship.atmo.airWater += got * 0.2;
       if (got < 0.4) s.traveler.needs.stress = clamp(s.traveler.needs.stress + 0.05);
@@ -251,6 +267,54 @@ const CORE_ACTIONS = {
       n.stress = clamp(n.stress - 0.03);
       s.traveler.history.lastWashT = s.t;
       emit(s, 'wash', { litres: round2(got), room: 'quarters' });
+    },
+  },
+
+  use_toilet: {
+    category: 'need', exertion: 0.5, posture: 'sitting', minCommit: 60,
+    gen(s, d, opts) {
+      const b = s.traveler.needs.bladder;
+      const sc = b > 0.97 ? 0.97 : smooth(b, 0.45, 0.95) * 0.9;
+      return one(floor(opts, sc, b > 0.15 ? 0.3 : 0), at('quarters', 'toilet'));
+    },
+    duration: (s) => (rand(s.rng) < 0.22 ? range(s.rng, 300, 600) : range(s.rng, 80, 200)),
+    complete(s) {
+      const got = useWater(s, 0.5); // flush, then washing hands
+      s.ship.water.grey += got;
+      const n = s.traveler.needs;
+      n.bladder = clamp(0.03);
+      n.hygiene = clamp(n.hygiene + 0.01);
+      s.traveler.history.lastToiletT = s.t;
+      emit(s, 'toilet', { room: 'quarters' });
+    },
+  },
+
+  change_clothes: {
+    category: 'need', exertion: 0.8, posture: 'standing', minCommit: 120,
+    gen(s, d, opts) {
+      const h = s.traveler.history;
+      if (h.lastDressDay === missionDay(s)) return [];
+      const hr = shipHour(s);
+      // dress once a day, soon after getting up (not in the first few minutes of being awake)
+      const awakeH = (s.t - h.lastWakeT) / HOUR;
+      if (awakeH < 0.15) return [];
+      const sc = awakeH < 4 ? 0.55 : 0.4;
+      return one(floor(opts, sc, 0.3), at('quarters', 'locker'));
+    },
+    duration: (s) => range(s.rng, 150, 320),
+    complete(s, d) {
+      const tr = s.traveler;
+      tr.outfit = pickOutfit(s, d.traveler.wardrobe, tr.outfit);
+      tr.history.lastDressDay = missionDay(s);
+      tr.history.laundry = (tr.history.laundry || 0) + 1;
+      if (tr.history.laundry >= 6) {
+        // a load through the washer: water to grey, a little to the air
+        const got = useWater(s, 3);
+        s.ship.water.grey += got * 0.9;
+        s.ship.atmo.airWater += got * 0.1;
+        tr.history.laundry = 0;
+      }
+      emit(s, 'dressed', { outfit: { ...tr.outfit }, room: 'quarters' });
     },
   },
 
@@ -703,7 +767,8 @@ const CORE_ACTIONS = {
       if (s.traveler.needs.fatigue > 0.85) sc *= 0.4;
       return one(Math.min(0.85, sc), [at('lounge', 'viewport'), at('bridge', 'viewport')], { subject: v.kind, id: v.id ?? null, name: v.name ?? null, interest: Math.round(v.interest * 100) / 100 });
     },
-    duration: (s, d, a) => range(s.rng, 600, 2400) * (1 + a.params.interest),
+    // a long look, not an hour frozen at the glass: the interest stretches it, but only so far
+    duration: (s, d, a) => range(s.rng, 300, 1100) * (1 + 0.5 * a.params.interest),
     rates: { stress: -0.08, solitude: -0.02 },
     complete(s, d, a) {
       const m = s.traveler.mood;
@@ -797,6 +862,45 @@ const CORE_ACTIONS = {
     },
   },
 
+  stroll: {
+    category: 'leisure', exertion: 1, posture: 'standing', minCommit: 40,
+    gen(s, d) {
+      // thinking on the move: walk somewhere else in the ship, look around, carry on
+      const here_ = s.traveler.pos.room;
+      const rooms = STROLL_ROOMS.filter((r) => r !== here_);
+      // scored many times per decision, so pick without touching the RNG stream
+      const slot = Math.floor(s.t / 300);
+      const room = rooms[slot % rooms.length];
+      const sc = leisureScore(s, d, 'stroll', { solitudeW: 0.25 }) * (1 - 0.5 * boredom(s, 'stroll', 1.5)) + 0.08 * s.traveler.needs.stress + 0.14;
+      const hints = ROOM_HINTS[room] || ['pause'];
+      return one(Math.min(0.5, sc), at(room, 'mid'), { hint: hints[Math.floor(slot / rooms.length) % hints.length] });
+    },
+    duration: (s) => range(s.rng, 45, 150),
+    rates: { stress: -0.04, solitude: -0.01 },
+    start(s, d, a) { emit(s, 'micro', { hint: a.params.hint, room: s.traveler.pos.room }); },
+    complete(s) {
+      if (rand(s.rng) < 0.3) {
+        const rec = pickMemory(s, rand(s.rng), { minAgeDays: 1 });
+        if (rec) { markRecalled(s, rec); emit(s, 'memory_recalled', { memoryId: rec.id, callback_count: rec.callback_count, via: 'stroll' }); }
+      }
+      hobbyComplete('stroll')(s);
+    },
+  },
+
+  tinker: {
+    category: 'leisure', exertion: 0.5, posture: 'sitting', minCommit: 600,
+    gen(s, d) {
+      return one(leisureScore(s, d, 'tinker'), [at('quarters', 'desk'), at('workshop', 'bench')]);
+    },
+    start(s, d, a) { a.params.object = TINKER_OBJECTS[Math.floor(rand(s.rng) * TINKER_OBJECTS.length)]; },
+    duration: (s) => range(s.rng, 900, 2400),
+    rates: { stress: -0.06 },
+    complete(s, d, a) {
+      emit(s, 'tinker', { object: a.params.object, room: s.traveler.pos.room });
+      hobbyComplete('tinker')(s);
+    },
+  },
+
   reflect: {
     category: 'leisure', exertion: 0.3, posture: 'sitting', minCommit: 300,
     gen(s, d) { return one(leisureScore(s, d, 'reflect', { solitudeW: 0.45, eveningW: 0.15 }), at('quarters', 'shelf')); },
@@ -846,6 +950,7 @@ function eatEffects(s, meal, snack = false) {
   const n = tr.needs;
   n.hunger = clamp(n.hunger - meal.kcal / 1000);
   n.thirst = clamp(n.thirst - (snack ? 0.02 : 0.08));
+  n.bladder = clamp(n.bladder + (snack ? 0.01 : 0.05));
   n.stress = clamp(n.stress - 0.06 * meal.quality + (meal.algaeShare > 0.4 ? 0.03 : 0));
   tr.mood.weariness = clamp(tr.mood.weariness - 0.01 * (meal.quality - 0.5));
   tr.history.lastMealT = s.t;

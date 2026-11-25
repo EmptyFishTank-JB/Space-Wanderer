@@ -6,7 +6,7 @@ import { baseSecondsFor } from './clock.js';
 import { emptyDigest } from './events.js';
 import { initSpace } from '../space/init.js';
 
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 export function createInitialState(data, { seed = 'terrarium' } = {}) {
   const rng = seedRng(seed);
@@ -72,7 +72,8 @@ export function createInitialState(data, { seed = 'terrarium' } = {}) {
         score: 0.8, commitUntil: 0, category: 'sleep', routine: null,
       },
       routine: null,
-      needs: { fatigue: 0.16, hunger: 0.42, thirst: 0.38, hygiene: 0.33, stress: 0.2, solitude: 0.34 },
+      needs: { fatigue: 0.16, hunger: 0.42, thirst: 0.38, hygiene: 0.33, stress: 0.2, solitude: 0.34, bladder: 0.3 },
+      outfit: defaultOutfit(),
       body: { fitness: 0.72, condition: 0.96 },
       mood: { wonder: 0.45, weariness: 0.3 },
       history: {
@@ -80,7 +81,7 @@ export function createInitialState(data, { seed = 'terrarium' } = {}) {
         lastExerciseT: -30 * 3600, lastWashT: -14 * 3600, lastTendT: -16 * 3600, lastAlgaeT: -20 * 3600,
         lastScanT: -14 * 3600, lastNavT: -30 * 3600, lastInspectEngT: -40 * 3600, lastInspectLsT: -40 * 3600,
         lastStorageT: -3 * 86400, lastLogDay: startDay - 1, eveningDay: startDay - 1, lastRoundsT: -30 * 3600,
-        lastWakeT: -30 * 3600, lastSleepT: -6.2 * 3600,
+        lastWakeT: -30 * 3600, lastSleepT: -6.2 * 3600, lastToiletT: -3 * 3600, lastDressDay: startDay - 1, laundry: 0,
         recent: {}, // action id -> last completion t (boredom / repetition)
         daysSinceNovelty: 3.5,
         sketches: 0, logsWritten: int(rng, 3000, 3400),
@@ -108,4 +109,9 @@ export function initMemory(state) {
   tr.skills = tr.skills || { instrument: 0.15, sketch: 0.35, chess: 0.2 };
   tr.library = tr.library || { book: 0, page: 0, finished: 0 };
   tr.sketchesOf = tr.sketchesOf || [];
+}
+
+/** What the traveler is wearing before the first morning picks something else. */
+export function defaultOutfit() {
+  return { top: 'grey_tee', bottom: 'cargo', shoes: 'boots', socks: 'grey socks', underwear: 'boxers' };
 }

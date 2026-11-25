@@ -55,6 +55,8 @@ export function updatePhysiology(state, data, dt, exertion, asleep, rates) {
   n.hunger += ph((asleep ? 0.05 : 0.12) * (0.85 + 0.15 * exertion), dt);
   n.thirst += ph((asleep ? 0.05 : 0.17) * (0.8 + 0.2 * exertion) * (state.ship.thermal.heat > 0.6 ? 1.3 : 1), dt);
   n.hygiene += ph((asleep ? 0.012 : 0.028) * (0.7 + 0.3 * exertion), dt);
+  n.bladder += ph(asleep ? 0.045 : 0.12, dt);
+  if (n.bladder >= 1) n.stress += ph(0.3, dt); // holding it is miserable
   n.solitude += ph((asleep ? 0.005 : 0.018) * (1 + 0.5 * m.weariness) * (1.25 - 0.5 * data.traveler.traits.sociability), dt);
 
   // stress relaxes toward what the ship's condition justifies

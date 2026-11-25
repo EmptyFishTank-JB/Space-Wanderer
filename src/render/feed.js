@@ -62,6 +62,7 @@ export function renderRoomFeed(ctx, m) {
     const k = travelerPose(state, data, m.tracker, m.pos, t);
     if (k) {
       drawTraveler(lc, ox + k.x, k.y, k, t);
+      if (k.privacy) mosaic(lc, ox + k.x, k.y, k.pose);
       if (k.pose === 'sit_back') {
         // seen from behind, the chair's backrest and seat sit in front of them
         rect(lc, [44, 46, 52], ox + k.x - 7, FLOOR - 31, 14, 12);
@@ -123,4 +124,30 @@ export function renderNoSignal(ctx, t, label = 'NO SIGNAL') {
   ctx.putImageData(img, 0, 0);
   rect(ctx, [0, 0, 0], W / 2 - 26, H / 2 - 5, 52, 11, 0.8);
   text(ctx, label, W / 2 - label.length * 2 + 1, H / 2 - 2, [200, 200, 200]);
+}
+
+/**
+ * Privacy pixelation over the body (toilet, shower): average the drawn
+ * pixels in 4 px blocks, the way broadcast footage would.
+ */
+function mosaic(ctx, x, y, pose) {
+  const seated = pose === 'sit_side' || pose === 'sit_back';
+  const x0 = Math.round(x - 10), y0 = Math.round(y - (seated ? 30 : 38)), w = 20, h = seated ? 26 : 32;
+  const B = 4;
+  const img = ctx.getImageData(x0, y0, w, h);
+  const d = img.data;
+  for (let by = 0; by < h; by += B) for (let bx = 0; bx < w; bx += B) {
+    let r = 0, g = 0, b = 0, a = 0, n = 0;
+    for (let yy = by; yy < Math.min(h, by + B); yy++) for (let xx = bx; xx < Math.min(w, bx + B); xx++) {
+      const i = (yy * w + xx) * 4;
+      r += d[i] * d[i + 3]; g += d[i + 1] * d[i + 3]; b += d[i + 2] * d[i + 3]; a += d[i + 3]; n++;
+    }
+    if (!a) continue;
+    const c = [r / a, g / a, b / a, a / n];
+    for (let yy = by; yy < Math.min(h, by + B); yy++) for (let xx = bx; xx < Math.min(w, bx + B); xx++) {
+      const i = (yy * w + xx) * 4;
+      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = Math.max(d[i + 3], c[3] > 40 ? 255 : c[3]);
+    }
+  }
+  ctx.putImageData(img, x0, y0);
 }

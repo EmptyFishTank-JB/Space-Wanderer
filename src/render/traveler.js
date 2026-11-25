@@ -73,8 +73,11 @@ export function drawTraveler(ctx, x, y, k, t) {
   const f = k.facing < 0 ? -1 : 1;
   const X = (p) => x + p[0] * (sk.view === 'side' ? f : 1);
   const Y = (p) => y + p[1];
-  const suit = k.suited ? EVA_SUIT : SUIT;
-  const suitD = k.suited ? EVA_D : SUIT_D;
+  const o = !k.suited && k.outfit;
+  const suit = k.suited ? EVA_SUIT : (o && o.top) || SUIT;
+  const suitD = k.suited ? EVA_D : (o && o.bottom) || SUIT_D;
+  const boot = (o && o.shoes) || BOOT;
+  const shin = o && o.shorts ? SKIN : suitD; // shorts leave the lower legs bare
   ctx.globalAlpha = k.alpha ?? 1;
 
   // yawn / rub eyes: the near hand rises to the face
@@ -88,8 +91,8 @@ export function drawTraveler(ctx, x, y, k, t) {
   limb(ctx, mul(suit, 0.75), X(sk.elbowB), Y(sk.elbowB), X(sk.handB), Y(sk.handB), 3);
   rect(ctx, k.suited ? EVA_D : mul(SKIN, 0.8), X(sk.handB) - 1, Y(sk.handB) - 1, 2, 2);
   limb(ctx, mul(suitD, 0.85), X(sk.hip), Y(sk.hip), X(sk.kneeB), Y(sk.kneeB), 4);
-  limb(ctx, mul(suitD, 0.85), X(sk.kneeB), Y(sk.kneeB), X(sk.footB), Y(sk.footB) - 2, 4);
-  rect(ctx, BOOT, X(sk.footB) - 2 + (sk.view === 'side' ? f : 0), Y(sk.footB) - 3, 5, 3);
+  limb(ctx, mul(shin, 0.85), X(sk.kneeB), Y(sk.kneeB), X(sk.footB), Y(sk.footB) - 2, o && o.shorts ? 3 : 4);
+  rect(ctx, boot, X(sk.footB) - 2 + (sk.view === 'side' ? f : 0), Y(sk.footB) - 3, 5, 3);
 
   // torso
   const tw = sk.view === 'side' ? 8 : 12;
@@ -100,8 +103,8 @@ export function drawTraveler(ctx, x, y, k, t) {
 
   // near leg
   limb(ctx, suitD, X(sk.hip), Y(sk.hip), X(sk.kneeF), Y(sk.kneeF), 4);
-  limb(ctx, suitD, X(sk.kneeF), Y(sk.kneeF), X(sk.footF), Y(sk.footF) - 2, 4);
-  rect(ctx, BOOT, X(sk.footF) - 2 + (sk.view === 'side' ? f : 0), Y(sk.footF) - 3, 5, 3);
+  limb(ctx, shin, X(sk.kneeF), Y(sk.kneeF), X(sk.footF), Y(sk.footF) - 2, o && o.shorts ? 3 : 4);
+  rect(ctx, boot, X(sk.footF) - 2 + (sk.view === 'side' ? f : 0), Y(sk.footF) - 3, 5, 3);
 
   // head
   const hx = X(sk.head), hy = Y(sk.head);

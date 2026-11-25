@@ -19,7 +19,9 @@
     "listen_music": 0.75,
     "play_solitaire": 0.45,
     "play_instrument": 0.6,
-    "reflect": 0.55
+    "reflect": 0.55,
+    "stroll": 0.6,
+    "tinker": 0.65
   },
   "mealWindows": [
     [
@@ -76,5 +78,145 @@
       "title": "A History of Clocks",
       "pages": 360
     }
-  ]
+  ],
+  "wardrobe": {
+    "_comment": "Clothes the traveler picks from each morning. Colours are RGB for the sprite; shorts show bare lower legs.",
+    "tops": [
+      {
+        "id": "grey_tee",
+        "name": "grey T-shirt",
+        "color": [
+          140,
+          142,
+          148
+        ]
+      },
+      {
+        "id": "white_tee",
+        "name": "white T-shirt",
+        "color": [
+          196,
+          194,
+          186
+        ]
+      },
+      {
+        "id": "navy_henley",
+        "name": "navy henley",
+        "color": [
+          58,
+          70,
+          104
+        ]
+      },
+      {
+        "id": "olive_shirt",
+        "name": "olive work shirt",
+        "color": [
+          96,
+          104,
+          70
+        ]
+      },
+      {
+        "id": "rust_jumper",
+        "name": "rust jumper",
+        "color": [
+          150,
+          82,
+          58
+        ],
+        "warm": true
+      },
+      {
+        "id": "ship_jacket",
+        "name": "ship-issue jacket",
+        "color": [
+          74,
+          100,
+          98
+        ],
+        "warm": true
+      }
+    ],
+    "bottoms": [
+      {
+        "id": "cargo",
+        "name": "cargo trousers",
+        "color": [
+          70,
+          74,
+          66
+        ]
+      },
+      {
+        "id": "jeans",
+        "name": "dark jeans",
+        "color": [
+          48,
+          58,
+          82
+        ]
+      },
+      {
+        "id": "joggers",
+        "name": "joggers",
+        "color": [
+          60,
+          60,
+          66
+        ]
+      },
+      {
+        "id": "shorts",
+        "name": "work shorts",
+        "color": [
+          110,
+          98,
+          78
+        ],
+        "shorts": true
+      }
+    ],
+    "shoes": [
+      {
+        "id": "boots",
+        "name": "deck boots",
+        "color": [
+          44,
+          40,
+          36
+        ]
+      },
+      {
+        "id": "trainers",
+        "name": "trainers",
+        "color": [
+          190,
+          186,
+          176
+        ]
+      },
+      {
+        "id": "slipons",
+        "name": "slip-ons",
+        "color": [
+          96,
+          70,
+          56
+        ]
+      }
+    ],
+    "socks": [
+      "grey socks",
+      "wool socks",
+      "black socks",
+      "striped socks"
+    ],
+    "underwear": [
+      "boxers",
+      "briefs",
+      "a thermal base layer"
+    ]
+  }
 }

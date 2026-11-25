@@ -43,7 +43,7 @@ export function travelerPose(state, data, tracker, pos, t) {
   const tr = state.traveler;
   const a = tr.activity;
   const n = tr.needs;
-  const k = { pose: 'stand', facing: tracker.facing, phase: 0, fatigue: n.fatigue, yawn: 0, alpha: 1, x: pos.x * PPM, y: FLOOR };
+  const k = { pose: 'stand', facing: tracker.facing, phase: 0, fatigue: n.fatigue, yawn: 0, alpha: 1, x: pos.x * PPM, y: FLOOR, outfit: outfitColors(data, tr.outfit) };
   // a yawn every so often when tired
   if (n.fatigue > 0.62) {
     const cyc = Math.floor(t / 37);
@@ -63,6 +63,8 @@ export function travelerPose(state, data, tracker, pos, t) {
   if (!a || a.phase !== 'perform') return k;
   const def = ACTIONS[a.id];
   const station = a.loc && a.loc.station;
+  // toilet and shower: the feed pixelates the body (see feed.js)
+  k.privacy = a.id === 'use_toilet' || a.id === 'wash';
   const room = pos.room;
   switch (def.posture) {
     case 'lying': {
@@ -75,6 +77,8 @@ export function travelerPose(state, data, tracker, pos, t) {
     case 'sitting':
       if (CONSOLE_STATIONS.has(station)) { k.pose = 'sit_back'; k.typing = TYPING.has(a.id) || a.id === 'jump' || a.id === 'land' || a.id === 'takeoff' || a.id === 'set_course'; }
       else if (station === 'easel') { k.pose = 'sit_back'; }
+      else if (station === 'toilet') { k.pose = 'sit_side'; k.facing = 1; }
+      else if (a.id === 'tinker') { k.pose = station === 'desk' ? 'sit_back' : 'sit_side'; k.working = true; k.facing = 1; }
       else { k.pose = 'sit_side'; k.eating = a.id === 'eat_meal'; k.facing = 1; }
       break;
     case 'reclining':
@@ -97,4 +101,14 @@ export function travelerPose(state, data, tracker, pos, t) {
     default: k.pose = 'stand';
   }
   return k;
+}
+
+/** Sprite colours for today's clothes (ids from data/traveler.json's wardrobe). */
+export function outfitColors(data, outfit) {
+  const w = data.traveler && data.traveler.wardrobe;
+  if (!w || !outfit) return null;
+  const top = w.tops.find((t) => t.id === outfit.top);
+  const bottom = w.bottoms.find((b) => b.id === outfit.bottom);
+  const shoes = w.shoes.find((b) => b.id === outfit.shoes);
+  return { top: top && top.color, bottom: bottom && bottom.color, shoes: shoes && shoes.color, shorts: !!(bottom && bottom.shorts) };
 }

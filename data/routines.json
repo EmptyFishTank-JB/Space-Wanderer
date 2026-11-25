@@ -3,38 +3,128 @@
   "routines": {
     "morning": {
       "steps": [
-        { "action": "stretch" },
-        { "action": "drink_water" },
-        { "action": "wash", "if": { "need": "hygiene", "gt": 0.3 } },
-        { "action": "cook_meal", "if": { "need": "hunger", "gt": 0.25 } },
-        { "action": "eat_meal" },
-        { "action": "wash_dishes", "if": { "tidy": true } },
-        { "action": "check_scans" },
-        { "action": "tend_trays", "if": { "sinceHours": { "key": "lastTendT", "gt": 14 } } }
+        {
+          "action": "stretch"
+        },
+        {
+          "action": "use_toilet"
+        },
+        {
+          "action": "drink_water"
+        },
+        {
+          "action": "wash",
+          "if": {
+            "need": "hygiene",
+            "gt": 0.3
+          }
+        },
+        {
+          "action": "change_clothes"
+        },
+        {
+          "action": "cook_meal",
+          "if": {
+            "need": "hunger",
+            "gt": 0.25
+          }
+        },
+        {
+          "action": "eat_meal"
+        },
+        {
+          "action": "wash_dishes",
+          "if": {
+            "tidy": true
+          }
+        },
+        {
+          "action": "check_scans"
+        },
+        {
+          "action": "tend_trays",
+          "if": {
+            "sinceHours": {
+              "key": "lastTendT",
+              "gt": 14
+            }
+          }
+        }
       ]
     },
     "meal": {
       "steps": [
-        { "action": "cook_meal" },
-        { "action": "eat_meal" },
-        { "action": "wash_dishes", "if": { "tidy": true } }
+        {
+          "action": "cook_meal"
+        },
+        {
+          "action": "eat_meal"
+        },
+        {
+          "action": "wash_dishes",
+          "if": {
+            "tidy": true
+          }
+        }
       ]
     },
     "evening": {
-      "trigger": { "fromHour": 20.5, "toHour": 23.0, "score": 0.42 },
+      "trigger": {
+        "fromHour": 20.5,
+        "toHour": 23.0,
+        "score": 0.42
+      },
       "steps": [
-        { "action": "write_log" },
-        { "choose": ["read", "listen_music", "reflect", "play_instrument", "sketch"] },
-        { "action": "wash", "if": { "need": "hygiene", "gt": 0.2 } },
-        { "action": "drink_water" }
+        {
+          "action": "write_log"
+        },
+        {
+          "choose": [
+            "read",
+            "listen_music",
+            "reflect",
+            "play_instrument",
+            "sketch"
+          ]
+        },
+        {
+          "action": "wash",
+          "if": {
+            "need": "hygiene",
+            "gt": 0.2
+          }
+        },
+        {
+          "action": "drink_water"
+        },
+        {
+          "action": "use_toilet"
+        }
       ]
     },
     "rounds": {
-      "trigger": { "everyHours": 46, "fromHour": 9.0, "toHour": 17.0, "score": 0.34 },
+      "trigger": {
+        "everyHours": 46,
+        "fromHour": 9.0,
+        "toHour": 17.0,
+        "score": 0.34
+      },
       "steps": [
-        { "action": "inspect_engineering" },
-        { "action": "inspect_lifesupport" },
-        { "action": "tend_algae", "if": { "sinceHours": { "key": "lastAlgaeT", "gt": 12 } } }
+        {
+          "action": "inspect_engineering"
+        },
+        {
+          "action": "inspect_lifesupport"
+        },
+        {
+          "action": "tend_algae",
+          "if": {
+            "sinceHours": {
+              "key": "lastAlgaeT",
+              "gt": 12
+            }
+          }
+        }
       ]
     }
   }

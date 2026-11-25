@@ -293,6 +293,12 @@ const ROOMS = {
     rect(ctx, [196, 190, 176], M(1.15), FLOOR - 20, M(2.7) - M(1.15), 4);
     rect(ctx, [220, 214, 204], M(1.18), FLOOR - 23, 10, 3);
     rect(ctx, [80, 64, 54], M(1.15) - 2, FLOOR - 30, 3, 30);
+    // compact toilet in the wet corner beside the basin, with a slatted screen that slides out when in use
+    const inUse = s.traveler.activity && s.traveler.activity.id === 'use_toilet' && s.traveler.activity.phase === 'perform';
+    rect(ctx, [176, 180, 184], M(2.88) - 4, FLOOR - 11, 8, 3);
+    rect(ctx, [150, 154, 158], M(2.88) - 2, FLOOR - 8, 5, 8);
+    rect(ctx, [160, 164, 168], M(2.88) + 2, FLOOR - 20, 3, 9);
+    if (inUse) for (let i = 0; i < 6; i++) rect(ctx, [126, 110, 92], M(2.88) - 9, FLOOR - 52 + i * 8, 3, 6);
     // sink & mirror
     rect(ctx, [180, 186, 190], M(3.2) - 8, FLOOR - 32, 16, 4);
     rect(ctx, [120, 126, 130], M(3.2) - 2, FLOOR - 28, 4, 28);
