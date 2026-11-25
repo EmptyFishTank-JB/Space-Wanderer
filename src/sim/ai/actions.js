@@ -766,6 +766,8 @@ const CORE_ACTIONS = {
       let sc = leisureScore(s, d, 'gaze_viewport', { wonderW: 0.3 }) + 0.35 * v.interest * (1 - 0.6 * boredom(s, 'gaze_viewport', 3));
       const it = s.space.agenda[0];
       if (it && it.kind === 'visit' && it.done.lingerUntil && s.t < it.done.lingerUntil) sc += 0.25;
+      const fl = s.ship.flight;
+      if (fl.mode === 'landed' && fl.touchdownT !== undefined && s.t - fl.touchdownT < 2 * HOUR) sc += 0.2; // landed somewhere new: look at it
       if (v.interest > 0.6 && !s.space.awed[`${v.kind}:${v.id}`]) sc += 0.2;
       if (s.traveler.needs.fatigue > 0.85) sc *= 0.4;
       return one(Math.min(0.85, sc), [at('lounge', 'viewport'), at('bridge', 'viewport')], { subject: v.kind, id: v.id ?? null, name: v.name ?? null, interest: Math.round(v.interest * 100) / 100 });

@@ -352,6 +352,7 @@ function stepPhases(state, data, dt, kind) {
     const first = !state.space.landedBodies[b.id];
     state.space.landedBodies[b.id] = true;
     state.space.stats.landings++;
+    f.touchdownT = state.t; // for the linger before lifting off again
     emit(state, 'touchdown', { body: b.name, bodyId: b.id, bodyType: b.type, gravity: round(b.gravity, 2), tempK: b.tempK, first });
   } else {
     f.mode = 'orbit';

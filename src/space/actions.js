@@ -264,6 +264,9 @@ export const FLIGHT_ACTIONS = {
       const evaBlocked = s.ship.components.airlock_seals.fault && s.ship.components.airlock_seals.fault.severity === 'major';
       const doneHere = !it || it.body !== f.at || it.done.evas >= it.eva || evaBlocked;
       if (!doneHere) return [];
+      // after the work is done, a while just being there: longer on a beautiful world (0.4 to 1.6 h after touchdown)
+      const b = currentSystem(s, d).byId[f.at];
+      if (f.touchdownT !== undefined && s.t - f.touchdownT < (0.4 + 1.2 * (b ? b.beauty : 0)) * 3600) return [];
       return one(0.42, at('bridge', 'helm'));
     },
     start(s, d) { startAscent(s, d); },
