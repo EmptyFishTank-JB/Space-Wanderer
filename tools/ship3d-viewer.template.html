@@ -1,0 +1,957 @@
+<title>Halyard General Arrangement</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* A naval general-arrangement sheet. Light theme is drafting film; dark theme is the ship's own telemetry console.
+   Order: the spec strip, the 3D model, the classic GA set (profile, deck plans, section), how it fits the sim, open questions. */
+:root {
+  --bg: #eef1f1; --panel: #f8fafa; --ink: #18232c; --muted: #56646e; --rule: #c9d2d5; --grid: #dfe6e8;
+  --accent: #0c7a86; --select: #d4570f; --traveler: #d4570f;
+  --hab: #3c97a4; --life: #4e9a55; --service: #7d8a94; --passage: #a9b6bc; --power: #c98a1e; --drive: #6a6fc2; --fuel: #3f7fc4; --thermal: #c4583b; --sensor: #8e8e8e;
+  --hull-fill: rgba(40, 70, 90, 0.11); --hull-line: rgba(30, 60, 80, 0.42); --hull-solid: #a3aeb4; --glass: rgba(40, 150, 185, 0.40);
+  --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c1115; --panel: #11181d; --ink: #d3e1de; --muted: #8b9ca0; --rule: #26343c; --grid: #19242b;
+  --accent: #5fc9bc; --select: #f08a3c; --traveler: #f08a3c;
+  --hab: #4fb3bf; --life: #66b56c; --service: #8c99a3; --passage: #5d6c74; --power: #e0a03a; --drive: #8f93e6; --fuel: #5b9be0; --thermal: #e07656; --sensor: #a4a4a4;
+  --hull-fill: rgba(120, 190, 200, 0.06); --hull-line: rgba(140, 200, 210, 0.36); --hull-solid: #4a585f; --glass: rgba(90, 200, 220, 0.32);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0c1115; --panel: #11181d; --ink: #d3e1de; --muted: #8b9ca0; --rule: #26343c; --grid: #19242b;
+  --accent: #5fc9bc; --select: #f08a3c; --traveler: #f08a3c;
+  --hab: #4fb3bf; --life: #66b56c; --service: #8c99a3; --passage: #5d6c74; --power: #e0a03a; --drive: #8f93e6; --fuel: #5b9be0; --thermal: #e07656; --sensor: #a4a4a4;
+  --hull-fill: rgba(120, 190, 200, 0.06); --hull-line: rgba(140, 200, 210, 0.36); --hull-solid: #4a585f; --glass: rgba(90, 200, 220, 0.32);
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: 0.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.05; }
+h2 { font-size: 23px; }
+h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+p { margin: 0; max-width: 70ch; }
+code { font: 13px var(--mono); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+header { display: grid; gap: 12px; }
+.lede { color: var(--muted); font-size: 15.5px; }
+.specs { display: flex; flex-wrap: wrap; margin: 4px 0 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.specs div { padding: 10px 18px 10px 0; margin-right: 18px; border-right: 1px solid var(--rule); }
+.specs div:last-child { border-right: 0; }
+.specs dt { font: 500 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.specs dd { margin: 2px 0 0; font: 600 20px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 14px; }
+
+.viewer { position: relative; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+#view3d { display: block; width: 100%; height: clamp(300px, 64vh, 620px); touch-action: none; cursor: grab; }
+#view3d.dragging { cursor: grabbing; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--rule); font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.seg button { font: 500 12px/1 var(--mono); letter-spacing: 0.04em; padding: 8px 10px; border: 0; background: transparent; color: var(--ink); cursor: pointer; min-height: 32px; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+.tgroup { display: inline-flex; align-items: center; gap: 6px; }
+.tlabel { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.cut { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 240px; min-width: 0; }
+.cut input { flex: 1; min-width: 80px; accent-color: var(--select); }
+.cut output { font: 500 12px var(--mono); font-variant-numeric: tabular-nums; min-width: 8ch; }
+.hint { position: absolute; left: 12px; top: 10px; right: 12px; font: 12px var(--mono); color: var(--muted); pointer-events: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* bracket + info card: a preview of the in-game tap/hover focus */
+.bracket { position: absolute; pointer-events: none; transition: opacity 0.6s ease, transform 0.25s ease-out; transform-origin: center; z-index: 2; }
+.bracket b { position: absolute; width: 12px; height: 12px; border-color: var(--select); border-style: solid; border-width: 0; }
+.bracket .tl { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
+.bracket .tr { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
+.bracket .bl { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
+.bracket .br { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; }
+.chip { position: absolute; z-index: 3; width: min(300px, calc(100% - 16px)); background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--select);
+  border-radius: 4px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; pointer-events: none; transition: opacity 0.6s ease; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16); }
+.chip .nm { font: 600 16px/1.2 var(--display); }
+.chip .sub { font: 11px/1.35 var(--mono); color: var(--muted); margin: 2px 0 6px; }
+.chip .k { font: 500 10.5px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; }
+.chip .tag { font: 500 10px var(--mono); color: var(--select); border: 1px solid currentColor; border-radius: 3px; padding: 0 4px; margin-left: 6px; vertical-align: 2px; letter-spacing: 0.06em; }
+.faded { opacity: 0; }
+
+.sheets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.sheet { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 12px 10px; display: grid; gap: 8px; align-content: start; min-width: 0; position: relative; }
+.sheet.wide { grid-column: 1 / -1; }
+.sheet .head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
+.sheet .draw { overflow-x: auto; overscroll-behavior-x: contain; }
+.sheet svg { display: block; width: 100%; height: auto; }
+#profile svg { min-width: 880px; }
+#planU svg, #planM svg { min-width: 480px; }
+#section svg { min-width: 420px; }
+.cap { font: 12px/1.45 var(--mono); color: var(--muted); }
+.swipe { display: none; }
+@media (max-width: 860px) { .sheets { grid-template-columns: minmax(0, 1fr); } .swipe { display: inline; } }
+@media (max-width: 600px) { #view3d { height: clamp(280px, 52vh, 460px); } .chip { font-size: 12px; padding: 8px 10px; } }
+
+svg .hull { fill: var(--hull-fill); stroke: var(--hull-line); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+svg .room { stroke: var(--ink); stroke-opacity: 0.55; stroke-width: 1; vector-effect: non-scaling-stroke; fill-opacity: 0.55; cursor: pointer; }
+svg .room.corr { fill: none; stroke-dasharray: 5 3; pointer-events: stroke; }
+svg .modf { stroke: var(--muted); stroke-width: 0.8; vector-effect: non-scaling-stroke; fill-opacity: 0.3; cursor: pointer; }
+svg [data-id]:hover, svg .on { stroke: var(--select); stroke-opacity: 1; stroke-width: 2.2; }
+svg .axis { stroke: var(--grid); stroke-width: 1; vector-effect: non-scaling-stroke; }
+svg .door { stroke: var(--select); stroke-width: 3.2; stroke-linecap: butt; vector-effect: non-scaling-stroke; }
+svg .ladder { fill: var(--panel); stroke: var(--select); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+svg .crawl { stroke: var(--select); stroke-width: 1.6; stroke-dasharray: 3 2.5; fill: none; vector-effect: non-scaling-stroke; }
+svg .camg { fill: var(--accent); fill-opacity: 0.55; stroke: none; }
+svg .cutline { stroke: var(--select); stroke-width: 1.4; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+svg .trav, svg .trav * { fill: var(--traveler); stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
+svg .mlbl { font-family: var(--display); font-weight: 500; fill: var(--muted); pointer-events: none; }
+svg .lbl { font-family: var(--display); font-weight: 600; fill: var(--ink); pointer-events: none; }
+svg .dim { font-family: var(--mono); fill: var(--muted); pointer-events: none; }
+
+.key { display: grid; gap: 10px; font-size: 13.5px; }
+.key div { display: flex; align-items: center; gap: 10px; }
+.key svg { flex: none; width: 34px; height: 18px; }
+
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px 28px; }
+.notes > div { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.ask { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; display: grid; gap: 10px; }
+.ok { color: var(--life); font-family: var(--mono); font-size: 13px; }
+.bad { color: var(--thermal); font-family: var(--mono); font-size: 13px; }
+footer { font: 12px var(--mono); color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .bracket, .chip { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Proposal · general arrangement · rev A</div>
+    <h1 id="shipname">Halyard-class long-range surveyor</h1>
+    <p class="lede" id="summary"></p>
+    <dl class="specs" id="specs"></dl>
+  </header>
+
+  <section aria-labelledby="h3d">
+    <h2 id="h3d">The hull and its compartments</h2>
+    <div class="viewer" id="viewer3d">
+      <canvas id="view3d" aria-label="3D model of the ship. Drag to turn it, zoom with the plus and minus buttons, and tap a compartment for its details."></canvas>
+      <div class="hint" id="hint"></div>
+      <div class="toolbar">
+        <span class="tgroup"><span class="tlabel">View</span>
+        <span class="seg" id="views">
+          <button type="button" data-view="iso" aria-pressed="true">3/4</button>
+          <button type="button" data-view="top" aria-pressed="false">Top</button>
+          <button type="button" data-view="side" aria-pressed="false">Side</button>
+          <button type="button" data-view="front" aria-pressed="false">Bow</button>
+          <button type="button" data-view="aft" aria-pressed="false">Stern</button>
+        </span></span>
+        <span class="tgroup"><span class="tlabel">Zoom</span>
+        <span class="seg" id="zoom">
+          <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+          <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+        </span></span>
+        <span class="tgroup"><span class="tlabel">Hull</span>
+        <span class="seg" id="hullmode">
+          <button type="button" data-hull="ghost" aria-pressed="true">Ghost</button>
+          <button type="button" data-hull="solid" aria-pressed="false">Solid</button>
+          <button type="button" data-hull="off" aria-pressed="false">Off</button>
+        </span></span>
+        <span class="tgroup"><span class="tlabel">Decks</span>
+        <span class="seg" id="decks">
+          <button type="button" data-decks="both" aria-pressed="true">Both</button>
+          <button type="button" data-decks="upper" aria-pressed="false">Upper</button>
+          <button type="button" data-decks="main" aria-pressed="false">Main</button>
+        </span></span>
+        <label class="cut" for="cutx"><span class="tlabel">Cut</span><input id="cutx" type="range" min="-46" max="47" step="0.5" value="47"><output id="cutout" for="cutx">no cut</output></label>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section aria-labelledby="hga">
+    <h2 id="hga">Sections and deck plans</h2>
+    <p class="lede">The usual general-arrangement set, drawn from the same numbers as the model. Tap or hover a compartment on any drawing. The transverse section follows the cut slider above. <span class="swipe">Swipe a drawing sideways to see all of it.</span></p>
+    <div class="sheets">
+      <div class="sheet wide">
+        <div class="head"><h3 id="profiletitle">Inboard profile</h3>
+          <span class="seg" id="half">
+            <button type="button" data-half="port" aria-pressed="true">Port half</button>
+            <button type="button" data-half="stbd" aria-pressed="false">Starboard half</button>
+          </span></div>
+        <div class="draw" id="profile"></div><div class="cap" id="profilecap"></div>
+      </div>
+      <div class="sheet"><div class="head"><h3>Upper deck · living</h3></div><div class="draw" id="planU"></div><div class="cap">Floor 3.8 m above the main deck. Bow to the right, starboard at the bottom.</div></div>
+      <div class="sheet"><div class="head"><h3>Main deck · service</h3></div><div class="draw" id="planM"></div><div class="cap">Bow to the right, starboard at the bottom. Fuel tanks run alongside, outboard of the rooms.</div></div>
+      <div class="sheet"><div class="head"><h3>Transverse section · looking forward</h3></div><div class="draw" id="section"></div><div class="cap" id="sectioncap"></div></div>
+      <div class="sheet"><div class="head"><h3>Reading the drawings</h3></div>
+        <div class="key">
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><line x1="6" y1="9" x2="28" y2="9" stroke="var(--select)" stroke-width="3.2"/></svg>Door, drawn in the wall it sits in</div>
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><rect x="10" y="2" width="14" height="14" fill="var(--panel)" stroke="var(--select)" stroke-width="1.4"/><path d="M10 6.5h14M10 11.5h14" stroke="var(--select)" stroke-width="1.2"/></svg>Companionway: ladder and hatch between the decks</div>
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><line x1="4" y1="9" x2="30" y2="9" stroke="var(--select)" stroke-width="1.6" stroke-dasharray="3 2.5"/></svg>Crawlway under the deck plates</div>
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><polygon points="8,9 26,2 26,16" fill="var(--accent)" fill-opacity="0.55"/></svg>Room camera and the way it looks (the wall you see in its feed)</div>
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><rect x="3" y="3" width="28" height="12" fill="none" stroke="var(--ink)" stroke-opacity="0.6" stroke-dasharray="5 3"/></svg>Corridor running along the centreline</div>
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><circle cx="17" cy="9" r="5" fill="var(--traveler)"/></svg>The traveler (tap them too)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hfit">
+    <h2 id="hfit">Fitting it to the simulation</h2>
+    <p class="lede" id="fitlede"></p>
+    <div class="tablewrap"><table id="changes"></table></div>
+    <div class="notes">
+      <div><h3>What else changes</h3><ul id="else"></ul></div>
+      <div><h3>Spaces the sim doesn't have yet</h3><ul id="simless"></ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hask">
+    <h2 id="hask">Before I build on it</h2>
+    <div class="ask">
+      <p><strong>Name.</strong> "Halyard" is a working class name (the line that hoists a sail). Should the ship itself have a name the traveler uses in the logs?</p>
+      <p><strong>Silhouette.</strong> At 94 m it is roughly 60% of an Anaconda's length, sized for one person's life rather than a crew. Longer and leaner, or wider and heavier?</p>
+      <p><strong>New spaces.</strong> Should the washroom, the sample hold and the EVA lift become places the traveler actually uses, with their own cameras?</p>
+    </div>
+  </section>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/*__DATA__*/
+/*__GEOMETRY__*/
+(() => {
+  'use strict';
+  const S = SHIP;
+  const $ = (id) => document.getElementById(id);
+  const ROLE = { hab: '--hab', life: '--life', service: '--service', passage: '--passage', power: '--power', drive: '--drive', fuel: '--fuel', thermal: '--thermal', sensor: '--sensor' };
+  const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', passage: 'Passage', power: 'Power', drive: 'Drive', fuel: 'Fuel', thermal: 'Thermal', sensor: 'Sensors' };
+  const SHORT = { bridge: 'Bridge', lounge: 'Lounge', quarters: 'Quarters', galley: 'Galley', corridor_fore: 'Fwd corridor', corridor_aft: 'Aft corridor', hydro: 'Hydroponics', lifesupport: 'Life support', storage: 'Storage', airlock: 'Airlock', workshop: 'Workshop', engineering: 'Engineering', head: 'Washroom' };
+  const simRoom = Object.fromEntries(SIM.rooms.map((r) => [r.id, r]));
+  const rooms = withDecks(S);
+  const roomById = Object.fromEntries(rooms.map((r) => [r.id, r]));
+  const geoHatch = Object.fromEntries(S.hatches.map((h) => [h.id, h]));
+  const nameOf = (id) => (simRoom[id] && simRoom[id].name) || (roomById[id] && roomById[id].name) || id;
+  const TRAV = { room: 'lounge', at: [29.2, -3.2, 3.8], h: 1.75 };
+  const NO_CUT = 47;
+  const n2 = (v) => Math.round(v * 100) / 100;
+
+  /** Axis-aligned extent of a module. */
+  function extent(m) {
+    if (m.shape === 'box') return { x: m.x, y: m.y, z: m.z };
+    if (m.shape === 'cyl-x') return { x: m.x, y: [m.y - m.r, m.y + m.r], z: [m.z - m.r, m.z + m.r] };
+    return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: m.z };
+  }
+
+  let pal = {};
+  function readPalette() {
+    const cs = getComputedStyle(document.documentElement);
+    const g = (n) => cs.getPropertyValue(n).trim();
+    pal = { ink: g('--ink'), panel: g('--panel'), select: g('--select'), traveler: g('--traveler'), hullFill: g('--hull-fill'), hullLine: g('--hull-line'), hullSolid: g('--hull-solid'), glass: g('--glass'), display: g('--display') };
+    for (const [k, v] of Object.entries(ROLE)) pal[k] = g(v);
+  }
+  readPalette();
+
+  // ───────── header ─────────
+  $('shipname').textContent = S.name;
+  $('summary').textContent = S.summary;
+  const xsAll = [...S.hull.main.map((s) => s.x), ...S.modules.flatMap((m) => extent(m).x)];
+  const length = Math.max(...xsAll) - Math.min(...xsAll);
+  const beam = 2 * Math.max(...S.hull.main.map((s) => s.b));
+  const keel = Math.min(...S.hull.main.map((s) => s.z[0]));
+  const crown = Math.max(...S.hull.head.map((s) => s.z[1]));
+  const pv = Object.values(REPORT.volumes).reduce((a, b) => a + b, 0);
+  const tankV = S.modules.filter((m) => m.role === 'fuel' && m.shape === 'cyl-x').reduce((a, m) => a + Math.PI * m.r * m.r * (m.x[1] - m.x[0]), 0);
+  const specs = [['Length', `${length.toFixed(0)} m`], ['Beam', `${beam.toFixed(0)} m`], ['Hull height', `${(crown - keel).toFixed(1)} m`], ['Pressurized', `${(Math.round(pv / 10) * 10).toLocaleString('en-US')} m³`], ['Decks', String(S.decks.length)], ['Fuel', `${SIM.fuelCapacity} t LH₂ · ${Math.round(tankV / 10) * 10} m³`], ['Crew', '1']];
+  $('specs').innerHTML = specs.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('legend').innerHTML = Object.keys(ROLE).map((r) => `<span><i style="background:var(${ROLE[r]})"></i>${ROLE_NAME[r]}</span>`).join('')
+    + '<span><i style="background:var(--glass)"></i>Canopy glazing</span><span><i style="background:var(--traveler);border-radius:50%"></i>Traveler</span>';
+
+  // ───────── what the bracket card says ─────────
+  const STATION_NAME = { ogs: 'oxygen generator', torpor_pod: 'torpor pod' };
+  function stationsOf(id) {
+    if (!simRoom[id]) return [];
+    const keys = Object.keys(simRoom[id].stations).filter((k) => k !== 'mid');
+    const trays = keys.filter((k) => /^tray_\d+$/.test(k));
+    const rest = keys.filter((k) => !/^tray_\d+$/.test(k)).map((k) => STATION_NAME[k] || k.replace(/_(\d+)$/, ' $1').replace(/_/g, ' '));
+    if (trays.length) rest.splice(1, 0, `${trays.length} grow trays`);
+    return rest;
+  }
+  const VIEW_WORD = { fore: 'forward', aft: 'aft', port: 'to port', starboard: 'to starboard' };
+  function infoFor(id) {
+    if (id === 'traveler') {
+      return {
+        name: 'The traveler', tag: 'mock-up', sub: 'Observation Lounge · at the easel',
+        body: 'In the game this card follows the character for a few seconds after a tap. The values below are a new voyage\'s starting state.',
+        rows: [['Doing', 'Painting'], ['Mood', 'Wonder 45% · weariness 30%'], ['Needs', 'Hunger 42% · thirst 38% · fatigue 16%'], ['Cabin air', 'O₂ 20.9% · CO₂ 780 ppm']],
+      };
+    }
+    const r = roomById[id];
+    if (r) {
+      const dims = [r.x[1] - r.x[0], r.y[1] - r.y[0], r.zRange[1] - r.zRange[0]].map((v) => v.toFixed(1)).join(' × ');
+      const links = SIM.hatches.filter((h) => h.a === id || h.b === id).map((h) => {
+        const other = h.a === id ? h.b : h.a;
+        const kind = geoHatch[h.id] && geoHatch[h.id].kind;
+        return SHORT[other] + (kind && kind !== 'door' ? ` (${kind})` : '');
+      });
+      const rows = [];
+      const st = stationsOf(id);
+      if (st.length) rows.push(['Stations', st.join(', ')]);
+      if (links.length) rows.push(['Opens to', links.join(' · ')]);
+      if (simRoom[id]) rows.push(['Camera', `looks ${VIEW_WORD[r.view]}`]);
+      if (r.resize) rows.push(['Change', r.resize]);
+      if (r.simless) rows.push(['Note', 'Not a separate space in the sim yet.']);
+      rows.push(['In the game', 'Live status: lights, faults, wear, who is inside.']);
+      return { name: nameOf(id), sub: `${r.deck === 'upper' ? 'Upper' : 'Main'} deck · ${ROLE_NAME[r.role]} · ${dims} m`, body: r.info || '', rows };
+    }
+    const m = S.modules.find((x) => x.id === id);
+    if (m) return { name: m.name, sub: `${ROLE_NAME[m.role]} · outside the pressure hull`, body: m.info || '', rows: [] };
+    if (id === 'hull') return { name: 'Hull', sub: `${length.toFixed(0)} × ${beam.toFixed(0)} m arrowhead`, body: 'The main hull carries tanks, reactor, drive and engines. The dorsal head superstructure holds the living deck and the bridge under the canopy.', rows: [] };
+    return null;
+  }
+  function cardHTML(i, compact) {
+    if (compact) i = { ...i, rows: i.rows.filter(([k]) => k !== 'In the game' && k !== 'Change').slice(0, 2) };
+    let h = `<div class="nm">${i.name}${i.tag ? `<span class="tag">${i.tag}</span>` : ''}</div><div class="sub">${i.sub}</div>`;
+    if (i.body) h += `<div>${i.body}</div>`;
+    for (const [k, v] of i.rows) h += `<div class="k">${k}</div><div>${v}</div>`;
+    return h;
+  }
+
+  /** Corner brackets + a card, inside a positioned container. Fades after a few seconds. */
+  function makeFocus(container, onHide, bounds) {
+    const br = document.createElement('div');
+    br.className = 'bracket faded';
+    br.innerHTML = '<b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>';
+    const chip = document.createElement('div');
+    chip.className = 'chip faded';
+    chip.setAttribute('role', 'status');
+    container.append(br, chip);
+    let timer = 0;
+    let current = null;
+    const HOLD = 6000;
+    return {
+      container,
+      get id() { return current; },
+      show(id, rect) {
+        const info = infoFor(id);
+        if (!info || !rect) { this.hide(); return; }
+        const cw = container.clientWidth, ch = bounds ? bounds.clientHeight : container.clientHeight, pad = 6;
+        const x = Math.max(2, rect.x - pad), y = Math.max(2, rect.y - pad);
+        const w = Math.max(18, Math.min(cw - x - 2, rect.w + 2 * pad)), h = Math.max(18, Math.min(ch - y - 2, rect.h + 2 * pad));
+        Object.assign(br.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+        const fresh = id !== current;
+        if (fresh) {
+          chip.innerHTML = cardHTML(info, cw < 560);
+          br.style.transition = 'none';
+          br.style.transform = 'scale(1.18)';
+          void br.offsetWidth;
+          br.style.transition = '';
+          br.style.transform = 'scale(1)';
+        }
+        current = id;
+        const cwid = chip.offsetWidth, chH = chip.offsetHeight;
+        let cx = x + w + 10, cy = y;
+        if (cx + cwid > cw - 8) cx = x - cwid - 10;
+        if (cx < 8) { cx = Math.min(cw - cwid - 8, Math.max(8, x)); cy = y + h + 10 + chH > ch - 8 ? y - chH - 10 : y + h + 10; }
+        cy = Math.max(8, Math.min(cy, ch - chH - 8));
+        chip.style.left = `${cx}px`;
+        chip.style.top = `${cy}px`;
+        br.classList.remove('faded');
+        chip.classList.remove('faded');
+        clearTimeout(timer);
+        timer = setTimeout(() => this.hide(), HOLD);
+      },
+      hide() {
+        clearTimeout(timer);
+        br.classList.add('faded');
+        chip.classList.add('faded');
+        if (current == null) return;
+        current = null;
+        if (onHide) onHide();
+      },
+      keep() { clearTimeout(timer); timer = setTimeout(() => this.hide(), HOLD); },
+    };
+  }
+
+  // ───────── 3D model ─────────
+  // Data frame: y = starboard. That frame is left-handed, so geometry is mirrored into a right-handed render frame
+  // (y = port) once, at build time, and everything on screen uses the render frame.
+  const F = (p) => [p[0], -p[1], p[2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const norm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const avg = (pts) => pts.reduce((s, p) => [s[0] + p[0] / pts.length, s[1] + p[1] / pts.length, s[2] + p[2] / pts.length], [0, 0, 0]);
+
+  let objects = [];
+  let hullRings = [];
+  function addObj(o, tris) {
+    o.tris = tris.map((t) => {
+      const c = avg(t);
+      let n = t.n;
+      if (!n) { n = norm(cross(sub(t[1], t[0]), sub(t[2], t[0]))); if (dot(n, sub(c, o.ref(c))) < 0) n = n.map((v) => -v); }
+      const q = t.map(F);
+      q.n = F(n); q.c = F(c); q.glass = t.glass; q.cap = t.cap;
+      return q;
+    });
+    objects.push(o);
+  }
+  function boxTris(x0, x1, y0, y1, z0, z1) {
+    const p = (i) => [i & 1 ? x1 : x0, i & 2 ? y1 : y0, i & 4 ? z1 : z0];
+    return [[0, 1, 3, 2], [4, 5, 7, 6], [0, 1, 5, 4], [2, 3, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5]].flatMap(([a, b, c, d]) => [[p(a), p(b), p(c)], [p(a), p(c), p(d)]]);
+  }
+  function cylTris(axis, a0, a1, p, q, r, n) {
+    const at = (a, t) => (axis === 'x' ? [a, p + r * Math.cos(t), q + r * Math.sin(t)] : [p + r * Math.cos(t), q + r * Math.sin(t), a]);
+    const A = [], B = [];
+    for (let i = 0; i < n; i++) { const t = (i / n) * Math.PI * 2; A.push(at(a0, t)); B.push(at(a1, t)); }
+    const cA = axis === 'x' ? [a0, p, q] : [p, q, a0], cB = axis === 'x' ? [a1, p, q] : [p, q, a1];
+    const nA = axis === 'x' ? [-1, 0, 0] : [0, 0, -1], nB = nA.map((v) => -v);
+    const tris = [];
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      tris.push([A[i], A[j], B[j]], [A[i], B[j], B[i]]);
+      const capA = [cA, A[i], A[j]], capB = [cB, B[j], B[i]];
+      capA.n = nA; capB.n = nB;
+      tris.push(capA, capB);
+    }
+    return { tris, ref: (c) => (axis === 'x' ? [c[0], p, q] : [p, q, c[2]]) };
+  }
+  function loft(kind, cut) {
+    const st = S.hull[kind];
+    const xMax = Math.max(...st.map((s) => s.x)), xMin = Math.min(...st.map((s) => s.x));
+    const top = Math.min(xMax, cut);
+    if (top <= xMin + 0.2) return null;
+    const stationXs = st.map((s) => s.x);
+    const set = new Set([top, xMin, ...stationXs.filter((x) => x < top && x > xMin)]);
+    if (kind === 'head' && S.hull.canopy.x[0] < top) set.add(S.hull.canopy.x[0]);
+    for (let x = Math.floor(top / 2) * 2; x > xMin; x -= 2) if (x < top - 0.3) set.add(x);
+    const xsL = [...set].sort((a, b) => b - a);
+    const base = xsL.map((x) => { const s = station(st, x); return { x, s, pts: profile(kind, s) }; });
+    // split long profile edges (same split on every ring) so the painter's sort has small facets to work with
+    const nE = base[0].pts.length;
+    const splits = Array.from({ length: nE }, (_, i) => Math.max(1, Math.ceil(Math.max(...base.map(({ pts }) => Math.hypot(pts[(i + 1) % nE][0] - pts[i][0], pts[(i + 1) % nE][1] - pts[i][1]))) / 4)));
+    const rings = base.map(({ x, s, pts }) => {
+      const R = [];
+      const orig = [];
+      for (let i = 0; i < nE; i++) {
+        const [y1, z1] = pts[i], [y2, z2] = pts[(i + 1) % nE];
+        orig.push(R.length);
+        for (let k = 0; k < splits[i]; k++) { const t = k / splits[i]; R.push([x, y1 + (y2 - y1) * t, z1 + (z2 - z1) * t]); }
+      }
+      R.x = x; R.zk = s.zk; R.orig = orig; R.station = stationXs.includes(x) || (x === top && top < xMax);
+      return R;
+    });
+    const tris = [];
+    for (let k = 0; k < rings.length - 1; k++) {
+      const A = rings[k], B = rings[k + 1], n = A.length;
+      const canopy = kind === 'head' && A.x > S.hull.canopy.x[0] + 0.01;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        const t1 = [A[i], A[j], B[j]], t2 = [A[i], B[j], B[i]];
+        if (canopy && (A[i][2] + A[j][2]) / 2 > A.zk + 1.2) t1.glass = t2.glass = true;
+        tris.push(t1, t2);
+      }
+    }
+    const cap = (R, nx, isCut) => { const c = avg(R); for (let i = 0; i < R.length; i++) { const t = [c, R[i], R[(i + 1) % R.length]]; t.n = [nx, 0, 0]; t.cap = isCut; tris.push(t); } };
+    cap(rings[0], 1, top < xMax);
+    cap(rings[rings.length - 1], -1, false);
+    const ref = (c) => { const s = station(st, Math.max(xMin, Math.min(xMax, c[0]))); return [c[0], 0, s ? (s.zk + s.zt) / 2 : 0]; };
+    return { tris, rings, ref };
+  }
+  /** Is a box (extent) entirely inside the hull? */
+  function enclosed(e) {
+    const ins = (a, i) => a[i] + (i ? -0.1 : 0.1);
+    for (const x of [ins(e.x, 0), ins(e.x, 1)]) for (const y of [ins(e.y, 0), ins(e.y, 1)]) for (const z of [ins(e.z, 0), ins(e.z, 1)]) if (!insideHull(S, x, y, z)) return false;
+    return true;
+  }
+  function buildScene(cut) {
+    objects = [];
+    hullRings = [];
+    for (const r of rooms) {
+      const x1 = Math.min(r.x[1], cut);
+      if (x1 <= r.x[0] + 0.05) continue;
+      const c = [(r.x[0] + x1) / 2, (r.y[0] + r.y[1]) / 2, (r.zRange[0] + r.zRange[1]) / 2];
+      addObj({ id: r.id, kind: 'room', role: r.role, deck: r.deck, inside: true, ref: () => c, top: [(r.x[0] + x1) / 2, (r.y[0] + r.y[1]) / 2, r.zRange[1]] }, boxTris(r.x[0], x1, r.y[0], r.y[1], r.zRange[0], r.zRange[1]));
+    }
+    for (const m of S.modules) {
+      const e = extent(m);
+      if (e.x[0] >= cut - 0.05) continue;
+      const o = { id: m.id, kind: 'module', role: m.role, zTop: e.z[1], inside: enclosed(e) };
+      if (m.shape === 'box') { const x1 = Math.min(m.x[1], cut); const c = [(m.x[0] + x1) / 2, (m.y[0] + m.y[1]) / 2, (m.z[0] + m.z[1]) / 2]; o.ref = () => c; addObj(o, boxTris(m.x[0], x1, m.y[0], m.y[1], m.z[0], m.z[1])); }
+      else if (m.shape === 'cyl-x') { const g = cylTris('x', m.x[0], Math.min(m.x[1], cut), m.y, m.z, m.r, 18); o.ref = g.ref; addObj(o, g.tris); }
+      else { const g = cylTris('z', m.z[0], m.z[1], m.x, m.y, m.r, 10); o.ref = g.ref; addObj(o, g.tris); }
+    }
+    for (const kind of ['main', 'head']) {
+      const l = loft(kind, cut);
+      if (!l) continue;
+      addObj({ id: 'hull', kind: 'hull', role: 'hull', ref: l.ref }, l.tris);
+      hullRings.push(l.rings);
+    }
+  }
+
+  const cv = $('view3d');
+  const ctx = cv.getContext('2d');
+  const PRESETS = { iso: [-0.75, 0.42, 84], top: [-Math.PI / 2, 1.54, 92], side: [-Math.PI / 2, 0.02, 88], front: [0, 0.14, 84], aft: [Math.PI, 0.2, 84] };
+  const view = { yaw: PRESETS.iso[0], pitch: PRESETS.iso[1], dist: PRESETS.iso[2], target: [0, 0, 2], fov: 0.62, hull: 'ghost', decks: 'both', cut: NO_CUT };
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  $('hint').textContent = coarse ? 'drag to turn · pinch to zoom · tap anything' : 'drag to turn · ctrl-scroll or ± to zoom · hover or click anything';
+  let W = 0, H = 0, dpr = 1;
+  let drawn = [];
+  let travSeg = null;
+  let selected = null;
+  const focus3d = makeFocus($('viewer3d'), () => { selected = null; draw(); }, $('view3d'));
+
+  function camera() {
+    const { yaw, pitch, dist, target } = view;
+    const eye = [target[0] + dist * Math.cos(pitch) * Math.cos(yaw), target[1] + dist * Math.cos(pitch) * Math.sin(yaw), target[2] + dist * Math.sin(pitch)];
+    const fwd = norm(sub(target, eye));
+    let right = cross(fwd, [0, 0, 1]);
+    right = Math.hypot(...right) < 1e-6 ? [0, -1, 0] : norm(right);
+    const up = cross(right, fwd);
+    // a long ship in a tall (phone) frame: pull the lens back so the whole hull fits across
+    return { eye, fwd, right, up, f: ((Math.min(W, H) / 2) / Math.tan(view.fov / 2)) * (W < H * 1.2 ? 0.6 : 1) };
+  }
+  function proj(cam, p) {
+    const v = sub(p, cam.eye);
+    const z = dot(v, cam.fwd);
+    return [W / 2 + (cam.f * dot(v, cam.right)) / z, H / 2 - (cam.f * dot(v, cam.up)) / z, z];
+  }
+  function visible(o) {
+    if (o.kind === 'hull') return view.hull !== 'off';
+    if (view.hull === 'solid' && o.inside) return false; // hidden behind opaque plating anyway
+    if (o.kind === 'room') return view.decks === 'both' || o.deck === view.decks;
+    return view.decks !== 'upper' || o.zTop > 3.8;
+  }
+  function shade(hex, k) {
+    const m = /^#([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const f = (v) => Math.max(0, Math.min(255, Math.round(v * k)));
+    return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
+  }
+  const travVisible = () => view.decks !== 'main' && objects.some((o) => o.id === TRAV.room) && TRAV.at[0] <= view.cut;
+
+  function draw() {
+    if (!W) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const cam = camera();
+    const light = norm([0.4, -0.5, 0.8]);
+    const list = [];
+    for (const o of objects) {
+      if (!visible(o)) continue;
+      for (const t of o.tris) {
+        if (dot(t.n, sub(cam.eye, t.c)) <= 0) continue;
+        const p0 = proj(cam, t[0]), p1 = proj(cam, t[1]), p2 = proj(cam, t[2]);
+        if (p0[2] < 1 || p1[2] < 1 || p2[2] < 1) continue;
+        list.push({ o, t, p: [p0, p1, p2], z: (p0[2] + p1[2] + p2[2]) / 3, lit: 0.5 + 0.5 * Math.max(0, dot(t.n, light)) });
+      }
+    }
+    list.sort((a, b) => b.z - a.z);
+    drawn = list;
+    for (const d of list) {
+      const { o, p, t } = d;
+      ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); ctx.lineTo(p[1][0], p[1][1]); ctx.lineTo(p[2][0], p[2][1]); ctx.closePath();
+      let fill;
+      if (o.kind === 'hull') {
+        if (t.cap) { ctx.globalAlpha = view.hull === 'solid' ? 0.55 : 0.2; ctx.fillStyle = pal.select; ctx.fill(); ctx.globalAlpha = 1; continue; }
+        if (view.hull === 'ghost') { ctx.fillStyle = t.glass ? pal.glass : pal.hullFill; ctx.fill(); continue; }
+        fill = t.glass ? pal.glass : shade(pal.hullSolid, d.lit);
+      } else {
+        fill = shade(pal[o.role] || pal.service, d.lit * (o.id === selected ? 1.22 : 1));
+      }
+      ctx.fillStyle = fill; ctx.fill();
+      if (!t.glass) { ctx.strokeStyle = fill; ctx.lineWidth = 0.6; ctx.stroke(); }
+    }
+    if (view.hull === 'ghost') {
+      ctx.strokeStyle = pal.hullLine; ctx.lineWidth = 0.9;
+      for (const rings of hullRings) {
+        for (const R of rings) {
+          if (!R.station) continue;
+          ctx.beginPath(); R.forEach((q, i) => { const s = proj(cam, F(q)); if (i) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); }); ctx.closePath(); ctx.stroke();
+        }
+        for (const i of rings[0].orig) {
+          ctx.beginPath(); rings.forEach((R, k) => { const s = proj(cam, F(R[i])); if (k) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); }); ctx.stroke();
+        }
+      }
+    }
+    if (view.cut < NO_CUT && view.hull !== 'off') {
+      ctx.strokeStyle = pal.select; ctx.lineWidth = 2;
+      for (const kind of ['main', 'head']) {
+        const st = station(S.hull[kind], view.cut);
+        if (!st) continue;
+        ctx.beginPath();
+        profile(kind, st).forEach(([y, z], i) => { const s = proj(cam, F([view.cut, y, z])); if (i) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); });
+        ctx.closePath(); ctx.stroke();
+      }
+    }
+    // the traveler, drawn over everything like a HUD marker so they can always be found and tapped
+    travSeg = null;
+    if (travVisible()) {
+      const [x, y, z] = TRAV.at;
+      const foot = proj(cam, F([x, y, z])), neck = proj(cam, F([x, y, z + TRAV.h * 0.82])), head = proj(cam, F([x, y, z + TRAV.h * 0.93]));
+      if (foot[2] > 1) {
+        const mid = [(foot[0] + head[0]) / 2, (foot[1] + head[1]) / 2];
+        const hidden = list.some((d) => d.o.kind !== 'hull' && d.o.id !== TRAV.room && d.z < foot[2] - 0.5 && inTri(mid[0], mid[1], d.p));
+        ctx.globalAlpha = hidden ? 0.45 : 1;
+        const k = cam.f / foot[2];
+        const bw = Math.max(3, 0.42 * k), hr = Math.max(2.5, 0.16 * k);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = pal.panel; ctx.lineWidth = bw + 3; ctx.beginPath(); ctx.moveTo(foot[0], foot[1]); ctx.lineTo(neck[0], neck[1]); ctx.stroke();
+        ctx.strokeStyle = pal.traveler; ctx.lineWidth = bw; ctx.beginPath(); ctx.moveTo(foot[0], foot[1]); ctx.lineTo(neck[0], neck[1]); ctx.stroke();
+        ctx.fillStyle = pal.traveler; ctx.strokeStyle = pal.panel; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(head[0], head[1], hr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.lineCap = 'butt';
+        ctx.globalAlpha = 1;
+        travSeg = { a: foot, b: head, r: Math.max(bw, hr * 2) };
+        cv.dataset.traveler = `${Math.round((foot[0] + head[0]) / 2)},${Math.round((foot[1] + head[1]) / 2)}`;
+      }
+    }
+    if (W >= 640 || view.decks !== 'both') {
+      ctx.font = `600 ${W < 520 ? 11 : 12}px ${pal.display}`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const placed = [];
+      const labels = objects.filter((o) => o.kind === 'room' && visible(o) && SHORT[o.id]).map((o) => ({ o, s: proj(cam, F(o.top)) })).filter((l) => l.s[2] > 1).sort((a, b) => a.s[2] - b.s[2]);
+      for (const { o, s } of labels) {
+        const label = SHORT[o.id], tw = ctx.measureText(label).width;
+        const box = [s[0] - tw / 2 - 4, s[1] - 16, tw + 8, 15];
+        if (placed.some((q) => box[0] < q[0] + q[2] && q[0] < box[0] + box[2] && box[1] < q[1] + q[3] && q[1] < box[1] + box[3])) continue;
+        placed.push(box);
+        ctx.globalAlpha = 0.82; ctx.fillStyle = pal.panel; ctx.fillRect(...box); ctx.globalAlpha = 1;
+        ctx.fillStyle = pal.ink; ctx.fillText(label, s[0], s[1] - 8.5);
+      }
+    }
+    if (selected && focus3d.id === selected) focus3d.show(selected, screenRect(selected, cam));
+  }
+  function screenRect(id, cam = camera()) {
+    if (id === 'traveler') {
+      if (!travSeg) return null;
+      const { a, b, r } = travSeg;
+      return { x: Math.min(a[0], b[0]) - r, y: Math.min(a[1], b[1]) - r, w: Math.abs(a[0] - b[0]) + 2 * r, h: Math.abs(a[1] - b[1]) + 2 * r };
+    }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const o of objects) {
+      if (o.id !== id || !visible(o)) continue;
+      for (const t of o.tris) for (const q of t) {
+        const s = proj(cam, q);
+        if (s[2] <= 1) continue;
+        x0 = Math.min(x0, s[0]); y0 = Math.min(y0, s[1]); x1 = Math.max(x1, s[0]); y1 = Math.max(y1, s[1]);
+      }
+    }
+    return Number.isFinite(x0) ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+  }
+  function inTri(x, y, p) {
+    const s = (a, b) => (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]);
+    const d1 = s(p[0], p[1]), d2 = s(p[1], p[2]), d3 = s(p[2], p[0]);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  }
+  function nearSeg(x, y, { a, b, r }) {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(x - (a[0] + t * dx), y - (a[1] + t * dy)) <= Math.max(10, r);
+  }
+  function pick(px, py) {
+    if (travSeg && nearSeg(px, py, travSeg)) return 'traveler';
+    let hull = false;
+    for (let i = drawn.length - 1; i >= 0; i--) {
+      const d = drawn[i];
+      if (!inTri(px, py, d.p)) continue;
+      if (d.o.kind === 'hull') { if (view.hull === 'solid') return 'hull'; hull = true; continue; }
+      return d.o.id;
+    }
+    return hull ? 'hull' : null;
+  }
+  function select(id) {
+    selected = id;
+    if (!id) { focus3d.hide(); return; }
+    draw();
+    focus3d.show(id, screenRect(id));
+  }
+  function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    draw();
+  }
+
+  // drag to turn, pinch / ctrl-wheel / buttons to zoom, tap or hover to bracket
+  const pointers = new Map();
+  let moved = 0, pinch = null;
+  const clampDist = (d) => Math.max(24, Math.min(320, d));
+  const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', (e) => {
+    cv.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    moved = 0;
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, dist: view.dist, my: (a[1] + b[1]) / 2, pitch: view.pitch };
+    }
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId)) {
+      if (e.pointerType !== 'mouse') return;
+      const [x, y] = local(e);
+      const id = pick(x, y);
+      if (id && id !== 'hull') { if (id !== selected) select(id); else focus3d.keep(); }
+      return;
+    }
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size === 2 && pinch) {
+      const [a, b] = [...pointers.values()];
+      view.dist = clampDist((pinch.dist * pinch.d) / Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])));
+      view.pitch = Math.max(-1.45, Math.min(1.54, pinch.pitch + ((a[1] + b[1]) / 2 - pinch.my) * 0.006));
+      moved = 99; setPreset(null); draw();
+      return;
+    }
+    const dx = e.clientX - prev[0], dy = e.clientY - prev[1];
+    moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 5) {
+      cv.classList.add('dragging');
+      view.yaw -= dx * 0.008;
+      view.pitch = Math.max(-1.45, Math.min(1.54, view.pitch + dy * 0.006));
+      setPreset(null); draw();
+    }
+  });
+  const release = (e, tap) => {
+    if (tap && pointers.size === 1 && moved <= 5) { const [x, y] = local(e); select(pick(x, y)); }
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (!pointers.size) cv.classList.remove('dragging');
+  };
+  cv.addEventListener('pointerup', (e) => release(e, true));
+  cv.addEventListener('pointercancel', (e) => release(e, false));
+  cv.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return; // plain scrolling scrolls the page
+    e.preventDefault();
+    view.dist = clampDist(view.dist * Math.exp(e.deltaY * 0.01));
+    draw();
+  }, { passive: false });
+  function setPreset(name) { document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name))); }
+  document.querySelectorAll('#views button').forEach((b) => b.addEventListener('click', () => {
+    const [y, p, d] = PRESETS[b.dataset.view];
+    Object.assign(view, { yaw: y, pitch: p, dist: d });
+    setPreset(b.dataset.view); draw();
+  }));
+  document.querySelectorAll('#zoom button').forEach((b) => b.addEventListener('click', () => { view.dist = clampDist(view.dist * (b.dataset.zoom === 'in' ? 0.8 : 1.25)); draw(); }));
+  const seg = (sel, key, after) => document.querySelectorAll(`${sel} button`).forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll(`${sel} button`).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    after(b.dataset[key]);
+  }));
+  seg('#hullmode', 'hull', (v) => { view.hull = v; draw(); });
+  seg('#decks', 'decks', (v) => { view.decks = v; focus3d.hide(); draw(); });
+  const cutx = $('cutx'), cutout = $('cutout');
+  cutx.addEventListener('input', () => {
+    view.cut = Number(cutx.value);
+    cutout.textContent = view.cut >= NO_CUT ? 'no cut' : `x = ${view.cut.toFixed(1)} m`;
+    buildScene(view.cut); draw();
+    drawProfile(); drawPlans(); drawSection();
+  });
+
+  // ───────── 2D drawings ─────────
+  function rect(cls, id, x, y, w, h, style = '', extra = '') {
+    return `<rect class="${cls}"${id ? ` data-id="${id}"` : ''} x="${n2(x)}" y="${n2(y)}" width="${n2(w)}" height="${n2(h)}"${style ? ` style="${style}"` : ''}${extra}/>`;
+  }
+  const text = (x, y, s, size, cls = 'lbl', anchor = 'middle') => `<text class="${cls}" x="${n2(x)}" y="${n2(y)}" font-size="${size}" text-anchor="${anchor}">${s}</text>`;
+  const line = (cls, x1, y1, x2, y2) => `<line class="${cls}" x1="${n2(x1)}" y1="${n2(y1)}" x2="${n2(x2)}" y2="${n2(y2)}"/>`;
+  const fillOf = (role) => `fill:var(${ROLE[role] || '--service'})`;
+  const fits = (label, size, w) => label.length * size * 0.5 + 0.3 < w;
+
+  function mountSheet(el, vb, inner, focus, label) {
+    el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(n2).join(' ')}" role="img" aria-label="${label}">${inner}</svg>`;
+    el.querySelectorAll('[data-id]').forEach((node) => {
+      const go = () => {
+        const cr = focus.container.getBoundingClientRect(), r = node.getBoundingClientRect();
+        el.querySelectorAll('.on').forEach((x) => x.classList.remove('on'));
+        node.classList.add('on');
+        focus.show(node.dataset.id, { x: r.left - cr.left, y: r.top - cr.top, w: r.width, h: r.height });
+      };
+      node.addEventListener('click', (e) => { e.stopPropagation(); go(); });
+      node.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') go(); });
+      node.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && focus.id === node.dataset.id) focus.keep(); });
+    });
+  }
+  function sheetFocus(id) {
+    const el = $(id);
+    const f = makeFocus(el.parentElement, () => el.querySelectorAll('.on').forEach((x) => x.classList.remove('on')));
+    el.addEventListener('click', () => f.hide());
+    return f;
+  }
+  const focusProfile = sheetFocus('profile'), focusU = sheetFocus('planU'), focusM = sheetFocus('planM'), focusSection = sheetFocus('section');
+
+  function hullOutline(kind, Z) {
+    const st = [...S.hull[kind]].sort((a, b) => b.x - a.x);
+    const pts = [...st.map((s) => [s.x, Z(s.z[1])]), ...st.slice().reverse().map((s) => [s.x, Z(s.z[0])])];
+    return `<polygon class="hull" points="${pts.map(([a, b]) => `${n2(a)},${n2(b)}`).join(' ')}"/>`;
+  }
+  function travelerFigure(x, zFoot, Z, w) {
+    return `<g class="trav" data-id="traveler"><rect x="${n2(x - w / 2)}" y="${n2(Z(zFoot + TRAV.h * 0.82))}" width="${n2(w)}" height="${n2(TRAV.h * 0.82)}" rx="${n2(w / 2)}"/><circle cx="${n2(x)}" cy="${n2(Z(zFoot + TRAV.h * 0.93))}" r="${n2(w * 0.55)}"/></g>`;
+  }
+
+  const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive block', hold: 'Sample hold', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', engine_c: 'Engines', engine_p: 'Engines', engine_s: 'Engines' };
+  let half = 'port';
+  function drawProfile() {
+    const Z = (z) => -z, fs = 1.05;
+    let g = '';
+    for (let x = -40; x <= 40; x += 10) g += line('axis', x, Z(-3.6), x, Z(10.8)) + text(x, Z(-4.8), x === 0 ? '0' : x, 0.85, 'dim');
+    g += text(47.5, Z(-4.8), 'm', 0.85, 'dim');
+    for (const kind of ['main', 'head']) g += hullOutline(kind, Z);
+    const inHalf = (y) => (half === 'port' ? y[0] < 0 : y[1] > 0);
+    const mids = (y) => (y[0] + y[1]) / 2;
+    const mods = S.modules.map((m) => ({ m, e: extent(m) })).filter(({ e }) => inHalf(e.y)).sort((a, b) => mids(a.e.y) - mids(b.e.y));
+    for (const { m, e } of mods) g += rect('modf', m.id, e.x[0], Z(e.z[1]), e.x[1] - e.x[0], e.z[1] - e.z[0], fillOf(m.role), m.shape === 'cyl-x' ? ` rx="${n2(m.r * 0.5)}"` : '');
+    for (const { m, e } of mods) if (MOD_SHORT[m.id] && e.z[1] - e.z[0] > 2 && fits(MOD_SHORT[m.id], 0.9, e.x[1] - e.x[0])) g += text((e.x[0] + e.x[1]) / 2, Z(e.z[0]) - 0.45, MOD_SHORT[m.id], 0.9, 'mlbl');
+    const rs = rooms.filter((r) => inHalf(r.y));
+    const corr = rs.filter((r) => r.role === 'passage');
+    for (const r of rs.filter((q) => q.role !== 'passage').sort((a, b) => mids(a.y) - mids(b.y))) {
+      g += rect('room', r.id, r.x[0], Z(r.zRange[1]), r.x[1] - r.x[0], r.zRange[1] - r.zRange[0], fillOf(r.role));
+      if (fits(SHORT[r.id], fs, r.x[1] - r.x[0])) g += text((r.x[0] + r.x[1]) / 2, Z((r.zRange[0] + r.zRange[1]) / 2) + fs * 0.35, SHORT[r.id], fs);
+    }
+    for (const r of corr) g += rect('room corr', r.id, r.x[0], Z(r.zRange[1]), r.x[1] - r.x[0], r.zRange[1] - r.zRange[0]);
+    if (half === 'port' && TRAV.at[0] <= view.cut) g += travelerFigure(TRAV.at[0] - 1.6, TRAV.at[2], Z, 0.55);
+    if (view.cut < NO_CUT) g += line('cutline', view.cut, Z(-3.6), view.cut, Z(10.8));
+    $('profiletitle').textContent = half === 'port' ? 'Inboard profile · port half, looking to port' : 'Outboard profile · starboard half, plating removed';
+    mountSheet($('profile'), [-49, -11.4, 98, 17], g, focusProfile, `Side profile of the ship, ${half === 'port' ? 'port' : 'starboard'} half`);
+    $('profilecap').textContent = `${half === 'port' ? 'Port-side' : 'Starboard-side'} compartments and the centreline rooms; corridors dashed. Metres from amidships, bow to the right.`;
+  }
+  seg('#half', 'half', (v) => { half = v; focusProfile.hide(); drawProfile(); });
+
+  const PLAN_VB = { upper: [9, -7.4, 30.4, 14.8], main: [-12, -12.6, 32.4, 25.2] };
+  function halfWidthAt(kind, x, z) {
+    const st = station(S.hull[kind], x);
+    if (!st) return null;
+    const pts = profile(kind, st);
+    let best = null;
+    for (let i = 0; i < pts.length; i++) {
+      const [y1, z1] = pts[i], [y2, z2] = pts[(i + 1) % pts.length];
+      if (z1 === z2 || (z1 - z) * (z2 - z) > 0) continue;
+      const y = y1 + ((z - z1) / (z2 - z1)) * (y2 - y1);
+      if (y > 0) best = Math.max(best ?? 0, y);
+    }
+    return best;
+  }
+  function cameraCone(r) {
+    const dir = { fore: [1, 0], aft: [-1, 0], starboard: [0, 1], port: [0, -1] }[r.view];
+    const cx = (r.x[0] + r.x[1]) / 2, cy = (r.y[0] + r.y[1]) / 2;
+    const hx = (r.x[1] - r.x[0]) / 2, hy = (r.y[1] - r.y[0]) / 2;
+    const cam = [cx - dir[0] * (hx - 0.2), cy - dir[1] * (hy - 0.2)];
+    const perp = [-dir[1], dir[0]], L = 1.0, s = 0.5;
+    const a = [cam[0] + dir[0] * L + perp[0] * s, cam[1] + dir[1] * L + perp[1] * s];
+    const b = [cam[0] + dir[0] * L - perp[0] * s, cam[1] + dir[1] * L - perp[1] * s];
+    return `<polygon class="camg" points="${[cam, a, b].map(([x, y]) => `${n2(x)},${n2(y)}`).join(' ')}"/>`;
+  }
+  function drawPlan(deckId) {
+    const d = S.decks.find((q) => q.id === deckId);
+    const vb = PLAN_VB[deckId];
+    const zMid = (d.z[0] + d.z[1]) / 2;
+    const fs = deckId === 'upper' ? 0.66 : 0.7;
+    const bottom = vb[1] + vb[3];
+    let g = '';
+    for (let x = Math.ceil(vb[0] / 5) * 5; x <= vb[0] + vb[2]; x += 5) g += line('axis', x, vb[1], x, bottom - 1) + text(x, bottom - 0.3, x, fs * 0.8, 'dim');
+    const kind = deckId === 'upper' ? 'head' : 'main';
+    const pts = [];
+    const xs = S.hull[kind].map((s) => s.x);
+    for (let x = Math.max(...xs); x >= Math.min(...xs); x -= 0.25) { const b = halfWidthAt(kind, x, zMid); if (b != null) pts.push([x, b]); }
+    g += `<polygon class="hull" points="${[...pts.map(([x, b]) => `${n2(x)},${n2(b)}`), ...pts.slice().reverse().map(([x, b]) => `${n2(x)},${n2(-b)}`)].join(' ')}"/>`;
+    for (const m of S.modules) {
+      const e = extent(m);
+      if (e.z[1] <= d.z[0] || e.z[0] >= d.z[1]) continue;
+      g += rect('modf', m.id, e.x[0], e.y[0], e.x[1] - e.x[0], e.y[1] - e.y[0], fillOf(m.role), m.shape === 'cyl-x' ? ` rx="${n2(m.r * 0.6)}"` : '');
+    }
+    for (const r of rooms.filter((q) => q.deck === deckId)) {
+      const w = r.x[1] - r.x[0], h = r.y[1] - r.y[0];
+      g += rect('room', r.id, r.x[0], r.y[0], w, h, fillOf(r.role));
+      if (simRoom[r.id]) g += cameraCone(r);
+      if (fits(SHORT[r.id], fs, w) && h > fs * 1.3) g += text(r.x[0] + w / 2, r.y[0] + h / 2 + fs * 0.35, SHORT[r.id], fs);
+    }
+    for (const h of SIM.hatches) {
+      const geo = geoHatch[h.id];
+      const A = roomById[h.a], B = roomById[h.b];
+      if (geo.kind === 'companionway') {
+        const [x, y] = geo.at;
+        g += `<g>${rect('ladder', null, x - 0.5, y - 0.5, 1, 1)}${line('ladder', x - 0.5, y - 0.17, x + 0.5, y - 0.17)}${line('ladder', x - 0.5, y + 0.17, x + 0.5, y + 0.17)}</g>`;
+        continue;
+      }
+      if (geo.path) {
+        if (deckId === 'main') { const [p, q] = geo.path; g += line('crawl', p[0], p[1] - 0.6, q[0], q[1] + 0.6); }
+        continue;
+      }
+      if (A.deck !== deckId) continue;
+      const [x, y] = geo.at;
+      const alongX = Math.min(A.x[1], B.x[1]) - Math.max(A.x[0], B.x[0]) > 0.3;
+      g += alongX ? line('door', x - 0.45, y, x + 0.45, y) : line('door', x, y - 0.45, x, y + 0.45);
+    }
+    if (deckId === 'upper' && TRAV.at[0] <= view.cut) g += `<circle class="trav" data-id="traveler" cx="${TRAV.at[0]}" cy="${TRAV.at[1]}" r="0.42"/>`;
+    if (view.cut < NO_CUT && view.cut > vb[0] && view.cut < vb[0] + vb[2]) g += line('cutline', view.cut, vb[1], view.cut, bottom - 1);
+    g += text(vb[0] + vb[2] - 0.3, vb[1] + fs * 1.3, 'FWD →', fs * 0.8, 'dim', 'end') + text(vb[0] + 0.3, vb[1] + fs * 1.3, 'PORT', fs * 0.8, 'dim', 'start') + text(vb[0] + 0.3, bottom - 1.3, 'STBD', fs * 0.8, 'dim', 'start');
+    mountSheet($(deckId === 'upper' ? 'planU' : 'planM'), vb, g, deckId === 'upper' ? focusU : focusM, `${d.name} plan`);
+  }
+  function drawPlans() { drawPlan('upper'); drawPlan('main'); }
+
+  function drawSection() {
+    const x = view.cut < NO_CUT ? view.cut : 25;
+    const Z = (z) => -z, fs = 0.72;
+    let g = '';
+    for (let y = -20; y <= 20; y += 5) g += line('axis', y, Z(-3.6), y, Z(10.8)) + text(y, Z(-4.8), y, 0.8, 'dim');
+    for (const kind of ['main', 'head']) {
+      const st = station(S.hull[kind], x);
+      if (st) g += `<polygon class="hull" points="${profile(kind, st).map(([y, z]) => `${n2(y)},${n2(Z(z))}`).join(' ')}"/>`;
+    }
+    for (const m of S.modules) {
+      const e = extent(m);
+      if (x < e.x[0] || x > e.x[1]) continue;
+      if (m.shape === 'cyl-x') g += `<circle class="modf" data-id="${m.id}" cx="${n2(m.y)}" cy="${n2(Z(m.z))}" r="${m.r}" style="${fillOf(m.role)}"/>`;
+      else g += rect('modf', m.id, e.y[0], Z(e.z[1]), e.y[1] - e.y[0], e.z[1] - e.z[0], fillOf(m.role));
+    }
+    for (const r of rooms) {
+      if (x < r.x[0] || x > r.x[1]) continue;
+      const w = r.y[1] - r.y[0];
+      g += rect('room', r.id, r.y[0], Z(r.zRange[1]), w, r.zRange[1] - r.zRange[0], fillOf(r.role));
+      if (fits(SHORT[r.id], fs, w)) g += text(r.y[0] + w / 2, Z((r.zRange[0] + r.zRange[1]) / 2) + fs * 0.35, SHORT[r.id], fs);
+    }
+    if (Math.abs(x - TRAV.at[0]) < 0.8) g += travelerFigure(TRAV.at[1], TRAV.at[2], Z, 0.55);
+    g += text(-21.5, Z(9.8), 'PORT', 0.8, 'dim', 'start') + text(21.5, Z(9.8), 'STBD', 0.8, 'dim', 'end');
+    mountSheet($('section'), [-23, -11.4, 46, 17], g, focusSection, `Cross-section at x = ${x.toFixed(1)} m`);
+    $('sectioncap').textContent = `Frame at x = ${x.toFixed(1)} m${view.cut < NO_CUT ? ', set by the cut slider.' : '. Move the cut slider to slice somewhere else.'}`;
+  }
+
+  // ───────── fitting the sim ─────────
+  const otherSide = (c) => { const h = SIM.hatches.find((q) => q.id === c.hatch); return c.side === 'a' ? h.b : h.a; };
+  $('fitlede').innerHTML = `Every hatch in the sim's room graph is placed in 3D. A checker confirms each door sits on both rooms' walls, no rooms overlap and nothing pokes through the hull: <span class="${REPORT.problems.length ? 'bad' : 'ok'}">${REPORT.problems.length ? `${REPORT.problems.length} problem(s)` : 'consistent'}</span>. Adopting this layout means these edits to <code>data/ship.json</code>. The traveler's routes stay the same; only walking distances change.`;
+  const rows = REPORT.resizes.map((r) => `<tr><td>${nameOf(r.room)}</td><td>Length</td><td class="num">${r.from} m</td><td class="num">${r.to} m</td></tr>`)
+    .concat(REPORT.changes.map((c) => `<tr><td>${nameOf(c.room)}</td><td>Door to ${SHORT[otherSide(c)]}</td><td class="num">${c.from} m</td><td class="num">${c.to} m</td></tr>`));
+  $('changes').innerHTML = `<thead><tr><th>Compartment</th><th>What moves</th><th>Now</th><th>Proposed</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  const side = (y) => (y > 0.1 ? 'to starboard' : y < -0.1 ? 'to port' : 'forward');
+  const yawNotes = Object.entries(S.cameraYaw).filter(([room, y]) => Math.abs((CAMYAW[room] ?? 0) - y) > 0.05).map(([room, y]) => `${SHORT[room]} ${side(y)}`);
+  $('else').innerHTML = [
+    `Window views follow the hull (in <code>cameras.json</code>): ${yawNotes.join(', ')}.`,
+    'Doors in the wall behind a room\'s camera (the bridge door, the side rooms\' corridor doors) get drawn as a frame in the foreground instead of on the back wall.',
+    'The hull camera and landing shots can show the real silhouette: canopy, radiators, the three-engine cluster.',
+    'Engineering\'s camera looks aft across the full beam at the shadow shield, with the reactor on the centreline.',
+  ].map((x) => `<li>${x}</li>`).join('');
+  $('simless').innerHTML = [
+    'Washroom on the upper deck. Washing happens at the quarters basin today.',
+    'Cargo and sample hold under the living deck. Samples are tracked as cargo but have no room.',
+    'EVA lift well. An EVA could start with the platform lowering instead of a wall door.',
+    'The plumbing hatch becomes a crawlway under the corridor deck, which suits its slow 6 s crossing.',
+  ].map((x) => `<li>${x}</li>`).join('');
+  $('foot').textContent = `Drawn from data/ship3d.json and checked against data/ship.json by tools/ship3d.mjs · ${rooms.length} compartments · ${S.modules.length} hull modules.`;
+
+  // ───────── go ─────────
+  buildScene(view.cut);
+  new ResizeObserver(resize).observe(cv);
+  const retheme = () => { readPalette(); draw(); };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  drawProfile(); drawPlans(); drawSection();
+})();
+</script>

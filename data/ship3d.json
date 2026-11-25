@@ -1,0 +1,84 @@
+{
+  "_comment": "PROPOSAL — 3D general arrangement of the ship, fitted to the sim's room graph (ship.json). Frame: metres; x fore(+)/aft(−), y starboard(+)/port(−), z up(+); origin amidships on the main-deck floor. Each room is a box. Its local coordinate u (the axis the side-on camera sees as left→right) is given by axis + origin: '+x' u = x − origin, '−x' u = origin − x, '+y' u = y − origin, '−y' u = origin − y. 'view' is the wall the room camera faces (its back wall). Hatches give the 3D door point (or a short path for crawlways); tools/ship3d.mjs checks them against ship.json.",
+  "status": "proposal",
+  "name": "Halyard-class long-range surveyor",
+  "summary": "A 94 m, single-occupant survey hull. A low arrowhead main hull carries fuel, reactor, frame-shift drive and engines; a dorsal 'head' superstructure forward holds the living deck and the bridge under a wraparound canopy.",
+  "decks": [
+    { "id": "upper", "name": "Upper deck (living)", "z": [3.8, 7.2] },
+    { "id": "main", "name": "Main deck (service)", "z": [0, 3.4] }
+  ],
+  "rooms": [
+    { "id": "bridge",        "deck": "upper", "x": [31.4, 36.4], "y": [-4.5, 4.5],  "axis": "+y", "origin": -4.5, "view": "fore",      "role": "hab", "info": "Forward on the upper deck, under the wraparound canopy. Helm, nav, scanner and terminal face the glazing; the camera looks forward across them." },
+    { "id": "corridor_fore", "deck": "upper", "x": [17.0, 31.0], "y": [-0.9, 0.9],  "axis": "-x", "origin": 31.0, "view": "starboard", "role": "passage", "info": "Spine of the living deck. Quarters and galley open to starboard, lounge and washroom to port, the bridge at the forward end and the companionway down at the aft end." },
+    { "id": "quarters",      "deck": "upper", "x": [23.5, 30.0], "y": [1.1, 4.7],   "axis": "-x", "origin": 30.0, "view": "starboard", "role": "hab", "info": "Starboard, forward. Bunk, basin, desk, locker and the torpor pod, with a viewport out to starboard." },
+    { "id": "galley",        "deck": "upper", "x": [18.0, 23.0], "y": [1.1, 4.7],   "axis": "-x", "origin": 23.0, "view": "starboard", "role": "hab", "info": "Starboard, aft of the quarters. Pantry, stove, counter and a table by a small starboard viewport." },
+    { "id": "lounge",        "deck": "upper", "x": [22.0, 30.0], "y": [-5.3, -1.1], "axis": "+x", "origin": 22.0, "view": "port",      "role": "hab", "info": "Port side, behind the largest window on the ship. Couch, easel, speaker and room to exercise." },
+    { "id": "head",          "deck": "upper", "x": [18.4, 21.6], "y": [-3.9, -1.1], "axis": "+x", "origin": 18.4, "view": "port",      "role": "hab", "simless": true, "name": "Washroom (head)", "info": "Small washroom between the lounge and the companionway." },
+    { "id": "corridor_aft",  "deck": "main",  "x": [-2.0, 18.0], "y": [-0.9, 0.9],  "axis": "-x", "origin": 18.0, "view": "starboard", "role": "passage", "resize": "lengthened from 14 m to 20 m so the six service compartments can open off it", "info": "Service spine on the main deck, from the foot of the companionway to the engineering bulkhead. Six compartments open off it." },
+    { "id": "hydro",         "deck": "main",  "x": [5.5, 17.5],  "y": [1.1, 6.1],   "axis": "-x", "origin": 17.5, "view": "starboard", "role": "life", "info": "Starboard, the longest compartment: ten grow trays, the algae tank, the seed bank and two pumps. The plumbing crawlway leaves from its aft end." },
+    { "id": "workshop",      "deck": "main",  "x": [-2.0, 5.0],  "y": [1.1, 5.1],   "axis": "-x", "origin": 5.0,  "view": "starboard", "role": "service", "info": "Starboard, aft. Bench, fabricator and lathe, with a side door straight into engineering." },
+    { "id": "storage",       "deck": "main",  "x": [11.6, 17.6], "y": [-5.1, -1.1], "axis": "+x", "origin": 11.6, "view": "port",      "role": "service", "info": "Port, forward of the airlock. Shelves and crates of spares, feedstock and food." },
+    { "id": "airlock",       "deck": "main",  "x": [6.4, 11.4],  "y": [-5.1, -1.1], "axis": "+x", "origin": 6.4,  "view": "port",      "role": "service", "info": "Port, amidships. Inner door from the corridor, suit rack, and the outer door onto the EVA lift well." },
+    { "id": "lifesupport",   "deck": "main",  "x": [-0.9, 6.1],  "y": [-5.1, -1.1], "axis": "+x", "origin": -0.9, "view": "port",      "role": "life", "info": "Port, aft. Water recycler, oxygen generator, CO₂ scrubber and dehumidifier." },
+    { "id": "engineering",   "deck": "main",  "x": [-9.4, -2.4], "y": [-5.5, 5.5],  "axis": "-y", "origin": 5.5,  "view": "aft",       "role": "power", "info": "Full-beam compartment at the aft end of the pressurized decks. Its camera looks aft at the shadow-shield bulkhead: scoop manifold to starboard, reactor face on the centreline, drive coupling to port." }
+  ],
+  "hatches": [
+    { "id": "h_bridge",      "at": [31.2, 0.0, 3.8],   "kind": "door" },
+    { "id": "h_quarters",    "at": [29.5, 1.0, 3.8],   "kind": "door" },
+    { "id": "h_lounge",      "at": [22.5, -1.0, 3.8],  "kind": "door" },
+    { "id": "h_galley",      "at": [22.5, 1.0, 3.8],   "kind": "door" },
+    { "id": "h_spine",       "at": [17.5, 0.0, 3.6],   "kind": "companionway", "note": "ladder well and pressure hatch between the decks" },
+    { "id": "h_hydro",       "at": [17.0, 1.0, 0.0],   "kind": "door" },
+    { "id": "h_storage",     "at": [12.1, -1.0, 0.0],  "kind": "door" },
+    { "id": "h_airlock",     "at": [6.9, -1.0, 0.0],   "kind": "door" },
+    { "id": "h_workshop",    "at": [4.5, 1.0, 0.0],    "kind": "door" },
+    { "id": "h_lifesupport", "at": [-0.4, -1.0, 0.0],  "kind": "door" },
+    { "id": "h_engineering", "at": [-2.2, 0.0, 0.0],   "kind": "door" },
+    { "id": "h_shop_eng",    "at": [-2.2, 3.1, 0.0],   "kind": "door" },
+    { "id": "h_plumbing",    "path": [[5.7, -1.0, -0.6], [5.7, 1.0, -0.6]], "kind": "crawlway", "note": "service crawlway under the corridor deck, carrying the water mains" }
+  ],
+  "hull": {
+    "main": [
+      { "x": 46.5,  "b": 0.6,  "z": [-0.8, 0.6] },
+      { "x": 40.0,  "b": 4.2,  "z": [-2.2, 2.2] },
+      { "x": 32.0,  "b": 8.2,  "z": [-2.8, 3.4] },
+      { "x": 20.0,  "b": 13.0, "z": [-3.0, 3.7] },
+      { "x": 5.0,   "b": 17.5, "z": [-3.0, 3.7] },
+      { "x": -12.0, "b": 20.0, "z": [-3.0, 3.7] },
+      { "x": -30.0, "b": 20.0, "z": [-2.8, 3.3] },
+      { "x": -40.0, "b": 16.0, "z": [-2.4, 2.9] },
+      { "x": -44.0, "b": 13.0, "z": [-2.0, 2.4] }
+    ],
+    "head": [
+      { "x": 38.4, "b": 1.2, "z": [3.4, 5.0] },
+      { "x": 36.8, "b": 5.4, "z": [3.4, 8.1] },
+      { "x": 31.0, "b": 5.9, "z": [3.4, 7.8] },
+      { "x": 17.0, "b": 5.9, "z": [3.4, 7.8] },
+      { "x": 12.0, "b": 3.2, "z": [3.4, 5.6] },
+      { "x": 9.0,  "b": 0.8, "z": [3.4, 4.0] }
+    ],
+    "canopy": { "x": [33.2, 38.4], "note": "wraparound glazing over the bridge: forward and roof panels" }
+  },
+  "modules": [
+    { "id": "fuel_port",    "name": "Fuel tank (port)",        "shape": "cyl-x", "x": [-24, 8],     "y": -10.5, "z": 0.3,  "r": 1.55, "role": "fuel",   "info": "Liquid hydrogen, 16 t. Fed by the scoop manifold; burned by reactor and drive." },
+    { "id": "fuel_stbd",    "name": "Fuel tank (starboard)",   "shape": "cyl-x", "x": [-24, 8],     "y": 10.5,  "z": 0.3,  "r": 1.55, "role": "fuel",   "info": "Liquid hydrogen, 16 t." },
+    { "id": "reactor",      "name": "Fusion reactor",          "shape": "cyl-x", "x": [-18.4, -10.6], "y": 0,   "z": 0.4,  "r": 2.9,  "role": "power",  "info": "40 kW-class plant. Its forward face and coolant loop are what engineering sees through the aft bulkhead." },
+    { "id": "shadow_shield","name": "Shadow shield bulkhead",  "shape": "box",   "x": [-10.4, -9.8], "y": [-6, 6],  "z": [-2.6, 3.4], "role": "power", "info": "Radiation shield between the reactor and the pressurized decks." },
+    { "id": "fsd",          "name": "Frame-shift drive",       "shape": "box",   "x": [-29, -19.5], "y": [-5, 5],   "z": [-2.0, 3.0], "role": "drive", "info": "Hyperspace coil assembly. Wears with each jump." },
+    { "id": "drive_block",  "name": "Main drive block",        "shape": "box",   "x": [-40, -30],   "y": [-11, 11], "z": [-2.2, 2.7], "role": "drive", "info": "Thruster feed, gimbals and the supercruise field generator." },
+    { "id": "engine_p",     "name": "Main engine (port)",      "shape": "cyl-x", "x": [-47, -40],   "y": -7,    "z": 0.3,  "r": 2.2, "role": "drive" },
+    { "id": "engine_c",     "name": "Main engine (centre)",    "shape": "cyl-x", "x": [-47, -40],   "y": 0,     "z": 0.3,  "r": 2.2, "role": "drive" },
+    { "id": "engine_s",     "name": "Main engine (starboard)", "shape": "cyl-x", "x": [-47, -40],   "y": 7,     "z": 0.3,  "r": 2.2, "role": "drive" },
+    { "id": "radiator_p",   "name": "Radiator panels (port)",  "shape": "box",   "x": [-30, -6],    "y": [-19, -12], "z": [3.95, 4.1], "role": "thermal", "info": "Dorsal radiators. Glow on the hull camera when the ship runs hot." },
+    { "id": "radiator_s",   "name": "Radiator panels (starboard)", "shape": "box", "x": [-30, -6],  "y": [12, 19], "z": [3.95, 4.1], "role": "thermal" },
+    { "id": "scoop",        "name": "Fuel scoop intake",       "shape": "box",   "x": [34, 40],     "y": [-1.6, 1.6], "z": [-2.9, -2.0], "role": "fuel", "info": "Chin intake. Plasma is drawn in here while skimming a star." },
+    { "id": "hold",         "name": "Cargo & sample hold",     "shape": "box",   "x": [18.4, 30],   "y": [-5.5, 5.5], "z": [0, 3.0], "role": "service", "info": "Unpressurized. Ore and ice samples wait here to be refined." },
+    { "id": "eva_lift",     "name": "EVA lift well",           "shape": "box",   "x": [10.2, 11.6], "y": [-6.8, -5.3], "z": [-3.0, 3.4], "role": "service", "info": "The airlock's outer door opens onto a lift platform that lowers to the surface." },
+    { "id": "gear_fp",      "name": "Landing gear (fore port)",  "shape": "cyl-z", "x": 26,  "y": -5,  "z": [-3.0, -1.2], "r": 0.6, "role": "service" },
+    { "id": "gear_fs",      "name": "Landing gear (fore stbd)",  "shape": "cyl-z", "x": 26,  "y": 5,   "z": [-3.0, -1.2], "r": 0.6, "role": "service" },
+    { "id": "gear_ap",      "name": "Landing gear (aft port)",   "shape": "cyl-z", "x": -24, "y": -14, "z": [-3.0, -1.2], "r": 0.7, "role": "service" },
+    { "id": "gear_as",      "name": "Landing gear (aft stbd)",   "shape": "cyl-z", "x": -24, "y": 14,  "z": [-3.0, -1.2], "r": 0.7, "role": "service" },
+    { "id": "mast",         "name": "Sensor mast & nav beacon",  "shape": "cyl-z", "x": 20,  "y": 0,   "z": [7.8, 10.6],  "r": 0.25, "role": "sensor", "info": "Long-range sensor array. Seen from the hull camera with its blinking beacon." }
+  ],
+  "cameraYaw": { "bridge": 0, "lounge": -1.5708, "quarters": 1.5708, "galley": 1.5708, "hydro": 1.5708, "airlock": -1.5708 }
+}
