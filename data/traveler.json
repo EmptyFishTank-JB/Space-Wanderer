@@ -1,0 +1,22 @@
+{
+  "_comment": "Personality and habit parameters. Traits are 0..1. Hobby weights bias leisure choices. schedule hours are ship time.",
+  "traits": {
+    "curiosity": 0.8,
+    "discipline": 0.6,
+    "tidiness": 0.55,
+    "resilience": 0.7,
+    "sociability": 0.5
+  },
+  "schedule": { "sleepHour": 23.2, "wakeHour": 7.0 },
+  "walkSpeed": 1.15,
+  "hobbies": {
+    "gaze_viewport": 1.0,
+    "read": 0.8,
+    "sketch": 0.85,
+    "listen_music": 0.75,
+    "play_solitaire": 0.45,
+    "play_instrument": 0.6,
+    "reflect": 0.55
+  },
+  "mealWindows": [[6.5, 9.5], [11.5, 14.0], [17.5, 20.5]]
+}

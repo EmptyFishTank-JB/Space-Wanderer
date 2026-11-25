@@ -1,0 +1,981 @@
+{
+  "_comment": "Wearable ship components. wearPerHour applies while the component runs (see runFraction in wear.js). hazard is the base fault rate per running hour, multiplied by a steep wear curve. Fault effects are multipliers consumed by the ship systems. alarm=true components announce faults over the ship's chime immediately; others must be noticed in person (sound, flicker, LED). Flight hardware (drive coil, scoop manifold, hull plating, airlock seals) runs only during jumps, scooping, atmospheric entry/cruise and airlock cycles. Exterior components can only be worked on while landed.",
+  "components": [
+    {
+      "id": "reactor_core",
+      "name": "reactor coolant loop",
+      "room": "engineering",
+      "station": "reactor",
+      "alarm": true,
+      "criticality": 0.95,
+      "wearPerHour": 0.00075,
+      "hazard": 0.006,
+      "initialWear": [
+        0.15,
+        0.35
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 1,
+        "seconds": 2400,
+        "label": "reseat coolant pump seals"
+      },
+      "repair": {
+        "minor": {
+          "parts": 2,
+          "seconds": 3600
+        },
+        "major": {
+          "parts": 5,
+          "seconds": 9000
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "coolant_pump_vibration",
+          "escalateHours": [
+            30,
+            90
+          ],
+          "effect": {
+            "output": 0.85,
+            "heat": 1.1
+          }
+        },
+        "major": {
+          "id": "coolant_pump_failure",
+          "effect": {
+            "output": 0.45,
+            "heat": 1.4
+          }
+        }
+      }
+    },
+    {
+      "id": "thermal_vents",
+      "name": "radiator vents",
+      "room": "engineering",
+      "station": "vents",
+      "alarm": true,
+      "criticality": 0.8,
+      "wearPerHour": 0.0021,
+      "hazard": 0.008,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": null,
+        "qty": 0,
+        "seconds": 1800,
+        "label": "clear radiator vent baffles"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 2400
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 5400
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "vent_clog",
+          "escalateHours": [
+            20,
+            60
+          ],
+          "effect": {
+            "efficiency": 0.6
+          }
+        },
+        "major": {
+          "id": "vent_blockage",
+          "effect": {
+            "efficiency": 0.3
+          }
+        }
+      }
+    },
+    {
+      "id": "water_recycler",
+      "name": "water recycler",
+      "room": "lifesupport",
+      "station": "recycler",
+      "alarm": true,
+      "criticality": 0.85,
+      "wearPerHour": 0.0042,
+      "hazard": 0.009,
+      "initialWear": [
+        0.2,
+        0.5
+      ],
+      "maintain": {
+        "item": "filters",
+        "qty": 1,
+        "seconds": 1200,
+        "label": "swap recycler filter"
+      },
+      "repair": {
+        "minor": {
+          "parts": 0,
+          "filters": 1,
+          "seconds": 1500
+        },
+        "major": {
+          "parts": 3,
+          "filters": 1,
+          "seconds": 6000
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "filter_clog",
+          "escalateHours": [
+            24,
+            72
+          ],
+          "effect": {
+            "efficiency": 0.5
+          }
+        },
+        "major": {
+          "id": "membrane_tear",
+          "effect": {
+            "efficiency": 0.1
+          }
+        }
+      }
+    },
+    {
+      "id": "o2_scrubber",
+      "name": "CO2 scrubber",
+      "room": "lifesupport",
+      "station": "scrubber",
+      "alarm": true,
+      "criticality": 0.9,
+      "wearPerHour": 0.0036,
+      "hazard": 0.009,
+      "initialWear": [
+        0.15,
+        0.45
+      ],
+      "maintain": {
+        "item": "cartridges",
+        "qty": 1,
+        "seconds": 1500,
+        "label": "replace scrubber cartridge"
+      },
+      "repair": {
+        "minor": {
+          "parts": 0,
+          "cartridges": 1,
+          "seconds": 1800
+        },
+        "major": {
+          "parts": 2,
+          "seals": 2,
+          "seconds": 5400
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "cartridge_saturation",
+          "escalateHours": [
+            24,
+            60
+          ],
+          "effect": {
+            "efficiency": 0.5
+          }
+        },
+        "major": {
+          "id": "seal_leak",
+          "effect": {
+            "efficiency": 0.2,
+            "leak": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "ogs",
+      "name": "oxygen generator",
+      "room": "lifesupport",
+      "station": "ogs",
+      "alarm": true,
+      "criticality": 0.75,
+      "wearPerHour": 0.0015,
+      "hazard": 0.006,
+      "initialWear": [
+        0.1,
+        0.35
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 1,
+        "seconds": 1800,
+        "label": "descale electrolysis cell"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 2400
+        },
+        "major": {
+          "parts": 4,
+          "seconds": 7200
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "electrode_scaling",
+          "escalateHours": [
+            36,
+            100
+          ],
+          "effect": {
+            "efficiency": 0.6
+          }
+        },
+        "major": {
+          "id": "cell_failure",
+          "effect": {
+            "efficiency": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "dehumidifier",
+      "name": "condensate dehumidifier",
+      "room": "lifesupport",
+      "station": "dehumidifier",
+      "alarm": false,
+      "criticality": 0.4,
+      "wearPerHour": 0.0016,
+      "hazard": 0.007,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": "filters",
+        "qty": 1,
+        "seconds": 1200,
+        "label": "clean dehumidifier coil"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1800
+        },
+        "major": {
+          "parts": 2,
+          "seconds": 3600
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "condensate_drip",
+          "escalateHours": [
+            48,
+            120
+          ],
+          "effect": {
+            "efficiency": 0.6,
+            "leak": 1
+          }
+        },
+        "major": {
+          "id": "fan_seized",
+          "effect": {
+            "efficiency": 0.1
+          }
+        }
+      }
+    },
+    {
+      "id": "hydro_pump_1",
+      "name": "hydroponic pump 1",
+      "room": "hydro",
+      "station": "pump_1",
+      "alarm": false,
+      "criticality": 0.55,
+      "wearPerHour": 0.0029,
+      "hazard": 0.008,
+      "initialWear": [
+        0.1,
+        0.45
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 1,
+        "seconds": 1500,
+        "label": "swap pump 1 bearing seal"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seals": 1,
+          "seconds": 2100
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 4800
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "bearing_rattle",
+          "escalateHours": [
+            30,
+            80
+          ],
+          "effect": {
+            "flow": 0.8
+          }
+        },
+        "major": {
+          "id": "pump_seized",
+          "effect": {
+            "flow": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "hydro_pump_2",
+      "name": "hydroponic pump 2",
+      "room": "hydro",
+      "station": "pump_2",
+      "alarm": false,
+      "criticality": 0.55,
+      "wearPerHour": 0.0029,
+      "hazard": 0.008,
+      "initialWear": [
+        0.3,
+        0.6
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 1,
+        "seconds": 1500,
+        "label": "swap pump 2 bearing seal"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seals": 1,
+          "seconds": 2100
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 4800
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "bearing_rattle",
+          "escalateHours": [
+            30,
+            80
+          ],
+          "effect": {
+            "flow": 0.8
+          }
+        },
+        "major": {
+          "id": "pump_seized",
+          "effect": {
+            "flow": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "grow_lamps_a",
+      "name": "grow lamp bank A",
+      "room": "hydro",
+      "station": "tray_2",
+      "alarm": false,
+      "criticality": 0.5,
+      "wearPerHour": 0.0016,
+      "hazard": 0.006,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 1,
+        "seconds": 1500,
+        "label": "replace lamp bank A ballast"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1800
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 4200
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "ballast_flicker",
+          "escalateHours": [
+            40,
+            110
+          ],
+          "effect": {
+            "level": 0.85
+          }
+        },
+        "major": {
+          "id": "bank_failure",
+          "effect": {
+            "level": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "grow_lamps_b",
+      "name": "grow lamp bank B",
+      "room": "hydro",
+      "station": "tray_7",
+      "alarm": false,
+      "criticality": 0.5,
+      "wearPerHour": 0.0016,
+      "hazard": 0.006,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 1,
+        "seconds": 1500,
+        "label": "replace lamp bank B ballast"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1800
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 4200
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "ballast_flicker",
+          "escalateHours": [
+            40,
+            110
+          ],
+          "effect": {
+            "level": 0.85
+          }
+        },
+        "major": {
+          "id": "bank_failure",
+          "effect": {
+            "level": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "algae_bubbler",
+      "name": "algae vat bubbler",
+      "room": "hydro",
+      "station": "algae",
+      "alarm": false,
+      "criticality": 0.45,
+      "wearPerHour": 0.0024,
+      "hazard": 0.007,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 1,
+        "seconds": 900,
+        "label": "clear algae bubbler line"
+      },
+      "repair": {
+        "minor": {
+          "parts": 0,
+          "seals": 1,
+          "seconds": 1200
+        },
+        "major": {
+          "parts": 2,
+          "seconds": 3000
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "bubbler_clog",
+          "escalateHours": [
+            48,
+            120
+          ],
+          "effect": {
+            "growth": 0.6
+          }
+        },
+        "major": {
+          "id": "bubbler_failure",
+          "effect": {
+            "growth": 0.2
+          }
+        }
+      }
+    },
+    {
+      "id": "corridor_lights_aft",
+      "name": "aft corridor light strip",
+      "room": "corridor_aft",
+      "station": "light_panel",
+      "alarm": false,
+      "criticality": 0.15,
+      "wearPerHour": 0.001,
+      "hazard": 0.006,
+      "initialWear": [
+        0.2,
+        0.55
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 1,
+        "seconds": 900,
+        "label": "reseat light strip driver"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1200
+        },
+        "major": {
+          "parts": 2,
+          "seconds": 2400
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "flicker",
+          "escalateHours": [
+            72,
+            200
+          ],
+          "effect": {
+            "cosmetic": 1
+          }
+        },
+        "major": {
+          "id": "dark_section",
+          "effect": {
+            "cosmetic": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "junction_box_fore",
+      "name": "forward junction box",
+      "room": "corridor_fore",
+      "station": "junction_box",
+      "alarm": false,
+      "criticality": 0.4,
+      "wearPerHour": 0.0008,
+      "hazard": 0.006,
+      "initialWear": [
+        0.15,
+        0.45
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 1,
+        "seconds": 1500,
+        "label": "retorque junction box terminals"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1800
+        },
+        "major": {
+          "parts": 2,
+          "seconds": 3600
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "arcing",
+          "escalateHours": [
+            24,
+            72
+          ],
+          "effect": {
+            "powerLoss": 0.4
+          }
+        },
+        "major": {
+          "id": "breaker_trip",
+          "effect": {
+            "powerLoss": 0.2,
+            "galleyPower": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "galley_heater",
+      "name": "galley heater",
+      "room": "galley",
+      "station": "stove",
+      "alarm": false,
+      "criticality": 0.25,
+      "wearPerHour": 0.015,
+      "hazard": 0.03,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 1,
+        "seconds": 900,
+        "label": "replace heater element contacts"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1200
+        },
+        "major": {
+          "parts": 2,
+          "seconds": 2400
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "element_weak",
+          "escalateHours": [
+            48,
+            150
+          ],
+          "effect": {
+            "speed": 0.65
+          }
+        },
+        "major": {
+          "id": "element_out",
+          "effect": {
+            "speed": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "bridge_sensors",
+      "name": "long-range sensor array",
+      "room": "bridge",
+      "station": "scanner",
+      "alarm": false,
+      "criticality": 0.35,
+      "wearPerHour": 0.0015,
+      "hazard": 0.006,
+      "initialWear": [
+        0.1,
+        0.4
+      ],
+      "maintain": {
+        "item": null,
+        "qty": 0,
+        "seconds": 1800,
+        "label": "recalibrate sensor array"
+      },
+      "repair": {
+        "minor": {
+          "parts": 0,
+          "seconds": 2400
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 5400
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "calibration_drift",
+          "escalateHours": [
+            60,
+            160
+          ],
+          "effect": {
+            "sensorQuality": 0.7
+          }
+        },
+        "major": {
+          "id": "array_offline",
+          "effect": {
+            "sensorQuality": 0.1
+          }
+        }
+      }
+    },
+    {
+      "id": "fabricator",
+      "name": "workshop fabricator",
+      "room": "workshop",
+      "station": "fabricator",
+      "alarm": false,
+      "criticality": 0.45,
+      "wearPerHour": 0.03,
+      "hazard": 0.05,
+      "initialWear": [
+        0.1,
+        0.3
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 1,
+        "seconds": 1200,
+        "label": "clear fabricator nozzle"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seconds": 1500
+        },
+        "major": {
+          "parts": 3,
+          "seconds": 3600
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "nozzle_clog",
+          "escalateHours": [
+            100,
+            300
+          ],
+          "effect": {
+            "speed": 0.6
+          }
+        },
+        "major": {
+          "id": "extruder_jam",
+          "effect": {
+            "speed": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "drive_coil",
+      "name": "frame shift drive coil",
+      "room": "engineering",
+      "station": "drive",
+      "alarm": true,
+      "criticality": 0.7,
+      "wearPerHour": 0.55,
+      "hazard": 2.0,
+      "initialWear": [
+        0.15,
+        0.3
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 2,
+        "seconds": 3600,
+        "label": "rebalance drive coil windings"
+      },
+      "repair": {
+        "minor": {
+          "parts": 3,
+          "seconds": 5400
+        },
+        "major": {
+          "parts": 6,
+          "seconds": 10800
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "coil_harmonic",
+          "escalateHours": [
+            50,
+            150
+          ],
+          "effect": {
+            "jumpRange": 0.8
+          }
+        },
+        "major": {
+          "id": "coil_failure",
+          "effect": {
+            "jumpRange": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "scoop_manifold",
+      "name": "fuel scoop manifold",
+      "room": "engineering",
+      "station": "scoop_manifold",
+      "alarm": true,
+      "criticality": 0.6,
+      "wearPerHour": 0.24,
+      "hazard": 0.6,
+      "initialWear": [
+        0.1,
+        0.3
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 2,
+        "seconds": 2400,
+        "label": "reseal scoop manifold"
+      },
+      "repair": {
+        "minor": {
+          "parts": 2,
+          "seconds": 3600
+        },
+        "major": {
+          "parts": 5,
+          "seconds": 7200
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "manifold_leak",
+          "escalateHours": [
+            40,
+            120
+          ],
+          "effect": {
+            "scoopRate": 0.6
+          }
+        },
+        "major": {
+          "id": "manifold_rupture",
+          "effect": {
+            "scoopRate": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": "hull_plating",
+      "name": "hull plating",
+      "room": "airlock",
+      "station": "outer_door",
+      "alarm": false,
+      "criticality": 0.6,
+      "wearPerHour": 0.3,
+      "hazard": 0.3,
+      "initialWear": [
+        0.2,
+        0.35
+      ],
+      "maintain": {
+        "item": "parts",
+        "qty": 2,
+        "seconds": 5400,
+        "label": "patch hull plating"
+      },
+      "repair": {
+        "minor": {
+          "parts": 3,
+          "seconds": 5400
+        },
+        "major": {
+          "parts": 6,
+          "seconds": 10800
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "micrometeorite_pitting",
+          "escalateHours": [
+            200,
+            500
+          ],
+          "effect": {
+            "shield": 0.85
+          }
+        },
+        "major": {
+          "id": "plating_breach",
+          "effect": {
+            "shield": 0.5,
+            "leak": 1
+          }
+        }
+      },
+      "exterior": true
+    },
+    {
+      "id": "airlock_seals",
+      "name": "airlock door seals",
+      "room": "airlock",
+      "station": "inner_door",
+      "alarm": false,
+      "criticality": 0.5,
+      "wearPerHour": 0.3,
+      "hazard": 0.8,
+      "initialWear": [
+        0.1,
+        0.3
+      ],
+      "maintain": {
+        "item": "seals",
+        "qty": 2,
+        "seconds": 1800,
+        "label": "replace airlock door seals"
+      },
+      "repair": {
+        "minor": {
+          "parts": 1,
+          "seals": 2,
+          "seconds": 2400
+        },
+        "major": {
+          "parts": 3,
+          "seals": 4,
+          "seconds": 4800
+        }
+      },
+      "faults": {
+        "minor": {
+          "id": "seal_creep",
+          "escalateHours": [
+            100,
+            300
+          ],
+          "effect": {
+            "cycleSpeed": 0.7
+          }
+        },
+        "major": {
+          "id": "seal_failure",
+          "effect": {
+            "cycleSpeed": 0.0
+          }
+        }
+      }
+    }
+  ]
+}

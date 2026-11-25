@@ -1,0 +1,12 @@
+{
+  "_comment": "cycleDays assumes a full 18h photoperiod at full lamp level. yieldKg is per rack at perfect health. spoilDays is fresh shelf life before it must be eaten or preserved. morale nudges meal quality.",
+  "photoperiod": { "on": 4.0, "off": 22.0 },
+  "crops": [
+    { "id": "potato",  "name": "potato",      "cycleDays": 95, "yieldKg": 18.0, "kcalPerKg": 770,  "spoilDays": 60,  "morale": 0.5, "seedsPerHarvest": [2, 4], "targetTrays": 2 },
+    { "id": "soy",     "name": "soybean",     "cycleDays": 90, "yieldKg": 6.5,  "kcalPerKg": 4460, "spoilDays": 300, "morale": 0.3, "seedsPerHarvest": [3, 5], "targetTrays": 3 },
+    { "id": "wheat",   "name": "dwarf wheat", "cycleDays": 80, "yieldKg": 4.6,  "kcalPerKg": 3400, "spoilDays": 365, "morale": 0.4, "seedsPerHarvest": [3, 5], "targetTrays": 2 },
+    { "id": "tomato",  "name": "tomato",      "cycleDays": 75, "yieldKg": 10.0, "kcalPerKg": 180,  "spoilDays": 12,  "morale": 0.9, "seedsPerHarvest": [2, 4], "targetTrays": 1 },
+    { "id": "lettuce", "name": "lettuce",     "cycleDays": 35, "yieldKg": 3.0,  "kcalPerKg": 150,  "spoilDays": 7,   "morale": 0.8, "seedsPerHarvest": [2, 3], "targetTrays": 1 },
+    { "id": "herbs",   "name": "basil",       "cycleDays": 40, "yieldKg": 0.8,  "kcalPerKg": 230,  "spoilDays": 10,  "morale": 1.0, "seedsPerHarvest": [2, 3], "targetTrays": 1 }
+  ]
+}

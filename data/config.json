@@ -1,0 +1,13 @@
+{
+  "tickSeconds": 1,
+  "slowEvery": 10,
+  "hazardEvery": 60,
+  "brainEvery": 30,
+  "missionStart": { "year": 31, "dayOfYear": 139, "hour": 5.4 },
+  "catchup": {
+    "maxDays": 120,
+    "chunkTicks": 50000
+  },
+  "autosaveSeconds": 30,
+  "journal": { "recentLimit": 150, "outboxLimit": 5000 }
+}

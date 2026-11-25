@@ -1,0 +1,71 @@
+{
+  "_comment": "Phase 2 spaceflight tuning. Units: light-seconds (Ls) in-system, light-years (ly) between stars, real seconds for durations. 1 AU = 499 Ls; R_sun = 2.32 Ls; R_earth = 0.02125 Ls.",
+  "galaxy": {
+    "cellLy": 10,
+    "starsPerCell": 3.2,
+    "densityLatticeLy": 320,
+    "riftThreshold": 0.38,
+    "missionHeading": [0.96, 0.27, 0.06],
+    "missionGoal": "the inner arm, where the oldest carrier signals were logged"
+  },
+  "drive": {
+    "baseRangeLy": 36,
+    "maxFuelPerJump": 8,
+    "fuelExponent": 2.45,
+    "chargeSeconds": 20,
+    "hyperspaceSeconds": [32, 48],
+    "voidLyPerYear": 38,
+    "voidRealHours": [10, 15],
+    "strandedTrickleTph": 0.08
+  },
+  "supercruise": {
+    "maxLsPerSec": 2001,
+    "minLsPerSec": 0.0001,
+    "accelPerSec": 0.04,
+    "accelLinear": 0.003,
+    "decelPerSec": 0.45,
+    "approachSeconds": 7,
+    "starWellLs": 1200,
+    "planetWellLs": 30,
+    "wellExponent": 1.5
+  },
+  "scoop": {
+    "zoneRadii": 3.5,
+    "minRadii": 1.15,
+    "startRadii": 2.4,
+    "diveRadii": 1.55,
+    "safeRadii": 6,
+    "maxRateTps": 0.035,
+    "heatScale": 1.7
+  },
+  "descent": {
+    "orbitalSeconds": [240, 420],
+    "entrySeconds": [120, 240],
+    "glideSeconds": [120, 200],
+    "poweredSeconds": [150, 240],
+    "touchdownSeconds": [60, 100],
+    "ascentSeconds": [300, 480]
+  },
+  "eva": {
+    "suitO2Hours": 6,
+    "suitUpSeconds": [480, 720],
+    "cycleSeconds": 120,
+    "suitOffSeconds": [360, 480],
+    "surfaceMinutes": [30, 110],
+    "walkSpeed": 0.9
+  },
+  "starClasses": {
+    "O":  { "freq": 0.00003, "temp": [30000, 50000], "mass": [16, 60],     "radius": [6.6, 15],     "lum": [30000, 500000], "color": "#9bb0ff", "scoopable": true,  "heat": 2.0,  "rate": 1.5, "label": "blue giant" },
+    "B":  { "freq": 0.0013,  "temp": [10000, 30000], "mass": [2.1, 16],    "radius": [1.8, 6.6],    "lum": [25, 30000],     "color": "#aabfff", "scoopable": true,  "heat": 1.5,  "rate": 1.35, "label": "blue-white star" },
+    "A":  { "freq": 0.006,   "temp": [7500, 10000],  "mass": [1.4, 2.1],   "radius": [1.4, 1.8],    "lum": [5, 25],         "color": "#cad7ff", "scoopable": true,  "heat": 1.25, "rate": 1.2, "label": "white star" },
+    "F":  { "freq": 0.03,    "temp": [6000, 7500],   "mass": [1.04, 1.4],  "radius": [1.15, 1.4],   "lum": [1.5, 5],        "color": "#f8f7ff", "scoopable": true,  "heat": 1.1,  "rate": 1.1, "label": "yellow-white star" },
+    "G":  { "freq": 0.076,   "temp": [5200, 6000],   "mass": [0.8, 1.04],  "radius": [0.96, 1.15],  "lum": [0.6, 1.5],      "color": "#fff4ea", "scoopable": true,  "heat": 1.0,  "rate": 1.0, "label": "yellow dwarf" },
+    "K":  { "freq": 0.121,   "temp": [3700, 5200],   "mass": [0.45, 0.8],  "radius": [0.7, 0.96],   "lum": [0.08, 0.6],     "color": "#ffd2a1", "scoopable": true,  "heat": 0.85, "rate": 0.85, "label": "orange dwarf" },
+    "M":  { "freq": 0.6,     "temp": [2400, 3700],   "mass": [0.08, 0.45], "radius": [0.12, 0.7],   "lum": [0.0002, 0.08],  "color": "#ffb56c", "scoopable": true,  "heat": 0.7,  "rate": 0.6, "label": "red dwarf" },
+    "L":  { "freq": 0.06,    "temp": [1300, 2400],   "mass": [0.05, 0.08], "radius": [0.08, 0.12],  "lum": [0.00003, 0.0002], "color": "#c85a3a", "scoopable": false, "heat": 0.3, "rate": 0, "label": "brown dwarf" },
+    "T":  { "freq": 0.03,    "temp": [550, 1300],    "mass": [0.02, 0.05], "radius": [0.08, 0.11],  "lum": [0.000002, 0.00003], "color": "#8a3b5a", "scoopable": false, "heat": 0.2, "rate": 0, "label": "methane dwarf" },
+    "D":  { "freq": 0.06,    "temp": [8000, 40000],  "mass": [0.5, 1.2],   "radius": [0.008, 0.02], "lum": [0.001, 0.1],    "color": "#e8eeff", "scoopable": false, "heat": 0.5, "rate": 0, "label": "white dwarf" },
+    "N":  { "freq": 0.001,   "temp": [100000, 600000], "mass": [1.2, 2.1], "radius": [0.000014, 0.000016], "lum": [0.0001, 0.01], "color": "#d6e4ff", "scoopable": false, "heat": 0.1, "rate": 0, "label": "neutron star" },
+    "BH": { "freq": 0.0003,  "temp": [0, 0],         "mass": [5, 25],      "radius": [0.000021, 0.0001], "lum": [0, 0],     "color": "#000000", "scoopable": false, "heat": 0.0, "rate": 0, "label": "black hole" }
+  }
+}
