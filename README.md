@@ -105,7 +105,8 @@ src/memory/           episodic memory and the log voice — deterministic, in th
   lint.js             anti-cliché rules enforced on every entry
   captions.js         which sentence is being typed right now
 src/ui/captions.js    quiet subtitles while an entry is being written
-src/ui/switcher.js    the auto-hiding feed selector
+src/ui/switcher.js    the auto-hiding camera menu (sectioned; T telemetry, F fullscreen, C menu)
+src/ui/telemetry.js   the ship-telemetry overlay (off by default; camera, location, traveler, ship)
 src/ui/sound.js       click-to-enable hint, mute toggle
 src/persist/          localStorage snapshots (+backup slot), IndexedDB journal, export/import
 src/dev/inspector.js  ?debug overlay — QA only, never part of the experience

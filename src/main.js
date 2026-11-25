@@ -11,6 +11,7 @@ import { mountSwitcher } from './ui/switcher.js';
 import { AudioEngine } from './audio/engine.js';
 import { mountSound } from './ui/sound.js';
 import { mountCaptions } from './ui/captions.js';
+import { mountTelemetry } from './ui/telemetry.js';
 
 function pickStorage() {
   try {
@@ -60,16 +61,18 @@ async function main() {
   let switcher = null;
   const audio = new AudioEngine({ data, cameras });
   const captions = cameras.captions === false ? null : mountCaptions();
+  const telemetry = mountTelemetry({ canvas });
   const renderer = new TerrariumRenderer({
     canvas, runner, data, cameras,
     onFeedChange: (f) => switcher && switcher.setActive(f),
     onFrame: (fr) => {
       try { audio.update(fr); } catch (e) { console.warn('terrarium: audio frame failed', e); }
       if (captions) captions.update(fr);
+      try { telemetry.update(fr); } catch (e) { console.warn('terrarium: telemetry frame failed', e); }
     },
   });
   listeners.add((evs) => { renderer.push(evs); audio.push(evs); });
-  switcher = mountSwitcher({ director: renderer.director, cameras, canvas });
+  switcher = mountSwitcher({ director: renderer.director, cameras, canvas, telemetry });
   mountSound({ audio });
   renderer.start();
 
