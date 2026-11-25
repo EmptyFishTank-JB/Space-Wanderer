@@ -98,6 +98,7 @@ const SCENARIOS = {
   shower(d) { const s = createInitialState(d, { seed: 'gallery-wash' }); runUntil(s, d, (x) => x.traveler.activity?.id === 'wash' && x.traveler.activity.phase === 'perform' && x.traveler.activity.elapsed > 20); return { s, feeds: ['CAM-03'] }; },
   dressed(d) { const s = createInitialState(d, { seed: 'gallery-dress' }); runUntil(s, d, (x) => x.traveler.history.lastDressDay >= 0 && x.t > 30 * 3600 && x.traveler.activity?.phase === 'perform' && !['sleep', 'use_toilet', 'wash'].includes(x.traveler.activity.id), 86400 * 4); return { s, feeds: [...ROOM_FEEDS] }; },
   tinker(d) { const s = createInitialState(d, { seed: 'gallery-tinker' }); runUntil(s, d, (x) => x.traveler.activity?.id === 'tinker' && x.traveler.activity.phase === 'perform', 86400 * 6); return { s, feeds: ['CAM-03', 'CAM-09'] }; },
+  gaze(d) { const s = createInitialState(d, { seed: 'gallery-gaze' }); runUntil(s, d, (x) => x.traveler.activity?.id === 'gaze_viewport' && x.traveler.activity.phase === 'perform' && x.traveler.activity.elapsed > 30, 86400 * 4); return { s, feeds: ['CAM-01', 'CAM-02'] }; },
   night(d) {
     const s = createInitialState(d, { seed: 'gallery-night' });
     runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'sleep' && x.traveler.activity.elapsed > 3600 && x.t > 10 * 3600);

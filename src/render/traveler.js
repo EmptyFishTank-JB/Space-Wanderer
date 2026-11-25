@@ -85,6 +85,12 @@ export function drawTraveler(ctx, x, y, k, t) {
     sk.elbowF = [sk.head[0] + 4, sk.head[1] + 9];
     sk.handF = [sk.head[0] + 3, sk.head[1] + 3];
   }
+  // idle beats (see actor.js): hand to chin while thinking, a sip from a mug, something turned over in the hand
+  if (!(k.yawn > 0) && k.beat && !k.suited && (sk.view === 'side' || sk.view === 'front')) {
+    if (k.beat === 'chin') { sk.elbowF = [sk.head[0] + 3, sk.head[1] + 11]; sk.handF = [sk.head[0] + 2, sk.head[1] + 5]; }
+    else if (k.beat === 'sip') { sk.elbowF = [sk.head[0] + 4, sk.head[1] + 10]; sk.handF = [sk.head[0] + 4, sk.head[1] + 3]; sk.mug = true; }
+    else if (k.beat === 'hold') { sk.elbowF = [sk.chest[0] + 3, sk.chest[1] + 9]; sk.handF = [sk.chest[0] + 7, sk.chest[1] + 7]; sk.item = k.item || [200, 180, 120]; }
+  }
 
   // far limbs
   limb(ctx, mul(suit, 0.75), X(sk.chest), Y(sk.chest) + 2, X(sk.elbowB), Y(sk.elbowB), 3);
@@ -138,6 +144,8 @@ export function drawTraveler(ctx, x, y, k, t) {
   rect(ctx, k.suited ? EVA_D : SKIN, X(sk.handF) - 1, Y(sk.handF) - 1, 2, 2);
   if (sk.book) rect(ctx, [150, 60, 50], X(sk.handF) - 2, Y(sk.handF) - 5, 4, 6);
   if (sk.tool) rect(ctx, [160, 160, 170], X(sk.handF), Y(sk.handF) - 1, 4 * f, 1);
+  if (sk.mug) { rect(ctx, [206, 204, 196], X(sk.handF) - 1, Y(sk.handF) - 3, 3, 4); px(ctx, [150, 110, 80], X(sk.handF), Y(sk.handF) - 3); }
+  if (sk.item) rect(ctx, sk.item, X(sk.handF) - 1, Y(sk.handF) - 3, 3, 3);
   ctx.globalAlpha = 1;
 }
 

@@ -106,6 +106,17 @@ export function decideAgenda(state, data, sys) {
       done: { scanned: false, landed: false, evas: 0, lingerUntil: null, leftSurface: false },
     });
   }
+  // Sightseeing: even with no survey reason, a striking world gets a look-only orbit (no landing),
+  // so the traveler parks somewhere beautiful instead of only ever working. Picked without the RNG.
+  const sight = scored.find(({ b }) => b.beauty > 0.6 && !items.some((i) => i.body === b.id));
+  if (sight && ambition > 0.2 && items.filter((i) => i.kind === 'visit').length < 3) {
+    const b = sight.b;
+    items.push({
+      kind: 'visit', body: b.id, land: false, eva: 0, sightsee: true,
+      lingerH: 0.75 + 2.5 * b.beauty * (0.6 + 0.4 * traits.curiosity),
+      done: { scanned: false, landed: false, evas: 0, lingerUntil: null, leftSurface: false },
+    });
+  }
   return items;
 }
 

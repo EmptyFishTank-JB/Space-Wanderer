@@ -100,7 +100,38 @@ export function travelerPose(state, data, tracker, pos, t) {
     case 'suited': k.pose = 'stand'; k.suited = (a.params.plan && a.params.plan.i >= 1) || a.elapsed > 300; break;
     default: k.pose = 'stand';
   }
+  applyBeat(k, a, room, t);
   return k;
+}
+
+// Activities where the body is otherwise still: they get small beats so he never looks frozen.
+const STILL = new Set(['gaze_viewport', 'reflect', 'listen_music', 'linger', 'stroll']);
+const MUG_ROOMS = new Set(['lounge', 'galley', 'bridge', 'quarters']);
+// what is in his hand when he turns something over: a photo, a book, a datapad, a leaf, a tool tag...
+const HELD = { quarters: [200, 180, 140], lounge: [150, 60, 50], bridge: [80, 140, 170], galley: [210, 200, 170], hydro: [90, 170, 90], workshop: [170, 170, 180], engineering: [170, 170, 180] };
+
+/**
+ * Idle beats, chosen from the clock (deterministic, no sim state): every ~14 s
+ * he may turn from the glass, put a hand to his chin, sip from a mug, turn
+ * something over in his hand or shift his weight; mid-chore he sometimes
+ * stops to think for a moment.
+ */
+function applyBeat(k, a, room, t) {
+  const cyc = Math.floor((t + hash(Math.floor(a.startT), 3, 9) * 14) / 14);
+  const h = hash(cyc, 5, 21);
+  if (STILL.has(a.id)) {
+    if (k.pose === 'stand_back') {
+      if (h < 0.4) { k.pose = 'stand'; k.facing = h < 0.2 ? 1 : -1; k.beat = h < 0.12 ? 'chin' : h < 0.24 ? 'sip' : h < 0.32 ? 'hold' : null; }
+    } else if (k.pose === 'stand' || k.pose === 'sit_side') {
+      k.beat = h < 0.25 ? 'chin' : h < 0.45 ? 'sip' : h < 0.55 ? 'hold' : null;
+    }
+    if (h > 0.9 && k.pose.startsWith('stand')) k.x += h > 0.95 ? 1 : -1; // weight shift
+  } else if (k.working && h < 0.08) {
+    k.working = false;
+    k.beat = 'chin'; // stops mid-task to think something over
+  }
+  if (k.beat === 'sip' && !MUG_ROOMS.has(room)) k.beat = 'chin';
+  if (k.beat === 'hold') k.item = HELD[room] || [200, 180, 120];
 }
 
 /** Sprite colours for today's clothes (ids from data/traveler.json's wardrobe). */
