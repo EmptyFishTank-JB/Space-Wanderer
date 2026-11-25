@@ -21,7 +21,7 @@ export function renderFeed(ctx, feedId, m, director) {
 }
 
 export class TerrariumRenderer {
-  constructor({ canvas, runner, data, cameras, onFeedChange }) {
+  constructor({ canvas, runner, data, cameras, onFeedChange, onFrame }) {
     this.canvas = canvas;
     this.runner = runner;
     this.data = data;
@@ -32,6 +32,7 @@ export class TerrariumRenderer {
     this.tracker = new TravelerTracker();
     this.events = [];
     this.onFeedChange = onFeedChange;
+    this.onFrame = onFrame;
     this.last = null;
     this.feed = null;
     this.resize();
@@ -79,6 +80,7 @@ export class TerrariumRenderer {
     if (feed !== this.feed) { this.feed = feed; if (this.onFeedChange) this.onFeedChange(feed); }
     const view = spaceView(state, this.data);
     renderFeed(this.fbx, feed, { state, data: this.data, view, t: now, alpha, pos, tracker: this.tracker, dt }, this.director);
+    if (this.onFrame) this.onFrame({ state, data: this.data, feedId: feed, feedDef: this.director.feedDef(feed), pos, tracker: this.tracker, view, t: now, dt });
     const fade = this.director.fadeAmount(now);
     if (fade > 0) rect(this.fbx, [0, 0, 0], 0, 0, W, H, fade);
     const ctx = this.canvas.getContext('2d');

@@ -8,6 +8,8 @@ import { IndexedDBJournal, MemoryJournal } from './persist/journal.js';
 import { buildBackup, parseBackup } from './persist/backup.js';
 import { TerrariumRenderer } from './render/app.js';
 import { mountSwitcher } from './ui/switcher.js';
+import { AudioEngine } from './audio/engine.js';
+import { mountSound } from './ui/sound.js';
 
 function pickStorage() {
   try {
@@ -55,9 +57,15 @@ async function main() {
   // the observation window
   const canvas = document.getElementById('feed');
   let switcher = null;
-  const renderer = new TerrariumRenderer({ canvas, runner, data, cameras, onFeedChange: (f) => switcher && switcher.setActive(f) });
-  listeners.add((evs) => renderer.push(evs));
+  const audio = new AudioEngine({ data, cameras });
+  const renderer = new TerrariumRenderer({
+    canvas, runner, data, cameras,
+    onFeedChange: (f) => switcher && switcher.setActive(f),
+    onFrame: (fr) => { try { audio.update(fr); } catch (e) { console.warn('terrarium: audio frame failed', e); } },
+  });
+  listeners.add((evs) => { renderer.push(evs); audio.push(evs); });
   switcher = mountSwitcher({ director: renderer.director, cameras, canvas });
+  mountSound({ audio });
   renderer.start();
 
   const save = () => { try { snapshots.save(runner.state); } catch (e) { console.warn('terrarium: save failed', e); } };
@@ -93,7 +101,7 @@ async function main() {
   });
 
   // Devtools handle (read-only by convention: the viewer never steers the traveler).
-  window.terrarium = { data, runner, journal, renderer, get state() { return runner.state; }, onEvents: (fn) => listeners.add(fn) };
+  window.terrarium = { data, runner, journal, renderer, audio, get state() { return runner.state; }, onEvents: (fn) => listeners.add(fn) };
 
   if (params.has('debug')) {
     const { mountInspector } = await import('./dev/inspector.js');

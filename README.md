@@ -3,9 +3,10 @@
 A passive observation window into the life of a solitary traveler aboard a
 deep-space vessel. Not a game: the viewer never steers anything.
 
-**Status: Phases 1–3 complete — life-support simulation, persistence,
-Elite Dangerous-scale spaceflight, and the pixel-art observation window.**
-Sound arrives in Phase 4. Open with `?debug` for a developer-only inspector, or
+**Status: Phases 1–4 of 5 complete — life-support simulation, persistence,
+Elite Dangerous-scale spaceflight, the pixel-art observation window, and its
+procedural soundscape.** Phase 5 (episodic memory, written logs, keepsakes)
+is next. Open with `?debug` for a developer-only inspector, or
 `dev/gallery.html` to see every camera feed rendered from staged scenarios.
 
 ### Watching
@@ -18,13 +19,14 @@ selector appears for three seconds; that is the only interface.
 | click a feed code, `[` / `]`, ↑ / ↓ | switch camera (`CAM-01 BRIDGE` … `CAM-08 EXT-HULL` … `EVA-POV`) |
 | drag, ← / → | pan within the current camera's physical bounds |
 | `F` / ⛶ | fullscreen |
+| `M` / `SND` | mute (remembered); the first click anywhere enables sound |
 
 After 30 s without camera input the director fades back to the traveler.
 
 ## Running
 
 ```bash
-npm test                                   # 47 tests, ~15 s
+npm test                                   # 62 tests, ~15 s
 node tools/run.mjs --hours 8 --timeline    # watch a slice of life in the terminal
 node tools/run.mjs --days 30 --summary     # long run + hours-by-activity
 node tools/run.mjs --days 2 --logs         # dump structured log-entry facts
@@ -82,7 +84,13 @@ src/render/           pixel-art renderer — reads the sim, never writes it
   eva.js              helmet cam (visor, suit LED, dust, frost, breath, head-bob)
   director.js         autonomous camera director + viewer feed/pan controls (no DOM)
   app.js              frame loop, integer-scale blit
+src/audio/            procedural Web Audio — no samples
+  mix.js              pure acoustic model: per-layer gain/low-pass for the camera being watched
+  synth.js            noise buffers, room impulse responses, one-shot recipes (footsteps by floor…)
+  music.js            generative music for the in-room speaker, seeded by track
+  engine.js           ~30 continuous layers + one-shot buses; applies the mix every frame
 src/ui/switcher.js    the auto-hiding feed selector
+src/ui/sound.js       click-to-enable hint, mute toggle
 src/persist/          localStorage snapshots (+backup slot), IndexedDB journal, export/import
 src/dev/inspector.js  ?debug overlay — QA only, never part of the experience
 src/main.js           browser entry
@@ -211,6 +219,48 @@ no smoothing. There are no image assets.
   (just the bunk lamp and the porthole), red emergency light in limp mode, and
   pink grow-lamp spill in the bay.
 
+### The soundscape (Phase 4)
+
+Everything is synthesised live with the Web Audio API from noise,
+oscillators, filters and envelopes. There are no audio files.
+
+* **Listening follows the camera.** Each source belongs to a room. In the
+  watched room it is clear, one bulkhead away it is low-passed to about
+  900 Hz at roughly a quarter of the level, and further away it fades to
+  bleed. So the traveler's footsteps are muffled when you watch an empty
+  room next door. The hull camera hears structure-borne propulsion; the
+  helmet cam hears only the suit.
+* **Vessel bed.**
+  * Reactor sub-bass: strongest in engineering, deadened in the quarters, tracking reactor output.
+  * Ventilation and electrical hum.
+  * Thermal bulkhead creaks, more of them when the ship runs hot.
+* **Room systems.**
+  * Hydroponics: water circulation, misting cycles, grow-lamp ballast hum.
+  * Bridge: console chirps, relay clicks, scanner sweeps.
+  * Galley: heater and kettle.
+  * Workshop: fabricator whir.
+  * Life support: rhythmic recycler pumps and OGS bubbles.
+  * Engineering: radiator hiss with heat.
+  * Faults you can hear: a rattling pump bearing, an arcing junction box, a buzzing light strip.
+* **Traveler foley.** Footsteps by floor material (grating, damp deck,
+  padded, tile, deck plate), pneumatic hatch cycles, chair creaks, typing,
+  utensils, water at the sink, wrench clanks during repairs, rowing strokes,
+  a sigh with each yawn.
+* **Propulsion.**
+  * Drive charge: a rising spool-up whine.
+  * Hyperspace: a roar.
+  * Supercruise: a harmonic hum whose pitch and brightness track speed, so it sinks as the ship slows near a mass.
+  * Scooping: plasma rumble and crackle that grow with heat, hull groans, and the bridge warning chime.
+  * Atmospheric entry: wind shear and buffeting rumble, with a thump at touchdown.
+* **EVA.** Inhale/exhale breathing paced by exertion and fatigue, suit hum,
+  comms hiss with dropouts, regolith crunch per step, outside wind muffled
+  through the helmet (only where there is air), and airlock depressurisation.
+* **Music.** When the traveler plays a recording, the room's speaker plays
+  a generative piece seeded by the track number, through a small-speaker
+  filter and the room's acoustics.
+* **Room acoustics.** A synthetic convolution reverb sized to each room:
+  tight quarters, ringing corridors and engineering.
+
 ### Persistence
 
 * `localStorage`: snapshot (~7 KB) with a previous-snapshot backup slot;
@@ -230,7 +280,8 @@ no smoothing. There are no image assets.
   * Flight: `flight.mode`, `altitudeKm`, `buffeting`, `entryHeat`, `wellRatio` (supercruise speed fraction), `starRadii` and `externalHeat` (glare and caution strobes).
   * Exterior views: `viewSubject()` picks the shot; bodies carry `type`, `rings`, `atmosphere`, `hue` and `beauty`.
   * EVA: the head-cam is the `surface` pseudo-room with `x` in metres; `eva_feature` events say what is being looked at.
-* **Phase 4 (audio):**
+* **Phase 4 (done):** see above.
+* **Phase 4 hooks used:**
   * Supercruise: `supercruise_engage`, `wellRatio` for gravitational drag pitch.
   * Hyperspace and scooping: `hyperspace_charge/enter/exit`, `scoop_start`, `heat_warning`, `heat_damage`.
   * Planetary: `descent_phase` (entry wind shear), `touchdown`, `liftoff`.
