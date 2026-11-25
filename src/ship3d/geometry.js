@@ -12,7 +12,9 @@ export function station(stations, x) {
     const a = s[i], c = s[i + 1];
     if (x <= a.x && x >= c.x) {
       const t = a.x === c.x ? 0 : (a.x - x) / (a.x - c.x);
-      return { b: lerp(a.b, c.b, t), zk: lerp(a.z[0], c.z[0], t), zt: lerp(a.z[1], c.z[1], t) };
+      const st = { b: lerp(a.b, c.b, t), zk: lerp(a.z[0], c.z[0], t), zt: lerp(a.z[1], c.z[1], t) };
+      if (a.y != null && c.y != null) st.yc = lerp(a.y, c.y, t); // a part whose centreline sweeps sideways
+      return st;
     }
   }
   return null;
@@ -32,6 +34,9 @@ export function profile(kind, st) {
   }
   return [[0.62 * b, zt], [b, zt - 0.45 * h], [0.92 * b, zk + 0.18 * h], [0.55 * b, zk], [-0.55 * b, zk], [-0.92 * b, zk + 0.18 * h], [-b, zt - 0.45 * h], [-0.62 * b, zt]];
 }
+
+/** Lateral centre of a part at a station (parts may sweep inward, like the bow prongs). */
+export const partY = (part, st) => (st && st.yc != null ? st.yc : part.y || 0);
 
 /** Hull parts, each { id, profile, y, stations }. Accepts the rev A layout (hull.main / hull.head). */
 export function hullParts(ship) {
@@ -55,7 +60,7 @@ function inPoly(pts, y, z) {
 export function insideHull(ship, x, y, z) {
   for (const part of hullParts(ship)) {
     const st = station(part.stations, x);
-    if (st && inPoly(profile(part.profile, st), y - part.y, z)) return true;
+    if (st && inPoly(profile(part.profile, st), y - partY(part, st), z)) return true;
   }
   return false;
 }

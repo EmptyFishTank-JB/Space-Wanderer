@@ -171,7 +171,7 @@ footer { font: 12px var(--mono); color: var(--muted); }
     <h2 id="h3d">The hull and its compartments</h2>
     <div class="viewer" id="viewer3d">
       <div class="stage" id="stage">
-        <canvas id="view3d" aria-label="3D model of the ship. Drag to turn it, zoom with the plus and minus buttons, and click or tap anything for its details."></canvas>
+        <canvas id="view3d" aria-label="3D model of the ship. Drag to turn it, right-drag or two-finger drag to move it, zoom with the plus and minus buttons, and click or tap anything for its details."></canvas>
         <canvas id="overlay3d" aria-hidden="true"></canvas>
         <div class="hint" id="hint"></div>
       </div>
@@ -332,7 +332,7 @@ readPalette();
 // ───────── header ─────────
 $('shipname').textContent = S.name;
 $('summary').textContent = S.summary;
-const beam = 2 * Math.max(...parts.map((p) => Math.max(...p.stations.map((s) => s.b)) + Math.abs(p.y)));
+const beam = 2 * Math.max(...parts.flatMap((p) => p.stations.map((s) => s.b + Math.abs(s.y ?? p.y))));
 const keel = Math.min(...parts.flatMap((p) => p.stations.map((s) => s.z[0])));
 const crown = Math.max(...parts.flatMap((p) => p.stations.map((s) => s.z[1])));
 const pv = Object.values(REPORT.volumes).reduce((a, b) => a + b, 0);
@@ -484,9 +484,9 @@ function makeFocus(container, onHide, bounds) {
 
 // ───────── 3D model (three.js, real depth buffer) ─────────
 const view = { yaw: 0.78, pitch: 0.42, dist: 134, target: [0, 1.5, 0], hull: 'ghost', decks: 'all', cut: NO_CUT, layers: { rooms: true, systems: true, machinery: true, cameras: true, labels: true } };
-const PRESETS = { iso: [0.78, 0.42, 134], top: [Math.PI / 2, 1.555, 140], side: [Math.PI / 2, 0.03, 128], front: [0, 0.14, 84], aft: [Math.PI, 0.2, 90], below: [0.9, -0.5, 120] };
+const PRESETS = { iso: [0.78, 0.42, 134], top: [Math.PI / 2, 1.555, 140], side: [Math.PI / 2, 0.03, 128], front: [0, 0.14, 150], aft: [Math.PI, 0.2, 140], below: [0.9, -0.5, 120] };
 const coarse = matchMedia('(pointer: coarse)').matches;
-$('hint').textContent = coarse ? 'drag to turn · pinch to zoom · tap anything for details' : 'drag to turn · ctrl-scroll or ± to zoom · click anything for details';
+$('hint').textContent = coarse ? 'drag to turn · pinch to zoom · two fingers to move · tap for details' : 'drag to turn · right-drag or shift-drag to move · ctrl-scroll or ± to zoom · click for details';
 let onCut = () => {};
 let onRetheme = () => {};
 let setSelected = () => {};
@@ -618,7 +618,7 @@ if (!THREE) {
     const xMax = Math.max(...xsP), xMin = Math.min(...xsP);
     for (let x = Math.floor(xMax / 2) * 2; x > xMin; x -= 2) if (x < xMax - 0.3) xsP.push(x);
     const xs = [...new Set(xsP)].sort((a, b) => b - a);
-    const rings = xs.map((x) => { const st = station(p.stations, x); return { x, st, pts: profile(p.profile, st).map(([y, z]) => [x, y + p.y, z]) }; });
+    const rings = xs.map((x) => { const st = station(p.stations, x); return { x, st, pts: profile(p.profile, st).map(([y, z]) => [x, y + partY(p, st), z]) }; });
     const body = [], glass = [], lines = [];
     const push = (arr, ...pts) => pts.forEach((q) => arr.push(q[0], q[2], q[1]));
     for (let k = 0; k < rings.length - 1; k++) {
@@ -675,7 +675,7 @@ if (!THREE) {
       const m = new THREE.Mesh(g, fillMat(key, op)); m.renderOrder = 9; G.add(m);
     };
     const rectYZ = (y, z) => [[y[0], z[0]], [y[1], z[0]], [y[1], z[1]], [y[0], z[1]]];
-    if (view.hull !== 'off') for (const p of parts) { const st = station(p.stations, view.cut); if (st) { const yz = profile(p.profile, st).map(([y, z]) => [y + p.y, z]); loop(yz); fan(yz, 'hullSolid', view.hull === 'solid' ? 0.45 : 0.1); } }
+    if (view.hull !== 'off') for (const p of parts) { const st = station(p.stations, view.cut); if (st) { const yz = profile(p.profile, st).map(([y, z]) => [y + partY(p, st), z]); loop(yz); fan(yz, 'hullSolid', view.hull === 'solid' ? 0.45 : 0.1); } }
     if (view.layers.rooms) for (const r of rooms) if (view.cut > r.x[0] && view.cut < r.x[1] && deckShown(r.deck, r.zRange)) { const yz = rectYZ(r.y, r.zRange); fan(yz, r.role, 0.5); loop(yz); }
     if (view.layers.systems) {
       for (const s of shafts) if (view.cut > s.x[0] && view.cut < s.x[1] && deckShown(null, s.z)) loop(rectYZ(s.y, s.z));
@@ -752,7 +752,7 @@ if (!THREE) {
         travMarker = [x, y - 10, Math.max(y, foot[1])];
       }
     }
-    if (!view.layers.labels || !view.layers.rooms) return;
+    if (!view.layers.labels || !view.layers.rooms || view.hull === 'solid') return; // solid plating hides the rooms, so their labels would float on the skin
     octx.font = `600 ${W < 520 ? 11 : 12}px ${pal.display}`;
     octx.textAlign = 'center'; octx.textBaseline = 'middle';
     const placed = [];
@@ -811,15 +811,26 @@ if (!THREE) {
 
   // drag to turn, pinch / ctrl-wheel / buttons to zoom, click or tap to bracket. Hover only changes the cursor.
   const pointers = new Map();
-  let moved = 0, pinch = null;
+  let moved = 0, pinch = null, panning = false;
   const clampDist = (d) => Math.max(20, Math.min(420, d));
   const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   cv.addEventListener('pointerdown', (e) => {
     cv.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, [e.clientX, e.clientY]);
     moved = 0;
-    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, dist: view.dist, my: (a[1] + b[1]) / 2, pitch: view.pitch }; }
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, dist: view.dist, mx: (a[0] + b[0]) / 2, my: (a[1] + b[1]) / 2 }; }
+    panning = e.pointerType === 'mouse' && (e.button === 2 || e.shiftKey);
   });
+  cv.addEventListener('contextmenu', (e) => e.preventDefault());
+  /** Slide the ship across the screen: move the orbit target in the camera's own plane. */
+  function pan(dx, dy) {
+    const d = view.dist * Math.max(1, 1.75 / (W / Math.max(1, H)));
+    const k = (2 * d * Math.tan((camera.fov * Math.PI) / 360)) / H;
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+    const t = new THREE.Vector3(...view.target).addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
+    view.target = [t.x, t.y, t.z];
+  }
   let hoverQueued = false;
   cv.addEventListener('pointermove', (e) => {
     if (!pointers.has(e.pointerId)) {
@@ -835,12 +846,15 @@ if (!THREE) {
     if (pointers.size === 2 && pinch) {
       const [a, b] = [...pointers.values()];
       view.dist = clampDist((pinch.dist * pinch.d) / Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])));
-      view.pitch = Math.max(-1.45, Math.min(1.555, pinch.pitch + ((a[1] + b[1]) / 2 - pinch.my) * 0.006));
-      moved = 99; setPreset(null); render3d();
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      pan(mx - pinch.mx, my - pinch.my);
+      pinch.mx = mx; pinch.my = my;
+      moved = 99; render3d();
       return;
     }
     const dx = e.clientX - prev[0], dy = e.clientY - prev[1];
     moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 5 && panning) { cv.classList.add('dragging'); pan(dx, dy); render3d(); return; }
     if (moved > 5) {
       cv.classList.add('dragging');
       view.yaw += dx * 0.008;
@@ -849,7 +863,7 @@ if (!THREE) {
     }
   });
   const release = (e, tap) => {
-    if (tap && pointers.size === 1 && moved <= 5) { const [x, y] = local(e); select(pick(x, y)); }
+    if (tap && !panning && pointers.size === 1 && moved <= 5) { const [x, y] = local(e); select(pick(x, y)); }
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = null;
     if (!pointers.size) cv.classList.remove('dragging');
@@ -858,7 +872,7 @@ if (!THREE) {
   cv.addEventListener('pointercancel', (e) => release(e, false));
   cv.addEventListener('wheel', (e) => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); view.dist = clampDist(view.dist * Math.exp(e.deltaY * 0.01)); render3d(); }, { passive: false });
   function setPreset(name) { document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name))); }
-  document.querySelectorAll('#views button').forEach((b) => b.addEventListener('click', () => { const [y, p, d] = PRESETS[b.dataset.view]; Object.assign(view, { yaw: y, pitch: p, dist: d }); setPreset(b.dataset.view); render3d(); }));
+  document.querySelectorAll('#views button').forEach((b) => b.addEventListener('click', () => { const [y, p, d] = PRESETS[b.dataset.view]; Object.assign(view, { yaw: y, pitch: p, dist: d, target: [0, 1.5, 0] }); setPreset(b.dataset.view); render3d(); }));
   document.querySelectorAll('#zoom button').forEach((b) => b.addEventListener('click', () => { view.dist = clampDist(view.dist * (b.dataset.zoom === 'in' ? 0.8 : 1.25)); render3d(); }));
   segmented('#hullmode', 'hull', (v) => { view.hull = v; applyVisibility(); rebuildSection(); render3d(); });
   segmented('#decks', 'decks', (v) => { view.decks = v; focus3d.hide(); applyVisibility(); rebuildSection(); render3d(); });
@@ -947,8 +961,7 @@ function drawProfile() {
   for (let x = -60; x <= 70; x += 10) g += line('axis', x, Z(-10), x, Z(18)) + text(x, Z(-11.2), x, 0.95, 'dim');
   for (const d of S.decks) g += text(X_MIN - 0.8, Z(mid(d.z)) + 0.35, d.name.replace(' deck', '').toUpperCase(), 0.8, 'dim', 'end');
   for (const p of parts) {
-    const bMax = Math.max(...p.stations.map((s) => s.b));
-    if (!inHalf([p.y - bMax, p.y + bMax])) continue;
+    if (!inHalf([Math.min(...p.stations.map((s) => (s.y ?? p.y) - s.b)), Math.max(...p.stations.map((s) => (s.y ?? p.y) + s.b))])) continue;
     const st = [...p.stations].sort((a, b) => b.x - a.x);
     const pts = [...st.map((s) => [s.x, Z(s.z[1])]), ...st.slice().reverse().map((s) => [s.x, Z(s.z[0])])];
     g += `<polygon class="hull" data-id="hull:${p.id}" points="${pts.map(([a, b]) => `${n2(a)},${n2(b)}`).join(' ')}"/>`;
@@ -990,9 +1003,9 @@ function hullPlan(z, partsFor) {
   for (const p of partsFor) {
     const xs = p.stations.map((s) => s.x);
     const pts = [];
-    for (let x = Math.max(...xs); x >= Math.min(...xs) - 1e-6; x -= 0.25) { const st = station(p.stations, x); const b = z == null ? st && st.b : halfWidthAt(p, x, z); if (b != null) pts.push([x, b]); }
+    for (let x = Math.max(...xs); x >= Math.min(...xs) - 1e-6; x -= 0.25) { const st = station(p.stations, x); const b = z == null ? st && st.b : halfWidthAt(p, x, z); if (b != null) pts.push([x, b, partY(p, st)]); }
     if (pts.length < 2) continue;
-    g += `<polygon class="hull" data-id="hull:${p.id}" points="${[...pts.map(([x, b]) => `${n2(x)},${n2(p.y + b)}`), ...pts.slice().reverse().map(([x, b]) => `${n2(x)},${n2(p.y - b)}`)].join(' ')}"/>`;
+    g += `<polygon class="hull" data-id="hull:${p.id}" points="${[...pts.map(([x, b, c]) => `${n2(x)},${n2(c + b)}`), ...pts.slice().reverse().map(([x, b, c]) => `${n2(x)},${n2(c - b)}`)].join(' ')}"/>`;
   }
   return g;
 }
@@ -1052,7 +1065,7 @@ function drawSection() {
   const Z = (z) => -z, fs = 0.95;
   let g = '', labels = '';
   for (let y = -30; y <= 30; y += 10) g += line('axis', y, Z(-10), y, Z(18)) + text(y, Z(-11.2), y, 0.9, 'dim');
-  for (const p of parts) { const st = station(p.stations, x); if (st) g += `<polygon class="hull" data-id="hull:${p.id}" points="${profile(p.profile, st).map(([y, z]) => `${n2(y + p.y)},${n2(Z(z))}`).join(' ')}"/>`; }
+  for (const p of parts) { const st = station(p.stations, x); if (st) g += `<polygon class="hull" data-id="hull:${p.id}" points="${profile(p.profile, st).map(([y, z]) => `${n2(y + partY(p, st))},${n2(Z(z))}`).join(' ')}"/>`; }
   for (const m of S.modules) {
     const e = moduleExtent(m);
     if (x < e.x[0] || x > e.x[1]) continue;
