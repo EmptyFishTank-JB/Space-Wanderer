@@ -2,9 +2,9 @@
 import { range, chance } from '../sim/rng.js';
 import { clamp, HOUR } from '../sim/util.js';
 import { factor } from '../sim/ship/wear.js';
-import { neighbors, density, riftLength, nearestStar, systemName, dist3 } from './galaxy.js';
+import { neighbors, density, riftLength, nearestStar, systemName, dist3, starVariant } from './galaxy.js';
 
-const STAR_RARITY = { O: 1, B: 0.9, A: 0.6, F: 0.35, G: 0.25, K: 0.15, M: 0.05, L: 0.4, T: 0.55, D: 0.6, N: 0.95, BH: 1 };
+const STAR_RARITY = { O: 1, B: 0.9, A: 0.6, F: 0.35, G: 0.25, K: 0.15, M: 0.05, L: 0.4, T: 0.55, D: 0.6, N: 0.95, BH: 1, Y: 0.8, C: 0.95, RG: 0.7, WR: 1, PSR: 1 };
 
 export function jumpRange(state, data) {
   const d = data.space.drive;
@@ -47,7 +47,7 @@ export function plotRoute(state, data) {
     const after = fuel - cost;
     if (!def.scoopable && after < 1.6 * drive.maxFuelPerJump) continue; // never strand ourselves
     const progress = ((c.pos[0] - sp.pos[0]) * H[0] + (c.pos[1] - sp.pos[1]) * H[1] + (c.pos[2] - sp.pos[2]) * H[2]) / range0;
-    const score = progress + curiosity * STAR_RARITY[c.cls] * 0.5 + (def.scoopable && state.ship.fuel.tons < 0.5 * state.ship.fuel.capacity ? 0.3 : 0)
+    const score = progress + curiosity * STAR_RARITY[starVariant(sp.galaxySeed, c.id, c.cls, space) || c.cls] * 0.5 + (def.scoopable && state.ship.fuel.tons < 0.5 * state.ship.fuel.capacity ? 0.3 : 0)
       - (cost / drive.maxFuelPerJump) * 0.15 + range(state.rng, -0.1, 0.1);
     if (!best || score > best.score) best = { score, progress, c, cost };
   }

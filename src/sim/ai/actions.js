@@ -171,7 +171,7 @@ const CORE_ACTIONS = {
       const ateThisWindow = win && sinceH(s, 'lastMealT') < hoursAfter(hr, win[0]);
       let sc = smooth(n.hunger, 0.3, 0.8) * 0.75 + (win && !ateThisWindow && n.hunger > 0.25 ? 0.15 : 0);
       if (sinceH(s, 'lastMealT') < 3.5) sc *= 0.3;
-      if (inWindow(hr, 21.5, 5)) sc *= 0.4; // too late to cook — a snack will do
+      if (inWindow(hr, 21.5, 6)) sc *= 0.4; // too late (or too early) to cook — a snack will do
       if (n.fatigue > 0.9) sc *= 0.5;
       return one(floor(opts, sc, 0.35), at('galley', 'stove'), {}, { startsRoutine: 'meal' });
     },

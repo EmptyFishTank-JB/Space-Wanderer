@@ -7,7 +7,7 @@ import { pickMemory, markRecalled } from './recall.js';
 import { lintLog } from './lint.js';
 
 const CROP = { potato: 'potatoes', soy: 'soybeans', wheat: 'wheat', tomato: 'tomatoes', lettuce: 'lettuce', herbs: 'basil' };
-const LIGHT = { M: 'red-orange', K: 'amber', G: 'plain yellow-white', F: 'white', A: 'blue-white', B: 'hard blue', O: 'hard blue', L: 'dim red', T: 'dim magenta', D: 'thin and white', N: 'almost none', BH: 'none' };
+const LIGHT = { M: 'red-orange', K: 'amber', G: 'plain yellow-white', F: 'white', A: 'blue-white', B: 'hard blue', O: 'hard blue', L: 'dim red', T: 'dim magenta', D: 'thin and white', N: 'almost none', BH: 'none', Y: 'barely any, a bruised violet', C: 'deep blood-red', RG: 'heavy orange', WR: 'violent blue-white', PSR: 'a flicker, many times a second' };
 const FAULT_PAST = {
   bearing_rattle: 'started rattling at the bearing', pump_seized: 'seized', filter_clog: 'clogged its filter', membrane_tear: 'tore a membrane',
   cartridge_saturation: 'saturated its cartridge', seal_leak: 'started leaking at the seal', electrode_scaling: 'scaled up', cell_failure: 'lost its cell',

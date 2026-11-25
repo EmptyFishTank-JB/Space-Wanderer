@@ -23,28 +23,44 @@ for (let i = 0; i < 1400; i++) {
   FIELD.push({ az, el, m: m * m * m, c: tint < 0.15 ? [255, 210, 170] : tint < 0.3 ? [180, 200, 255] : [235, 235, 245] });
 }
 
-/** Background stars + faint galactic band. `seed` rotates the sky per system. */
-export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band = true } = {}) {
-  const rot = (seed % 1000) / 1000 * Math.PI * 2;
+/**
+ * Background sky. With `sky` (render/sky.js) it is the real sky from this
+ * system: the galactic band along the galactic plane, brightest toward the
+ * core; nearby nebulae; the faint distant field; and the neighbouring stars
+ * by their true direction, brightness and colour, so the same patterns hold
+ * from system to system and drift as the ship travels. Without it (the
+ * ground view, the gallery) it falls back to the old per-system sky.
+ */
+export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band = true, sky = null } = {}) {
+  const rot = sky ? 0 : (seed % 1000) / 1000 * Math.PI * 2;
+  const wrapA = (b) => ((b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+  const toScreen = (az, el) => {
+    const b = wrapA(az - yaw + rot);
+    if (Math.abs(b) > FOV / 2 + 0.3) return null;
+    return [W / 2 + FOCAL * Math.tan(b), H / 2 - FOCAL * Math.tan(el - pitch)];
+  };
+  if (sky) drawNebulae(ctx, sky, toScreen, yaw, pitch, dim, 'behind');
   if (band) {
     for (let x = 0; x < W; x += 2) {
-      const az = Math.atan((x - W / 2) / FOCAL) + yaw + rot;
-      const cy = H / 2 - FOCAL * Math.tan(0.25 * Math.sin(az * 1.0 + 0.7) - pitch);
-      for (let k = 0; k < 7; k++) {
-        const y = cy + (hash(x, k, seed) - 0.5) * 50;
-        const n = noise3(x * 0.05, y * 0.05, seed % 97, 5);
-        if (n > 0.55) px(ctx, [110, 105, 140], x, y, (n - 0.55) * 0.9 * dim);
+      const az = Math.atan((x - W / 2) / FOCAL) + yaw - rot;
+      const el0 = sky ? 0.03 * Math.sin(2 * az + 0.4) : 0.25 * Math.sin(az * 1.0 + 0.7);
+      const core = sky ? 0.45 + 1.1 * Math.max(0, Math.cos(az - sky.coreAz)) ** 3 : 1;
+      const cy = H / 2 - FOCAL * Math.tan(el0 - pitch);
+      const n7 = sky ? Math.round(5 + 6 * core) : 7;
+      for (let k = 0; k < n7; k++) {
+        const y = cy + (hash(x, k, sky ? 11 : seed) - 0.5) * 50 * (sky ? 0.7 + 0.5 * core : 1);
+        const n = noise3(x * 0.05 + (sky ? az * 9 : 0), y * 0.05, sky ? 31 : seed % 97, 5);
+        if (n > 0.55) px(ctx, sky ? [128, 118, 150] : [110, 105, 140], x, y, Math.min(0.6, (n - 0.55) * 0.9 * dim * core));
       }
     }
   }
+  const fieldK = sky ? 0.55 : 1;
   for (const s of FIELD) {
-    let b = s.az - yaw + rot;
-    b = ((b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-    if (Math.abs(b) > FOV / 2 + 0.05) continue;
-    const x = W / 2 + FOCAL * Math.tan(b);
-    const y = H / 2 - FOCAL * Math.tan(s.el - pitch);
-    if (y < -2 || y > H + 2) continue;
-    const a = (0.25 + 0.75 * s.m) * dim;
+    const p = toScreen(s.az, s.el);
+    if (!p) continue;
+    const [x, y] = p;
+    if (x < -2 || x > W + 2 || y < -2 || y > H + 2) continue;
+    const a = (0.25 + 0.75 * s.m) * dim * fieldK;
     if (speed > 0.02) {
       // supercruise streaks: radial from the centre of travel
       const dx = x - W / 2, dy = y - H / 2;
@@ -52,8 +68,73 @@ export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band 
       line(ctx, s.c, x, y, x + dx * k, y + dy * k, a * 0.8);
     } else {
       px(ctx, s.c, x, y, a);
-      if (s.m > 0.85) { px(ctx, s.c, x - 1, y, a * 0.35); px(ctx, s.c, x + 1, y, a * 0.35); px(ctx, s.c, x, y - 1, a * 0.35); px(ctx, s.c, x, y + 1, a * 0.35); }
+      if (!sky && s.m > 0.85) { px(ctx, s.c, x - 1, y, a * 0.35); px(ctx, s.c, x + 1, y, a * 0.35); px(ctx, s.c, x, y - 1, a * 0.35); px(ctx, s.c, x, y + 1, a * 0.35); }
     }
+  }
+  if (!sky) return;
+  // the neighbours: real directions, real colours, brighter when nearer and more luminous
+  for (const st of sky.stars) {
+    const p = toScreen(st.az, st.el);
+    if (!p) continue;
+    const [x, y] = p;
+    if (x < -3 || x > W + 3 || y < -3 || y > H + 3) continue;
+    const a = Math.min(1, (0.3 + (MAG_FAINT - st.m) / 6)) * dim * (st.pulsar ? 0.6 + 0.4 * Math.sin(performanceT() * 9 + st.az * 50) : 1);
+    if (speed > 0.02) { const dx = x - W / 2, dy = y - H / 2; line(ctx, st.c, x, y, x + dx * speed * 0.2, y + dy * speed * 0.2, a); continue; }
+    px(ctx, mix(st.c, [255, 255, 255], 0.35), x, y, a);
+    if (st.m < 3.2) { px(ctx, st.c, x - 1, y, a * 0.45); px(ctx, st.c, x + 1, y, a * 0.45); px(ctx, st.c, x, y - 1, a * 0.45); px(ctx, st.c, x, y + 1, a * 0.45); }
+    if (st.m < 1.4) {
+      ctx.globalCompositeOperation = 'lighter';
+      glow(ctx, st.c, x, y, 5 + (1.4 - st.m) * 2, 0.25 * dim);
+      ctx.globalCompositeOperation = 'source-over';
+      px(ctx, st.c, x - 2, y, a * 0.25); px(ctx, st.c, x + 2, y, a * 0.25); px(ctx, st.c, x, y - 2, a * 0.25); px(ctx, st.c, x, y + 2, a * 0.25);
+    }
+  }
+  drawNebulae(ctx, sky, toScreen, yaw, pitch, dim, 'dark');
+}
+
+const MAG_FAINT = 6.2;
+const performanceT = () => (typeof performance !== 'undefined' ? performance.now() / 1000 : 0);
+
+/** Nebulae: emission, reflection and planetary glow behind the stars; dark clouds over them. */
+function drawNebulae(ctx, sky, toScreen, yaw, pitch, dim, pass) {
+  for (const n of sky.nebulae) {
+    const dark = n.kind === 'dark';
+    if ((pass === 'dark') !== dark) continue;
+    const seed = strHash(n.id);
+    if (n.inside) {
+      // inside the cloud: a tint everywhere and wisps drifting across the view
+      ctx.globalCompositeOperation = dark ? 'source-over' : 'lighter';
+      ctx.fillStyle = css(n.color, (dark ? 0.35 : 0.07) * dim * (0.6 + 0.4 * n.depth));
+      ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 18; i++) {
+        const p = toScreen(hash(i, 1, seed) * Math.PI * 2 - Math.PI, (hash(i, 2, seed) - 0.5) * 1.2);
+        if (!p) continue;
+        glow(ctx, mix(n.color, [255, 255, 255], 0.15 * hash(i, 4, seed)), p[0], p[1], 30 + 70 * hash(i, 3, seed), (dark ? 0.3 : 0.12) * dim);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      continue;
+    }
+    const c = toScreen(n.az, n.el);
+    if (!c) continue;
+    const R = FOCAL * Math.tan(Math.min(n.ang, 1.2));
+    if (c[0] + R < 0 || c[0] - R > W || c[1] + R < 0 || c[1] - R > H) continue;
+    ctx.globalCompositeOperation = dark ? 'source-over' : 'lighter';
+    if (n.kind === 'planetary') {
+      // a small shell around a dying star: a ring, brighter at the rim
+      for (let a = 0; a < Math.PI * 2; a += 0.12) glow(ctx, n.color, c[0] + Math.cos(a) * R * 0.8, c[1] + Math.sin(a) * R * 0.65, Math.max(1.5, R * 0.35), 0.1 * n.bright * dim);
+      px(ctx, [230, 240, 255], c[0], c[1], 0.9 * dim);
+    } else {
+      // a clumpy cloud: overlapping glows placed by the nebula's own hash, sculpted by noise
+      const k = Math.round(10 + 14 * Math.min(1, R / 60));
+      for (let i = 0; i < k; i++) {
+        const ang = hash(i, 1, seed) * Math.PI * 2, rr = Math.sqrt(hash(i, 2, seed)) * R * (0.6 + 0.4 * n.shape);
+        const x = c[0] + Math.cos(ang) * rr * 1.3, y = c[1] + Math.sin(ang) * rr * 0.75;
+        const w = noise3(x * 0.03, y * 0.03, seed % 53, 4);
+        const col = mix(n.color, n.kind === 'emission' ? [255, 170, 120] : [200, 220, 255], 0.3 * hash(i, 3, seed));
+        glow(ctx, col, x, y, R * (0.25 + 0.4 * hash(i, 4, seed)), (dark ? 0.35 : 0.11) * n.bright * dim * (0.5 + w));
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
   }
 }
 
@@ -61,6 +142,20 @@ export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band 
 export function drawStar(ctx, x, y, angR, star, t, glareK = 1) {
   const c = hex(star.color);
   const r = angToPx(angR);
+  if (star.variant === 'PSR') {
+    // a pulsar: a hard point, and two beams sweeping round as it turns, flickering at the spin rate
+    const spin = star.spinS || 0.5;
+    const flick = 0.55 + 0.45 * Math.abs(Math.sin((Math.PI * t) / spin));
+    const a = t * 0.35;
+    ctx.globalCompositeOperation = 'lighter';
+    glow(ctx, [170, 190, 255], x, y, 14 * glareK, 0.5 * flick);
+    for (const s of [1, -1]) {
+      for (let w = -1; w <= 1; w++) line(ctx, [170, 200, 255], x, y, x + Math.cos(a) * 160 * s + w, y + Math.sin(a) * 60 * s, (w ? 0.12 : 0.3) * flick);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    px(ctx, [255, 255, 255], x, y);
+    return;
+  }
   if (star.cls === 'BH') {
     // a black hole: a lensed ring, nothing more
     const rr = Math.max(3, r * 30);
@@ -89,9 +184,12 @@ export function drawStar(ctx, x, y, angR, star, t, glareK = 1) {
   const img = ctx.getImageData(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
   const d = img.data;
   const hot = mix(c, [255, 250, 235], 0.35);
-  const limbC = mix(c, [255, 100, 25], 0.55);
+  const cool = star.variant === 'Y';
+  const limbC = cool ? mul(c, 0.55) : mix(c, [255, 100, 25], 0.55);
   const tt = t * 0.15;
-  const gs = Math.max(0.25, Math.min(0.6, 40 / R)); // granulation cell size tracks apparent size
+  const giant = star.variant === 'RG' || star.variant === 'C';
+  const gs = Math.max(0.25, Math.min(0.6, 40 / R)) * (giant ? 0.55 : 1); // granulation tracks apparent size; giants churn in huge cells
+  const soot = star.variant === 'C'; // carbon stars: dark sooty patches drifting over the disc
   for (let j = y0; j <= y1; j++) {
     for (let i = x0; i <= x1; i++) {
       const dx = (i - x) / R, dy = (j - y) / R;
@@ -102,13 +200,15 @@ export function drawStar(ctx, x, y, angR, star, t, glareK = 1) {
       const n2 = noise3(i * gs * 0.23 - tt * 0.3, j * gs * 0.23, 3, 12);
       const lane = Math.abs(n1 - 0.5) < 0.035 ? 0.9 : 1; // dark intergranular lanes
       const gran = (0.86 + 0.18 * n1 + 0.1 * (n2 - 0.5)) * lane;
-      const k = (0.5 + 0.5 * mu) * gran;
+      const k = (0.5 + 0.5 * mu) * gran * (soot && n2 > 0.58 ? 0.55 : 1) * (cool ? 0.45 : 1);
       const col = mix(limbC, hot, Math.pow(mu, 0.7));
       const o = ((j - y0) * (x1 - x0 + 1) + (i - x0)) * 4;
-      d[o] = Math.min(255, col[0] * k + 20); d[o + 1] = Math.min(255, col[1] * k + 10); d[o + 2] = Math.min(255, col[2] * k); d[o + 3] = 255;
+      d[o] = Math.min(255, col[0] * k + (cool ? 0 : 20)); d[o + 1] = Math.min(255, col[1] * k + (cool ? 0 : 10)); d[o + 2] = Math.min(255, col[2] * k); d[o + 3] = 255;
     }
   }
   ctx.putImageData(img, x0, y0);
+  const flareC = mix(c, [255, 120, 60], 0.5); // prominences take the star's own colour
+  if (star.variant === 'WR') wolfRayetShells(ctx, x, y, R, t);
   if (R > 30) {
     ctx.globalCompositeOperation = 'lighter';
     for (let k = 0; k < 14; k++) {
@@ -117,11 +217,26 @@ export function drawStar(ctx, x, y, angR, star, t, glareK = 1) {
       for (let h = 0; h < hgt; h += 1) {
         const rr = R + h;
         const aa = a + Math.sin(h / hgt * Math.PI) * 0.02;
-        px(ctx, [255, 120, 60], x + Math.cos(aa) * rr, y + Math.sin(aa) * rr, 0.5 * (1 - h / hgt));
+        px(ctx, flareC, x + Math.cos(aa) * rr, y + Math.sin(aa) * rr, 0.5 * (1 - h / hgt));
       }
     }
     ctx.globalCompositeOperation = 'source-over';
   }
+}
+
+/** Wolf-Rayet: the star is shedding itself; shells of gas expand away from it. */
+function wolfRayetShells(ctx, x, y, R, t) {
+  ctx.globalCompositeOperation = 'lighter';
+  const base = Math.max(14, R * 2.2);
+  for (let i = 0; i < 3; i++) {
+    const rr = base * (1 + i * 0.7) + ((t * 0.6) % (base * 0.7));
+    for (let a = 0; a < Math.PI * 2; a += 0.03) {
+      const n = noise3(Math.cos(a) * 3 + i, Math.sin(a) * 3, i * 7, 61);
+      if (n < 0.45) continue;
+      px(ctx, mix([150, 180, 255], [210, 120, 255], i / 3), x + Math.cos(a) * rr * (0.9 + 0.2 * n), y + Math.sin(a) * rr * (0.9 + 0.2 * n), (n - 0.45) * 0.8 / (1 + i));
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 // ───────────────────────── planets ─────────────────────────
@@ -363,7 +478,7 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0 
   if (view.scene === 'void') { drawVoid(ctx, t, yaw); return; }
   if (view.scene === 'hyperspace') { drawHyperspace(ctx, view, t); return; }
   const y0 = yaw + parallax;
-  drawStarfield(ctx, view.seed, view.heading + y0, pitch, { speed: view.speed });
+  drawStarfield(ctx, view.seed, view.heading + y0, pitch, { speed: view.speed, sky: view.sky });
   for (const o of view.objects) {
     const p = project(o.bearing, o.elev, y0, pitch);
     if (!p) continue;

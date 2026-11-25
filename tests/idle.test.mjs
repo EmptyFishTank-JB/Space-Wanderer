@@ -33,7 +33,7 @@ test('version 3 snapshots gain a bladder and clothes', () => {
   delete s.traveler.needs.bladder;
   delete s.traveler.outfit;
   delete s.traveler.history.lastDressDay;
-  const text = serialize(s).replace('"version":4', '"version":3');
+  const text = serialize(s).replace(/"version":\d+/, '"version":3');
   const back = deserialize(text, data);
   assert.equal(typeof back.traveler.needs.bladder, 'number');
   assert.equal(back.traveler.outfit.top, 'grey_tee');

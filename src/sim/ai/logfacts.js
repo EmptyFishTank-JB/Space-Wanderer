@@ -44,7 +44,7 @@ function voyageFacts(s, d, dg) {
   const sys = currentSystem(s, d);
   const f = s.ship.flight;
   return {
-    system: sys.name, star: sys.star.label, starClass: sys.star.cls, at: f.at ? sys.byId[f.at].name : null, mode: f.mode,
+    system: sys.name, star: sys.star.label, starClass: sys.star.type || sys.star.cls, at: f.at ? sys.byId[f.at].name : null, mode: f.mode,
     atBody: f.at ? (({ name, type, rings, atmosphere, beauty }) => ({ name, type, rings, atmosphere, beauty }))(sys.byId[f.at]) : null,
     arrivals: dg.arrivals, discoveries: dg.discoveries, landings: dg.landings, evas: dg.evas, scoops: dg.scoops,
     awe: dg.awe, torpor: dg.torpor, heatDamage: dg.heatDamage, keepsakes: dg.keepsakes,

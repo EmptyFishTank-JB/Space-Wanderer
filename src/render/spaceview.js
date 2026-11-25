@@ -6,6 +6,8 @@ import { currentSystem, shipPos, orbitArrive } from '../space/flight.js';
 import { bodyPos, KM_PER_LS } from '../space/system.js';
 import { starById } from '../space/galaxy.js';
 import { hash, strHash } from './gfx.js';
+import { skyFor } from './sky.js';
+import { LS_PER_AU, LS_PER_RSUN } from '../space/system.js';
 
 const len = (x, y) => Math.sqrt(x * x + y * y);
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
@@ -74,6 +76,19 @@ export function spaceView(state, data) {
   const rs = len(p.x, p.y) || 1e-6;
   const starAng = Math.asin(Math.min(1, sys.star.radius / rs));
   view.objects.push({ kind: 'star', id: 'star', bearing: wrap(Math.atan2(-p.y, -p.x) - heading), elev: 0.04, angR: starAng, dist: rs, color: sys.star.color, star: sys.star });
+  // a binary companion, far out: a bright point (or small disc) of its own colour
+  const comp = sys.star.companion;
+  if (comp) {
+    const def = data.space.starClasses[comp.cls];
+    const cx = Math.cos(comp.angle) * comp.sepAU * LS_PER_AU, cy = Math.sin(comp.angle) * comp.sepAU * LS_PER_AU;
+    const dx = cx - p.x, dy = cy - p.y;
+    const dc = len(dx, dy) || 1;
+    const rad = Math.sqrt(def.radius[0] * def.radius[1]) * LS_PER_RSUN;
+    const lum = Math.sqrt(Math.max(def.lum[0], 1e-6) * def.lum[1]);
+    view.objects.push({ kind: 'star', id: 'companion', bearing: wrap(Math.atan2(dy, dx) - heading), elev: 0.09, angR: Math.asin(Math.min(1, rad / dc)), dist: dc, color: def.color,
+      star: { cls: comp.cls, color: def.color, lum, label: `${def.label} companion`, radius: rad } });
+  }
+  view.sky = skyFor(sp.galaxySeed, sys, data.space);
 
   // bodies (the one we orbit sits low, its limb a horizon)
   for (const b of sys.bodies) {

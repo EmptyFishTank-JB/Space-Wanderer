@@ -30,7 +30,7 @@ function record(state, kind, data) {
 
 export function onArrival(state, data, sys, { ly, via }) {
   const sp = state.space;
-  const cls = sys.star.cls;
+  const cls = sys.star.type || sys.star.cls; // a red giant is a new sight even after many K dwarfs
   const first = !sp.classesSeen[cls];
   sp.classesSeen[cls] = (sp.classesSeen[cls] || 0) + 1;
   emit(state, 'system_arrival', {

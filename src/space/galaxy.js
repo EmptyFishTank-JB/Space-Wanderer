@@ -137,3 +137,40 @@ export function riftLength(seed, pos, dir, space) {
   }
   return d;
 }
+
+/**
+ * Rare kind of star this one is, or null: a Y dwarf, carbon star, red giant,
+ * Wolf-Rayet star or pulsar. Rolled from the star's own hash, never from the
+ * class pick, so adding kinds leaves every other star where and what it was.
+ */
+export function starVariant(seed, id, cls, space) {
+  const vs = space.variants;
+  if (!vs) return null;
+  const r = rand(hrng(seed, 'variant', id));
+  for (const [key, v] of Object.entries(vs)) if (key[0] !== '_' && v.from === cls && r < v.chance) return key;
+  return null;
+}
+
+/** Nebulae within `range` ly: [{id, kind, pos, radius, color}] from a coarse lattice. */
+export function nebulaeNear(seed, pos, range, space) {
+  const nb = space.nebulae;
+  if (!nb) return [];
+  const C = nb.cellLy;
+  const r = Math.ceil(range / C);
+  const c = pos.map((v) => Math.floor(v / C));
+  const kinds = Object.entries(nb.kinds);
+  const total = kinds.reduce((a, [, k]) => a + k.weight, 0);
+  const out = [];
+  for (let x = c[0] - r; x <= c[0] + r; x++) for (let y = c[1] - r; y <= c[1] + r; y++) for (let z = c[2] - 1; z <= c[2] + 1; z++) {
+    const st = hrng(seed, 'nebula', x, y, z);
+    if (rand(st) > nb.chance) continue;
+    let w = rand(st) * total;
+    let kind = kinds[0];
+    for (const k of kinds) { w -= k[1].weight; if (w <= 0) { kind = k; break; } }
+    const rr = kind[1].radiusLy || nb.radiusLy;
+    const p = [(x + rand(st)) * C, (y + rand(st)) * C, (z + 0.3 + 0.4 * rand(st)) * C * 0.25];
+    const n = { id: `${x}.${y}.${z}`, kind: kind[0], pos: p, radius: rr[0] + (rr[1] - rr[0]) * rand(st), color: kind[1].color, shape: rand(st) };
+    if (dist3(n.pos, pos) - n.radius <= range) out.push(n);
+  }
+  return out;
+}

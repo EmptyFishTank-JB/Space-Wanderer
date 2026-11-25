@@ -3,7 +3,7 @@
 // closing tab can never lose the traveler.
 import { STATE_VERSION, initMemory, defaultOutfit } from '../sim/state.js';
 import { initSpace } from '../space/init.js';
-import { getSystem } from '../space/system.js';
+import { getSystem, exemptFromVariants } from '../space/system.js';
 
 export const SNAPSHOT_KEY = 'deep-space-terrarium.snapshot';
 export const BACKUP_KEY = 'deep-space-terrarium.snapshot.prev';
@@ -54,6 +54,11 @@ export function migrate(state, version, data = null) {
     if (h.lastDressDay === undefined) h.lastDressDay = -1;
     if (h.laundry === undefined) h.laundry = 0;
   }
+  if (version < 5 && state.space) {
+    // star variants arrived: the system this voyage is sitting in stays exactly as it was
+    state.space.variantExempt = state.space.variantExempt || [state.space.systemId];
+  }
+  if (state.space) for (const id of state.space.variantExempt || []) exemptFromVariants(state.space.galaxySeed, id);
   state.version = STATE_VERSION;
   return state;
 }

@@ -1,13 +1,13 @@
 // Space-side initial state (also used to upgrade Phase 1 snapshots).
 import { hashString } from '../sim/rng.js';
-import { nearestStar } from './galaxy.js';
+import { nearestStar, starVariant } from './galaxy.js';
 import { getSystem } from './system.js';
 
 export function initSpace(state, data) {
   const space = data.space;
   const galaxySeed = hashString(`galaxy|${state.seed}`);
   const start =
-    nearestStar(galaxySeed, [0, 0, 0], space, (s) => s.cls === 'G' || s.cls === 'K') ||
+    nearestStar(galaxySeed, [0, 0, 0], space, (s) => (s.cls === 'G' || s.cls === 'K') && !starVariant(galaxySeed, s.id, s.cls, space)) ||
     nearestStar(galaxySeed, [0, 0, 0], space, (s) => space.starClasses[s.cls].scoopable);
   const sys = getSystem(galaxySeed, start.id, space);
   state.space = {
@@ -29,7 +29,8 @@ export function initSpace(state, data) {
     routeRetryT: 0,
     recent: [start.id],
     discoveries: [],
-    classesSeen: { [sys.star.cls]: 1 },
+    classesSeen: { [sys.star.type || sys.star.cls]: 1 },
+    variantExempt: [],
     typesSeen: {},
     evaFirst: {},
     lifeConfirmed: {},

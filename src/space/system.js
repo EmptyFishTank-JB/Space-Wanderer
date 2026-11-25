@@ -4,7 +4,7 @@
 // Units: orbits and radii in light-seconds (Ls), mass in solar / Earth
 // masses, temperature in kelvin, periods in seconds.
 import { rand, range, int, chance } from '../sim/rng.js';
-import { hrng, starById, systemName } from './galaxy.js';
+import { hrng, starById, systemName, starVariant } from './galaxy.js';
 
 export const LS_PER_AU = 499;
 export const LS_PER_RSUN = 2.32;
@@ -13,6 +13,15 @@ export const KM_PER_LS = 299792;
 const DAY = 86400;
 
 const cache = new Map();
+const exempt = new Set();
+
+/** Keep a system exactly as it was generated before star variants existed (a saved voyage is sitting in it). */
+export function exemptFromVariants(seed, id) {
+  const key = `${seed}|${id}`;
+  if (exempt.has(key)) return;
+  exempt.add(key);
+  cache.delete(key);
+}
 
 export function getSystem(seed, id, space) {
   const key = `${seed}|${id}`;
@@ -154,7 +163,43 @@ export function generateSystem(seed, id, space) {
       bodies.push(moon);
     }
   }
-  return { id, name, pos: entry.pos, star, bodies, byId: Object.fromEntries(bodies.map((b) => [b.id, b])) };
+  const variant = exempt.has(`${seed}|${id}`) ? null : starVariant(seed, id, entry.cls, space);
+  let kept = bodies;
+  if (variant) {
+    applyVariant(star, variant, space.variants[variant], hrng(seed, 'variant-star', id));
+    // a swollen star swallows its inner worlds (and their moons)
+    const gone = new Set(bodies.filter((b) => b.parent === 'star' && b.a < star.radius * 6).map((b) => b.id));
+    kept = bodies.filter((b) => !gone.has(b.id) && !gone.has(b.parent));
+  }
+  addCompanion(star, entry.cls, space.binary, hrng(seed, 'binary', id));
+  star.type = variant || entry.cls;
+  return { id, name, pos: entry.pos, star, bodies: kept, byId: Object.fromEntries(kept.map((b) => [b.id, b])) };
+}
+
+function applyVariant(star, key, v, st) {
+  const u = rand(st);
+  const lerpR = (r) => r[0] + (r[1] - r[0]) * u;
+  star.variant = key;
+  star.label = v.label;
+  if (v.color) star.color = v.color;
+  if (v.heat !== undefined) star.heat = v.heat;
+  if (v.temp) star.tempK = Math.round(lerpR(v.temp));
+  if (v.mass) star.mass = lerpR(v.mass);
+  if (v.radius) { star.radiusSun = lerpR(v.radius); star.radius = star.radiusSun * LS_PER_RSUN; }
+  if (v.lum) star.lum = v.lum[0] * (v.lum[1] / v.lum[0]) ** u;
+  star.rarity = v.rarity ?? star.rarity;
+  star.beauty = v.beauty ?? star.beauty;
+  if (v.pulsar) star.spinS = 0.08 + 1.6 * rand(st) ** 2; // seconds per turn
+}
+
+/** A wide companion star for some systems: drawn in the sky, no effect on the planets' orbits. */
+function addCompanion(star, cls, b, st) {
+  if (!b || !b.primaries.includes(cls) || rand(st) >= b.chance) return;
+  let w = rand(st);
+  let ccls = 'M';
+  for (const [k, p] of Object.entries(b.companions)) { w -= p; if (w <= 0) { ccls = k; break; } }
+  const sepAU = b.sepAU[0] * (b.sepAU[1] / b.sepAU[0]) ** rand(st);
+  star.companion = { cls: ccls, sepAU, angle: rand(st) * Math.PI * 2 };
 }
 
 /** Body centre in the system plane (Ls) at mission time `mt` (s). */
