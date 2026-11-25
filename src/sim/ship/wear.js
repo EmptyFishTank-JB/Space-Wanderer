@@ -179,7 +179,7 @@ export function applyRepair(state, data, id) {
   c.fault = null;
   c.known = false;
   c.knownWear = c.wear;
-  emit(state, 'repair', { component: id, fault, severity: sev, juryRig, room: data.components[id].room });
+  emit(state, 'repair', { component: id, name: data.components[id].name, fault, severity: sev, juryRig, room: data.components[id].room });
   return { ok: true, juryRig };
 }
 

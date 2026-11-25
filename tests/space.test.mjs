@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { data, fresh, runCollect, assertFinite, clone, DAY, HOUR } from './helpers.mjs';
-import { step, drain, shipHour } from '../src/sim/index.js';
+import { step, drain, shipHour, STATE_VERSION } from '../src/sim/index.js';
 import { getSystem, generateSystem, bodyPos } from '../src/space/system.js';
 import { neighbors, density, starsInCell } from '../src/space/galaxy.js';
 import { currentSystem, setCourse, startJump, shipPos } from '../src/space/flight.js';
@@ -205,7 +205,9 @@ test('a Phase 1 (v1) snapshot upgrades into a galaxy and keeps living', () => {
   const text = JSON.stringify({ format: FORMAT, version: 1, savedAtMs: 1, state: v1 });
   assert.throws(() => deserialize(text), /needs the data/);
   const up = deserialize(text, data);
-  assert.equal(up.version, 2);
+  assert.equal(up.version, STATE_VERSION);
+  assert.ok(up.memory && Array.isArray(up.memory.records), 'memory not initialised');
+  assert.ok(up.space.systemName, 'system name not filled in');
   assert.ok(up.space && up.space.systemId);
   assert.equal(up.traveler.history.logsWritten, s.traveler.history.logsWritten);
   runCollect(up, DAY);
@@ -234,7 +236,7 @@ test('60-day voyage soak: keeps moving, never strands, never cooks, stays finite
   assert.ok(s.traveler.body.condition > 0.8);
   assertFinite(s);
   // the snapshot stays small: systems are regenerated, not stored
-  assert.ok(serialize(s).length < 80000, `snapshot ${serialize(s).length} bytes`);
+  assert.ok(serialize(s).length < 110000, `snapshot ${serialize(s).length} bytes`);
 });
 
 test('planets keep orbiting: positions move with mission time, including through torpor', () => {

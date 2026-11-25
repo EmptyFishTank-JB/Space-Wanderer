@@ -1,8 +1,9 @@
 // Simulation snapshots in localStorage (or any getItem/setItem store).
 // The previous snapshot is kept as a backup slot so a write interrupted by a
 // closing tab can never lose the traveler.
-import { STATE_VERSION } from '../sim/state.js';
+import { STATE_VERSION, initMemory } from '../sim/state.js';
 import { initSpace } from '../space/init.js';
+import { getSystem } from '../space/system.js';
 
 export const SNAPSHOT_KEY = 'deep-space-terrarium.snapshot';
 export const BACKUP_KEY = 'deep-space-terrarium.snapshot.prev';
@@ -33,6 +34,15 @@ export function migrate(state, version, data = null) {
     if (!data) throw new Error('upgrading a v1 snapshot needs the data tables');
     initSpace(state, data);
     if (state.ship.components.drive_coil === undefined) throw new Error('v1 snapshot missing components');
+  }
+  if (version < 3) {
+    // Phase 2 → 5: memory, logs, skills, library; remember where we are by name
+    initMemory(state);
+    if (data && state.space && !state.space.systemName) {
+      const sys = getSystem(state.space.galaxySeed, state.space.systemId, data.space);
+      state.space.systemName = sys.name;
+      state.space.starClass = sys.star.cls;
+    }
   }
   state.version = STATE_VERSION;
   return state;

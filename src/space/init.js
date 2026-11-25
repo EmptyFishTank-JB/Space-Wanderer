@@ -14,6 +14,8 @@ export function initSpace(state, data) {
     galaxySeed,
     pos: sys.pos.slice(),
     systemId: start.id,
+    systemName: sys.name,
+    starClass: sys.star.cls,
     arrivedT: state.t - 2 * 3600,
     surveyed: false,
     detected: [],

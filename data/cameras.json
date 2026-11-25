@@ -1,5 +1,6 @@
 {
   "_comment": "Observation feeds. Room cameras are fixed side-on views that may pan within the room (pan bounds derive from room width). 'yaw' is where the room's viewports look, in radians relative to the ship's view direction. Director timings are in real seconds.",
+  "captions": true,
   "feeds": [
     { "id": "CAM-01", "label": "BRIDGE",      "room": "bridge",        "yaw": 0.0 },
     { "id": "CAM-02", "label": "OBS-LOUNGE",  "room": "lounge",        "yaw": 0.9 },

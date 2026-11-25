@@ -3,10 +3,10 @@
 A passive observation window into the life of a solitary traveler aboard a
 deep-space vessel. Not a game: the viewer never steers anything.
 
-**Status: Phases 1–4 of 5 complete — life-support simulation, persistence,
-Elite Dangerous-scale spaceflight, the pixel-art observation window, and its
-procedural soundscape.** Phase 5 (episodic memory, written logs, keepsakes)
-is next. Open with `?debug` for a developer-only inspector, or
+**Status: all 5 phases complete:** life-support simulation and persistence,
+Elite Dangerous-scale spaceflight, the pixel-art observation window, its
+procedural soundscape, and the traveler's episodic memory, written logs and
+living details. Open with `?debug` for a developer-only inspector, or
 `dev/gallery.html` to see every camera feed rendered from staged scenarios.
 
 ### Watching
@@ -26,10 +26,11 @@ After 30 s without camera input the director fades back to the traveler.
 ## Running
 
 ```bash
-npm test                                   # 62 tests, ~15 s
+npm test                                   # 73 tests, ~25 s
 node tools/run.mjs --hours 8 --timeline    # watch a slice of life in the terminal
 node tools/run.mjs --days 30 --summary     # long run + hours-by-activity
-node tools/run.mjs --days 2 --logs         # dump structured log-entry facts
+node tools/run.mjs --days 7 --logs         # read the traveler's log entries as they are written
+node tools/run.mjs --days 7 --memories     # watch memories form
 python3 -m http.server 8080                # then http://localhost:8080/  (or /?debug, /dev/gallery.html)
 ```
 
@@ -89,6 +90,13 @@ src/audio/            procedural Web Audio — no samples
   synth.js            noise buffers, room impulse responses, one-shot recipes (footsteps by floor…)
   music.js            generative music for the in-room speaker, seeded by track
   engine.js           ~30 continuous layers + one-shot buses; applies the mix every frame
+src/memory/           episodic memory and the log voice — deterministic, in the sim
+  observe.js          appraises notable events into weighted memory records
+  recall.js           picks memories to come back to (weight, echo, novelty)
+  logwriter.js        grounded log prose from the day's facts, with callbacks
+  lint.js             anti-cliché rules enforced on every entry
+  captions.js         which sentence is being typed right now
+src/ui/captions.js    quiet subtitles while an entry is being written
 src/ui/switcher.js    the auto-hiding feed selector
 src/ui/sound.js       click-to-enable hint, mute toggle
 src/persist/          localStorage snapshots (+backup slot), IndexedDB journal, export/import
@@ -261,6 +269,51 @@ oscillators, filters and envelopes. There are no audio files.
 * **Room acoustics.** A synthetic convolution reverb sized to each room:
   tight quarters, ringing corridors and engineering.
 
+### Memory, logs and living details (Phase 5)
+
+* **Episodic memory.** Notable events are appraised into structured records
+  with the spec's fields (`timestamp`, `mission_year`, `system_id`,
+  `star_class`, `event_type`, `emotional_weight`, `summary`,
+  `callback_count`), plus valence, tags and a subject phrase.
+  * Weights run from about 1.0 for confirmed life and 0.85 for an anomaly,
+    through first landings, geysers and awe at a ringed giant, down to small
+    things like a finished book.
+  * Hardships (emergency rations, limp power, a cooked scoop manifold) are
+    remembered too, with negative valence.
+  * The heaviest 100 stay in the snapshot. All of them are written to
+    IndexedDB `memories`, which keeps the callback counts current.
+* **Logs.** The entry is composed when the traveler sits down, from the facts
+  since the last one, then typed out on the terminal.
+  * The voice is plain: crisp technical notes ("Hydroponic pump 2 started
+    rattling at the bearing; swapped the pump 2 bearing seal before it got
+    worse."), the racks and the galley, the day's finds, at most one line of
+    quiet wonder drawn from the actual world's type, colour and rings, and a
+    little personal life.
+  * Entries run 2–8 sentences, shorter on quiet days.
+  * Generation is seeded per entry, so live play and offline catch-up write
+    identical words.
+  * `lint.js` bans melodrama (no "vast", "infinite", "tapestry", "the stars
+    whisper", exclamation marks or run-on sentences). Tests check this over
+    hundreds of real and fuzzed entries.
+* **Callbacks and reflection.** About a third of entries return to an older,
+  weightier memory, preferring ones that echo the day ("Thought about the ice
+  ridges on Nadir 8987 g 3 again today."). The `reflect` activity recalls one
+  too: good memories ease weariness, hard ones add a little stress. Both
+  increment `callback_count`.
+* **Captions.** Quiet subtitles under the feed, shown only while an entry is
+  being written and only when the camera is in that room. The text types
+  sentence by sentence in step with the terminal. Turn them off with
+  `"captions": false` in `cameras.json`.
+* **Living details.**
+  * The traveler reads through a shelf of invented books.
+  * Instrument, sketching and chess skills improve with practice.
+  * The instrument is audible from the quarters, with wrong notes and
+    hesitations that fade as the skill grows.
+  * Sketches pinned in the lounge are of remembered sights, cleaner as the
+    hand improves.
+  * Keepsakes collect on the quarters shelf and a star chart goes up over the
+    desk.
+
 ### Persistence
 
 * `localStorage`: snapshot (~7 KB) with a previous-snapshot backup slot;
@@ -268,8 +321,9 @@ oscillators, filters and envelopes. There are no audio files.
 * `IndexedDB` (`deep-space-terrarium`): `events` (notable events, the raw
   material for Phase 5 memories), `systems` (one record per visited system:
   star, bodies visited/landed, discoveries), and a reserved `memories` store.
-* Phase 1 (v1) snapshots upgrade automatically: the coasting ship is placed at
-  a home system and keeps its traveler, ship state and history.
+* Older snapshots upgrade automatically. A Phase 1 save (v1) gains a galaxy
+  and a home system; a Phases 2–4 save (v2) gains an empty memory, skills and
+  the bookshelf. Either way the traveler, ship and history are kept.
 * Hidden backup shortcuts: **Ctrl+Alt+Shift+E** export, **Ctrl+Alt+Shift+I** import.
 
 ## Hooks left for later phases
@@ -286,7 +340,8 @@ oscillators, filters and envelopes. There are no audio files.
   * Hyperspace and scooping: `hyperspace_charge/enter/exit`, `scoop_start`, `heat_warning`, `heat_damage`.
   * Planetary: `descent_phase` (entry wind shear), `touchdown`, `liftoff`.
   * EVA: `eva_phase` for suit breathing and airlock cycling.
-* **Phase 5 (memory and logs):**
+* **Phase 5 (done):** see above.
+* **Phase 5 hooks used:**
   * `log_entry.facts.voyage` lists arrivals, discoveries, landings, EVAs, scoops, awe and torpor since the last entry.
   * `traveler.keepsakes` holds mineral specimens, sealed bio vials and anomaly fragments for the quarters shelf.
   * Visited systems are stored in IndexedDB `systems`.

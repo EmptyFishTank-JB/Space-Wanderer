@@ -44,7 +44,7 @@ export function onArrival(state, data, sys, { ly, via }) {
     const h = state.traveler.history;
     h.daysSinceNovelty = Math.max(0, h.daysSinceNovelty - 0.15);
   }
-  if (first || r >= 0.85) record(state, 'star', { system: sys.name, star: cls, label: sys.star.label, rarity: r });
+  if (first || r >= 0.85) record(state, 'star', { system: sys.name, star: cls, label: sys.star.label, rarity: r, first });
 }
 
 function notable(b) {

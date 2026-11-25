@@ -4,6 +4,7 @@
 // inside the snapshot and folded into the "since last log" digest that the
 // traveler's log entries are built from.
 import { missionSeconds, missionDay } from './clock.js';
+import { observe } from '../memory/observe.js';
 
 /** Events worth persisting in the long-term journal. */
 export const NOTABLE = new Set([
@@ -17,6 +18,8 @@ export const NOTABLE = new Set([
   'hyperspace_charge', 'scoop_start', 'scoop_end', 'scoop_abort', 'scoop_misjudge', 'heat_damage', 'orbit_entered',
   'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'keepsake', 'awe', 'refine', 'melt_ice',
   'bay_dormant', 'torpor_start', 'torpor_end', 'system_record',
+  // Phase 5
+  'book_finished', 'reflection',
 ]);
 
 /** Verbose-only events (movement, micro behaviour) never go to the journal. */
@@ -33,6 +36,9 @@ export function emit(state, type, data = {}) {
     j.recent.push(compact);
     if (j.recent.length > j.recentLimit) j.recent.splice(0, j.recent.length - j.recentLimit);
     digest(j.sinceLastLog, ev);
+    // episodic memory: notable events that matter enough become memories
+    const rec = observe(state, ev);
+    if (rec) state.outbox.push({ id: j.nextId++, t: state.t, mt: ev.mt, day: ev.day, type: 'memory_formed', record: { ...rec } });
   }
   return ev;
 }
@@ -44,6 +50,7 @@ export function emptyDigest() {
     powerModes: [], alarms: [], hobbies: {}, exercise: 0, resourceLow: [], salvageKg: 0,
     // Phase 2 — the voyage
     arrivals: [], discoveries: [], landings: [], evas: [], scoops: [], awe: [], torpor: null, heatDamage: 0, keepsakes: [],
+    books: [],
   };
 }
 
@@ -68,7 +75,7 @@ function digest(d, ev) {
     case 'resource_low': d.resourceLow.push(ev.resource); break;
     case 'salvage': d.salvageKg += ev.kg; break;
     case 'system_arrival': d.arrivals.push({ system: ev.system, star: ev.star, label: ev.label, ly: ev.ly, via: ev.via }); break;
-    case 'discovery': d.discoveries.push({ kind: ev.kind, body: ev.body, bodyType: ev.bodyType, star: ev.star, system: ev.system, anomaly: ev.anomaly }); break;
+    case 'discovery': d.discoveries.push({ kind: ev.kind, body: ev.body, bodyType: ev.bodyType, rings: ev.rings, star: ev.star, label: ev.label, rarity: ev.rarity, first: ev.first, system: ev.system, anomaly: ev.anomaly }); break;
     case 'touchdown': d.landings.push({ body: ev.body, bodyType: ev.bodyType, gravity: ev.gravity, tempK: ev.tempK, first: ev.first }); break;
     case 'eva_end': d.evas.push({ body: ev.body, walkedM: ev.walkedM, features: ev.features, samples: ev.samples }); break;
     case 'scoop_end': d.scoops.push({ tons: ev.tons, peakHeat: ev.peakHeat, reason: ev.reason }); break;
@@ -76,6 +83,7 @@ function digest(d, ev) {
     case 'torpor_end': d.torpor = { years: ev.years, ly: ev.ly }; break;
     case 'heat_damage': d.heatDamage++; break;
     case 'keepsake': d.keepsakes.push(ev.label); break;
+    case 'book_finished': d.books.push(ev.title); break;
     default: break;
   }
 }

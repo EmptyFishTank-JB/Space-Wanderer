@@ -42,7 +42,9 @@ for (let i = 0; i < ticks; i++) {
           : type === 'log_entry' ? `entry #${rest.entry}` : JSON.stringify(rest);
         console.log(`${formatShipTime({ ...state, t })}  ${type.padEnd(20)} ${detail}`);
       }
-      if (flag('logs') && e.type === 'log_entry') console.log(JSON.stringify(e.facts, null, 2));
+      if (flag('logs') && e.type === 'log_entry') console.log(`\n  ── log #${e.entry} · ${e.header}\n  ${e.text}${e.callback ? `\n  (callback: ${e.callback})` : ''}\n`);
+      if (flag('facts') && e.type === 'log_entry') console.log(JSON.stringify(e.facts, null, 2));
+      if (flag('memories') && e.type === 'memory_formed') console.log(`  + memory w=${e.record.emotional_weight} ${e.record.event_type}: ${e.record.summary}`);
     }
   }
 }

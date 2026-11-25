@@ -60,7 +60,17 @@ export function renderRoomFeed(ctx, m) {
   drawRoom(lc, rc);
   if (m.pos && m.pos.room === room) {
     const k = travelerPose(state, data, m.tracker, m.pos, t);
-    if (k) drawTraveler(lc, ox + k.x, k.y, k, t);
+    if (k) {
+      drawTraveler(lc, ox + k.x, k.y, k, t);
+      if (k.pose === 'sit_back') {
+        // seen from behind, the chair's backrest and seat sit in front of them
+        rect(lc, [44, 46, 52], ox + k.x - 7, FLOOR - 31, 14, 12);
+        rect(lc, [58, 60, 66], ox + k.x - 7, FLOOR - 31, 14, 1);
+        rect(lc, [40, 42, 48], ox + k.x - 9, FLOOR - 18, 18, 3);
+        rect(lc, [36, 38, 44], ox + k.x - 1, FLOOR - 15, 2, 14);
+        rect(lc, [36, 38, 44], ox + k.x - 6, FLOOR - 1, 12, 1);
+      }
+    }
   }
   // 3. lighting, applied only to the room (windows stay transparent)
   lc.globalCompositeOperation = 'source-atop';

@@ -23,6 +23,8 @@ import { chooseCrop, TRAY_RESERVOIR_L } from '../ship/hydroponics.js';
 import { assembleMeal, addHarvest, preservable, preserveSurplus } from '../ship/food.js';
 import { workSlowdown } from '../traveler/physiology.js';
 import { buildLogFacts } from './logfacts.js';
+import { writeLog } from '../../memory/logwriter.js';
+import { pickMemory, markRecalled } from '../../memory/recall.js';
 import { FLIGHT_ACTIONS } from '../../space/actions.js';
 import { viewSubject } from '../../space/view.js';
 import { feelWonder } from '../../space/discovery.js';
@@ -657,13 +659,32 @@ const CORE_ACTIONS = {
       let sc = inWindow(hr, 19, 23.6) ? 0.5 : day - h.lastLogDay > 1 && hr > 12 ? 0.35 : 0.04;
       return one(floor(opts, sc), [at('quarters', 'desk'), at('bridge', 'terminal')]);
     },
-    duration: (s) => range(s.rng, 900, 1500),
-    complete(s, d) {
+    start(s, d, a) {
+      // the entry is composed as they sit down, so the terminal (and captions) can show it being typed
+      const entry = s.traveler.history.logsWritten + 1;
+      const facts = buildLogFacts(s, d);
+      const log = writeLog({ state: s, data: d, facts, entry });
+      a.params.entry = entry;
+      a.params.header = log.header;
+      a.params.text = log.text;
+      a.params.sentences = log.sentences;
+      a.params.callbackId = log.callback ? log.callback.id : null;
+      a.params.facts = facts;
+    },
+    duration: (s, d, a) => Math.max(600, Math.min(1800, 300 + (a.params.text || '').length * 3.2)) * range(s.rng, 0.9, 1.1),
+    complete(s, d, a) {
       const tr = s.traveler;
       tr.history.lastLogDay = missionDay(s);
-      tr.history.logsWritten++;
-      const facts = buildLogFacts(s, d);
-      emit(s, 'log_entry', { entry: tr.history.logsWritten, facts, room: tr.pos.room });
+      tr.history.logsWritten = a.params.entry || tr.history.logsWritten + 1;
+      const rec = a.params.callbackId ? s.memory.records.find((r) => r.id === a.params.callbackId) : null;
+      if (rec) {
+        markRecalled(s, rec);
+        emit(s, 'memory_recalled', { memoryId: rec.id, callback_count: rec.callback_count, via: 'log' });
+      }
+      const logs = s.memory.logs;
+      logs.push({ entry: tr.history.logsWritten, day: missionDay(s), header: a.params.header, text: a.params.text });
+      if (logs.length > 20) logs.shift(); // every entry is kept in IndexedDB; the snapshot holds the latest
+      emit(s, 'log_entry', { entry: tr.history.logsWritten, header: a.params.header, text: a.params.text, callback: rec ? rec.subject : null, facts: a.params.facts, room: tr.pos.room });
       s.journal.sinceLastLog = freshDigest(s);
       tr.needs.solitude = clamp(tr.needs.solitude - 0.08);
       tr.mood.weariness = clamp(tr.mood.weariness - 0.01);
@@ -680,7 +701,7 @@ const CORE_ACTIONS = {
       if (it && it.kind === 'visit' && it.done.lingerUntil && s.t < it.done.lingerUntil) sc += 0.25;
       if (v.interest > 0.6 && !s.space.awed[`${v.kind}:${v.id}`]) sc += 0.2;
       if (s.traveler.needs.fatigue > 0.85) sc *= 0.4;
-      return one(Math.min(0.85, sc), [at('lounge', 'viewport'), at('bridge', 'viewport')], { subject: v.kind, id: v.id ?? null, interest: Math.round(v.interest * 100) / 100 });
+      return one(Math.min(0.85, sc), [at('lounge', 'viewport'), at('bridge', 'viewport')], { subject: v.kind, id: v.id ?? null, name: v.name ?? null, interest: Math.round(v.interest * 100) / 100 });
     },
     duration: (s, d, a) => range(s.rng, 600, 2400) * (1 + a.params.interest),
     rates: { stress: -0.08, solitude: -0.02 },
@@ -692,7 +713,7 @@ const CORE_ACTIONS = {
         s.space.awed[key] = true;
         feelWonder(s, 0.05);
         s.traveler.history.daysSinceNovelty = Math.max(0, s.traveler.history.daysSinceNovelty - 0.25);
-        emit(s, 'awe', { subject: a.params.subject, id: a.params.id, room: s.traveler.pos.room });
+        emit(s, 'awe', { subject: a.params.subject, id: a.params.id, name: a.params.name, room: s.traveler.pos.room });
       }
       hobbyComplete('gaze_viewport')(s);
     },
@@ -703,7 +724,19 @@ const CORE_ACTIONS = {
     gen(s, d) { return one(leisureScore(s, d, 'read'), [at('quarters', 'bunk'), at('lounge', 'couch')]); },
     duration: (s) => range(s.rng, 1800, 3600),
     rates: { stress: -0.1, weariness: -0.002 },
-    complete: hobbyComplete('read'),
+    complete(s, d, a) {
+      const lib = s.traveler.library;
+      const books = d.traveler.library;
+      lib.page += Math.round((a.elapsed / 3600) * (30 + 15 * (1 - s.traveler.needs.fatigue)));
+      const book = books[lib.book % books.length];
+      if (lib.page >= book.pages) {
+        lib.page = 0;
+        lib.book++;
+        lib.finished++;
+        emit(s, 'book_finished', { title: book.title, room: s.traveler.pos.room });
+      }
+      hobbyComplete('read')(s);
+    },
   },
 
   listen_music: {
@@ -722,8 +755,18 @@ const CORE_ACTIONS = {
     duration: (s) => range(s.rng, 1800, 3600),
     rates: { stress: -0.09 },
     complete(s) {
-      s.traveler.history.sketches++;
-      s.traveler.mood.wonder = clamp(s.traveler.mood.wonder + 0.01);
+      const tr = s.traveler;
+      tr.history.sketches++;
+      tr.skills.sketch = clamp(tr.skills.sketch + 0.012 * (1 - tr.skills.sketch));
+      // draws from memory: the most recent sight not yet sketched, else the view
+      const drawn = new Set(tr.sketchesOf.map((x) => x.memoryId));
+      const subject = [...s.memory.records].reverse().find((r) => !drawn.has(r.id) && (r.tags.includes('awe') || r.tags.includes('body') || r.tags.includes('eva') || r.tags.includes('star')));
+      if (subject) {
+        tr.sketchesOf.push({ memoryId: subject.id, subject: subject.subject, day: missionDay(s), quality: Math.round(tr.skills.sketch * 100) / 100 });
+        if (tr.sketchesOf.length > 12) tr.sketchesOf.shift();
+        s.journal.sinceLastLog.sketch = subject.subject;
+      }
+      tr.mood.wonder = clamp(tr.mood.wonder + 0.01);
       s.ship.clutter.lounge = clamp(s.ship.clutter.lounge + 0.04);
       hobbyComplete('sketch')(s);
     },
@@ -734,7 +777,11 @@ const CORE_ACTIONS = {
     gen(s, d) { return one(leisureScore(s, d, 'play_solitaire'), at('galley', 'table')); },
     duration: (s) => range(s.rng, 1200, 2400),
     rates: { stress: -0.08 },
-    complete: hobbyComplete('play_solitaire'),
+    complete(s) {
+      const sk = s.traveler.skills;
+      sk.chess = clamp(sk.chess + 0.006 * (1 - sk.chess));
+      hobbyComplete('play_solitaire')(s);
+    },
   },
 
   play_instrument: {
@@ -742,7 +789,12 @@ const CORE_ACTIONS = {
     gen(s, d) { return one(leisureScore(s, d, 'play_instrument', { solitudeW: 0.25 }), at('quarters', 'desk')); },
     duration: (s) => range(s.rng, 1200, 2400),
     rates: { stress: -0.08, solitude: -0.08 },
-    complete: hobbyComplete('play_instrument'),
+    complete(s, d, a) {
+      const sk = s.traveler.skills;
+      // practice pays, slowly
+      sk.instrument = clamp(sk.instrument + 0.01 * (a.elapsed / 1800) * (1 - sk.instrument));
+      hobbyComplete('play_instrument')(s);
+    },
   },
 
   reflect: {
@@ -750,7 +802,20 @@ const CORE_ACTIONS = {
     gen(s, d) { return one(leisureScore(s, d, 'reflect', { solitudeW: 0.45, eveningW: 0.15 }), at('quarters', 'shelf')); },
     duration: (s) => range(s.rng, 600, 1200),
     rates: { solitude: -0.2, stress: -0.05 },
-    complete: hobbyComplete('reflect'),
+    complete(s) {
+      // turning over a memory: good ones lift the long-haul tiredness a little
+      const rec = pickMemory(s, rand(s.rng), { minAgeDays: 1 });
+      if (rec) {
+        markRecalled(s, rec);
+        const tr = s.traveler;
+        if (rec.valence > 0) tr.mood.weariness = clamp(tr.mood.weariness - 0.03 * rec.emotional_weight);
+        else tr.needs.stress = clamp(tr.needs.stress + 0.02 * rec.emotional_weight);
+        tr.needs.solitude = clamp(tr.needs.solitude - 0.05 * rec.emotional_weight);
+        emit(s, 'memory_recalled', { memoryId: rec.id, callback_count: rec.callback_count, via: 'reflection' });
+        emit(s, 'reflection', { memoryId: rec.id, subject: rec.subject, room: tr.pos.room });
+      }
+      hobbyComplete('reflect')(s);
+    },
   },
 
   linger: {

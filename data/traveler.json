@@ -1,5 +1,5 @@
 {
-  "_comment": "Personality and habit parameters. Traits are 0..1. Hobby weights bias leisure choices. schedule hours are ship time.",
+  "_comment": "Personality and habit parameters. Traits are 0..1. Hobby weights bias leisure choices. schedule hours are ship time. library: invented titles on the quarters shelf; read in order, then reread.",
   "traits": {
     "curiosity": 0.8,
     "discipline": 0.6,
@@ -7,7 +7,10 @@
     "resilience": 0.7,
     "sociability": 0.5
   },
-  "schedule": { "sleepHour": 23.2, "wakeHour": 7.0 },
+  "schedule": {
+    "sleepHour": 23.2,
+    "wakeHour": 7.0
+  },
   "walkSpeed": 1.15,
   "hobbies": {
     "gaze_viewport": 1.0,
@@ -18,5 +21,60 @@
     "play_instrument": 0.6,
     "reflect": 0.55
   },
-  "mealWindows": [[6.5, 9.5], [11.5, 14.0], [17.5, 20.5]]
+  "mealWindows": [
+    [
+      6.5,
+      9.5
+    ],
+    [
+      11.5,
+      14.0
+    ],
+    [
+      17.5,
+      20.5
+    ]
+  ],
+  "library": [
+    {
+      "title": "A Field Guide to Cold-Climate Lichens",
+      "pages": 310
+    },
+    {
+      "title": "Collected Letters of a Lighthouse Keeper",
+      "pages": 240
+    },
+    {
+      "title": "Practical Hydroponics, Ninth Edition",
+      "pages": 520
+    },
+    {
+      "title": "The Long Way Round, a sailing memoir",
+      "pages": 280
+    },
+    {
+      "title": "Notes on Soil",
+      "pages": 190
+    },
+    {
+      "title": "An Atlas of Clouds",
+      "pages": 150
+    },
+    {
+      "title": "Problems in Celestial Mechanics",
+      "pages": 410
+    },
+    {
+      "title": "Short Stories from the Outer Colonies",
+      "pages": 330
+    },
+    {
+      "title": "Knots and Splices",
+      "pages": 120
+    },
+    {
+      "title": "A History of Clocks",
+      "pages": 360
+    }
+  ]
 }

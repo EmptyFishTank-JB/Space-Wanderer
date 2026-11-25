@@ -139,13 +139,15 @@ export class AudioEngine {
     const a = state.traveler.activity;
     const performing = a && a.phase === 'perform' && !state.traveler.move;
     const musicOn = performing && a.id === 'listen_music';
-    if (musicOn && !this.speaker.track) this.speaker.play(this.musicTrack ?? 0);
-    if (!musicOn && this.speaker.track !== null) this.speaker.stop();
+    const practising = performing && a.id === 'play_instrument';
+    if (musicOn && (!this.speaker.track || this.speaker.practising)) this.speaker.play(this.musicTrack ?? 0);
+    if (practising) this.speaker.practice((state.traveler.skills && state.traveler.skills.instrument) || 0.2);
+    if (!musicOn && !practising && this.speaker.track !== null) this.speaker.stop();
     const plan = eva ? a.params.plan : null;
     const sys = fr.view && fr.view.sys;
     const mix = computeMix(state, data, this.hops, listener, {
       muted: this.muted, view: fr.view, exertion: state.traveler.exertion, fatigue: state.traveler.needs.fatigue,
-      music: { playing: musicOn, room: this.musicRoom || state.traveler.pos.room },
+      music: { playing: musicOn || practising, room: practising ? state.traveler.pos.room : this.musicRoom || state.traveler.pos.room },
       evaBody: plan && sys ? sys.byId[plan.body] : null,
     });
     this.lastMix = mix;

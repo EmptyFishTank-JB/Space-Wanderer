@@ -382,6 +382,8 @@ export function arriveSystem(state, data, starId, { ly = 0, via = 'jump' } = {})
   sp.systemId = starId;
   const sys = currentSystem(state, data);
   sp.pos = sys.pos.slice();
+  sp.systemName = sys.name;
+  sp.starClass = sys.star.cls;
   sp.arrivedT = state.t;
   sp.surveyed = false;
   sp.scanned = {};

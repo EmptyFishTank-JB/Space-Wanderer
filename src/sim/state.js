@@ -6,7 +6,7 @@ import { baseSecondsFor } from './clock.js';
 import { emptyDigest } from './events.js';
 import { initSpace } from '../space/init.js';
 
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 export function createInitialState(data, { seed = 'terrarium' } = {}) {
   const rng = seedRng(seed);
@@ -97,5 +97,15 @@ export function createInitialState(data, { seed = 'terrarium' } = {}) {
     outbox: [],
   };
   initSpace(state, data);
+  initMemory(state);
   return state;
+}
+
+/** Phase 5 state: episodic memory, written logs, skills and the bookshelf. */
+export function initMemory(state) {
+  state.memory = state.memory || { records: [], nextId: 1, logs: [] };
+  const tr = state.traveler;
+  tr.skills = tr.skills || { instrument: 0.15, sketch: 0.35, chess: 0.2 };
+  tr.library = tr.library || { book: 0, page: 0, finished: 0 };
+  tr.sketchesOf = tr.sketchesOf || [];
 }

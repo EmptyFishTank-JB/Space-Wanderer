@@ -3,6 +3,7 @@
 // in the room itself — never as overlays.
 import { W, H, PPM, FLOOR, CEIL, mix, mul, rect, px, hash, text, textWidth, hline, vline, disc, clamp01, line } from './gfx.js';
 import { trayStage } from '../sim/ship/hydroponics.js';
+import { writingProgress } from '../memory/captions.js';
 
 const THEME = {
   bridge: { wall: [56, 62, 76], trim: [40, 44, 54], floor: [66, 68, 76] },
@@ -262,8 +263,21 @@ const ROOMS = {
     line(ctx, [110, 84, 60], M(6.0) + 6, FLOOR, M(6.0), FLOOR - 40);
     rect(ctx, [228, 222, 206], M(6.0) - 9, FLOOR - 40, 18, 16);
     for (let i = 0; i < Math.min(12, 3 + s.traveler.history.sketches % 12); i++) px(ctx, [70, 70, 90], M(6.0) - 7 + hash(i, s.traveler.history.sketches, 1) * 14, FLOOR - 38 + hash(i, 2, s.traveler.history.sketches) * 12);
-    // finished sketches pinned to the wall
-    for (let i = 0; i < Math.min(5, Math.floor(s.traveler.history.sketches / 4)); i++) rect(ctx, [210, 204, 188], M(6.7) + i * 9, CEIL + 14 + (i % 2) * 6, 7, 6);
+    // sketches of things remembered, pinned to the wall; cleaner as the hand improves
+    const pinned = (s.traveler.sketchesOf || []).slice(-6);
+    pinned.forEach((sk, i) => {
+      const px0 = M(6.55) + (i % 3) * 11, py0 = CEIL + 10 + Math.floor(i / 3) * 12;
+      rect(ctx, [214, 208, 192], px0, py0, 9, 8);
+      px(ctx, [170, 60, 50], px0 + 4, py0); // pin
+      const rec = (s.memory && s.memory.records.find((r) => r.id === sk.memoryId)) || null;
+      const tags = rec ? rec.tags : [];
+      const ink = tags.includes('star') ? [170, 110, 50] : tags.includes('eva') ? [110, 90, 70] : tags.includes('awe') || tags.includes('rings') ? [80, 90, 130] : [70, 80, 100];
+      const n = 5 + Math.round(sk.quality * 10);
+      for (let k = 0; k < n; k++) {
+        const jitter = (1 - sk.quality) * 1.5;
+        px(ctx, ink, px0 + 1 + ((k * 3 + hash(k, sk.memoryId, 2) * jitter) % 7), py0 + 2 + (hash(k, 4, sk.memoryId) * 5), 0.85);
+      }
+    });
     // rowing rig
     rect(ctx, [70, 72, 78], M(6.6), FLOOR - 4, M(7.7) - M(6.6), 3);
     rect(ctx, [50, 52, 58], M(7.6), FLOOR - 16, 3, 13);
@@ -569,21 +583,23 @@ function corridor(ctx, rc, junction, jx) {
   }
 }
 
-/** Log terminal: lines type out while the traveler writes; idle cursor otherwise. */
+/** Log terminal: the entry's own characters type out while the traveler writes; idle cursor otherwise. */
 function terminalText(ctx, rc, x, y, w, h, where) {
-  const a = rc.state.traveler.activity;
-  const writing = a && a.id === 'write_log' && a.phase === 'perform' && rc.state.traveler.pos.room === where;
+  const p = writingProgress(rc.state);
   const c = [120, 230, 170];
-  if (!writing) { if (Math.sin(rc.t * 3) > 0) rect(ctx, c, x + 2, y + 2, 2, 1); return; }
-  const chars = Math.floor(a.elapsed * 1.8);
+  if (!p || rc.state.traveler.pos.room !== where) { if (Math.sin(rc.t * 3) > 0) rect(ctx, c, x + 2, y + 2, 2, 1); return; }
+  const text = p.a.params.text;
   const per = Math.floor((w - 4) / 2);
   const lines = Math.floor((h - 2) / 2);
-  const start = Math.max(0, Math.floor(chars / per) - lines + 1);
-  for (let l = 0; l < lines; l++) {
-    const li = start + l;
-    const n = Math.min(per, chars - li * per);
-    for (let k = 0; k < n; k++) if (hash(li, k, 77) > 0.18) px(ctx, c, x + 2 + k * 2, y + 1 + l * 2, 0.9);
-  }
+  // wrap the typed text into tiny 2-px "characters"; spaces stay blank
+  const typed = text.slice(0, p.chars);
+  const rows = [];
+  for (let i = 0; i < typed.length; i += per) rows.push(typed.slice(i, i + per));
+  const view = rows.slice(-lines);
+  view.forEach((row, l) => {
+    for (let k = 0; k < row.length; k++) if (row[k] !== ' ') px(ctx, c, x + 2 + k * 2, y + 1 + l * 2, /[.,;:]/.test(row[k]) ? 0.45 : 0.9);
+  });
+  if (Math.sin(rc.t * 6) > 0) px(ctx, [220, 255, 230], x + 2 + ((view[view.length - 1] || '').length) * 2, y + 1 + Math.max(0, view.length - 1) * 2);
 }
 
 /** Draw a whole room (shell + props) into ctx. rc collects light sources for the lighting pass. */

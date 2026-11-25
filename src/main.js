@@ -10,6 +10,7 @@ import { TerrariumRenderer } from './render/app.js';
 import { mountSwitcher } from './ui/switcher.js';
 import { AudioEngine } from './audio/engine.js';
 import { mountSound } from './ui/sound.js';
+import { mountCaptions } from './ui/captions.js';
 
 function pickStorage() {
   try {
@@ -58,10 +59,14 @@ async function main() {
   const canvas = document.getElementById('feed');
   let switcher = null;
   const audio = new AudioEngine({ data, cameras });
+  const captions = cameras.captions === false ? null : mountCaptions();
   const renderer = new TerrariumRenderer({
     canvas, runner, data, cameras,
     onFeedChange: (f) => switcher && switcher.setActive(f),
-    onFrame: (fr) => { try { audio.update(fr); } catch (e) { console.warn('terrarium: audio frame failed', e); } },
+    onFrame: (fr) => {
+      try { audio.update(fr); } catch (e) { console.warn('terrarium: audio frame failed', e); }
+      if (captions) captions.update(fr);
+    },
   });
   listeners.add((evs) => { renderer.push(evs); audio.push(evs); });
   switcher = mountSwitcher({ director: renderer.director, cameras, canvas });

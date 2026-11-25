@@ -47,6 +47,45 @@ export class Speaker {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.track = null;
+    this.practising = false;
+  }
+
+  /**
+   * The traveler practising: one short phrase, repeated, with hesitations and
+   * wrong notes that fade as their skill grows. Plucked, close, unamplified.
+   */
+  practice(skill) {
+    if (this.practising) { this.skill = skill; return; }
+    this.stop();
+    this.practising = true;
+    this.track = 'practice';
+    this.skill = skill;
+    this.root = 220;
+    this.scale = SCALES.majorPent;
+    this.beat = 60 / 66;
+    this.phrase = [0, 2, 4, 3, 2, 0, 1, 2, 4, 5, 4, 2];
+    this.pos = 0;
+    this.next = this.ctx.currentTime + 0.4;
+    this.timer = setInterval(() => this.schedulePractice(), 250);
+  }
+
+  schedulePractice() {
+    const c = this.ctx;
+    while (this.next < c.currentTime + 1.2) {
+      const t = this.next;
+      const sk = this.skill;
+      let deg = this.phrase[this.pos % this.phrase.length];
+      if (Math.random() < 0.3 * (1 - sk)) deg += Math.random() < 0.5 ? 1 : -1; // a wrong note
+      const vel = 0.07 + 0.04 * Math.random();
+      this.voice(t + (Math.random() - 0.5) * 0.12 * (1 - sk), this.note(deg, 1), { type: 'triangle', peak: vel, a: 0.003, d: this.beat * 1.3 });
+      this.voice(t, this.note(deg, 2), { type: 'sine', peak: vel * 0.2, a: 0.003, d: this.beat * 0.5 });
+      this.pos++;
+      // hesitation, and starting the phrase over after a slip
+      let gap = this.beat * (1 + (Math.random() < 0.25 * (1 - sk) ? 1.5 : 0));
+      if (this.pos % this.phrase.length === 0) gap += this.beat * 2;
+      if (Math.random() < 0.08 * (1 - sk)) { this.pos = 0; gap += this.beat * 1.5; }
+      this.next += gap;
+    }
   }
 
   note(deg, oct) {

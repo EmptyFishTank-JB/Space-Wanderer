@@ -59,6 +59,8 @@ export function mountInspector(t) {
       `voyage    ${flightLine(t)}`,
       `          ${s.space.stats.systems} systems · ${Math.round(s.space.stats.ly)} ly · ${s.space.stats.landings} landings · ${s.space.stats.evas} EVAs · ${s.space.stats.torpors} torpor (${s.space.stats.torporYears.toFixed(1)} y) · agenda ${s.space.agenda.map((i) => i.kind === 'visit' ? (i.land ? 'land ' : 'visit ') + i.body : i.kind).join(', ') || '—'}`,
       `faults    ${faults.join('  ') || 'none'}`,
+      `memory    ${(s.memory && s.memory.records.length) || 0} records · skills ${s.traveler.skills ? Object.entries(s.traveler.skills).map(([k, v]) => `${k} ${Math.round(v * 100)}`).join(' ') : '-'} · reading ${t.data.traveler.library[(s.traveler.library.book) % t.data.traveler.library.length].title} p.${s.traveler.library.page}`,
+      `last log  ${s.memory && s.memory.logs.length ? `#${s.memory.logs[s.memory.logs.length - 1].entry} ${s.memory.logs[s.memory.logs.length - 1].text.slice(0, 150)}…` : '—'}`,
       ``,
       ...log,
     ].join('\n');
