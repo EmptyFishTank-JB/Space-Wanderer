@@ -20,6 +20,10 @@
       font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; color: rgba(206, 224, 214, 0.78); text-shadow: 0 0 6px #000, 0 0 2px #000;
       opacity: 0; transition: opacity 2.2s ease; pointer-events: none; }
     .caption.shown { opacity: 1; transition-duration: 1.4s; }
+    .boot-status { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.1em;
+      color: rgba(170, 230, 205, 0.6); opacity: 0; transition: opacity 1.2s ease; pointer-events: none; text-align: center; }
+    .boot-status.hint { top: auto; bottom: 14vh; }
+    .boot-status.shown { opacity: 1; }
     .caption-head { font-size: 10px; letter-spacing: 0.08em; color: rgba(150, 200, 170, 0.55); min-height: 1.2em; }
   </style>
 </head>

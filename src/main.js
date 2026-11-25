@@ -41,10 +41,20 @@ async function main() {
   const journal = await openJournal();
   const params = new URLSearchParams(location.search);
 
+  // while a long absence is caught up the screen stays dark; say so quietly
+  const status = Object.assign(document.createElement('div'), { className: 'boot-status' });
+  document.body.appendChild(status);
+  const firstVisit = !snapshots.load();
   const { state, plan } = await bootSimulation({
     data, snapshots, journal,
-    onProgress: (f) => document.documentElement.style.setProperty('--catchup', String(f)),
+    onProgress: (f) => {
+      document.documentElement.style.setProperty('--catchup', String(f));
+      status.textContent = `catching up on ship life · ${Math.round(f * 100)}%`;
+      status.classList.add('shown');
+    },
   });
+  status.classList.remove('shown');
+  setTimeout(() => status.remove(), 2000);
   if (plan.simulate > 0) console.info(`terrarium: caught up ${(plan.simulate / 3600).toFixed(1)} h of ship life`);
 
   const listeners = new Set();
@@ -79,6 +89,14 @@ async function main() {
   switcher = mountSwitcher({ director: renderer.director, cameras, canvas, telemetry, selection });
   mountSound({ audio });
   renderer.start();
+  if (firstVisit) {
+    // one quiet hint for a first-time viewer, then never again
+    const hint = Object.assign(document.createElement('div'), { className: 'boot-status hint', textContent: 'move the mouse for cameras · S select things · T telemetry · F fullscreen' });
+    document.body.appendChild(hint);
+    setTimeout(() => hint.classList.add('shown'), 1500);
+    setTimeout(() => hint.classList.remove('shown'), 11000);
+    setTimeout(() => hint.remove(), 14000);
+  }
 
   // `frozen` stops autosave/pagehide from writing the old voyage over an import in progress
   let frozen = false;
