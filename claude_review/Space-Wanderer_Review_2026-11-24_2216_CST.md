@@ -1,1 +1,0 @@
-$(cat /tmp/review_content.txt)
