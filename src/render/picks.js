@@ -107,6 +107,20 @@ export function registerRoomPicks(rc, k) {
   }
 }
 
+/** The mug, wherever it was left (when carried it is in his hand, so the traveler's own entry covers it). */
+export function registerMugPick(rc) {
+  const m = rc.state.traveler.mug;
+  if (!m || m.carried || m.room !== rc.room) return null;
+  const u = rc.data.rooms[rc.room].stations[m.station];
+  if (u === undefined) return null;
+  const x = rc.M(u) + 6, y = FLOOR - (m.station === 'couch' ? 16 : 32);
+  picks.add({ id: 'mug', x: x - 3, y: y - 5, w: 7, h: 7, info: () => ({
+    name: 'Mug', sub: rc.data.rooms[rc.room].name,
+    lines: [['Contents', m.contents === 'empty' ? 'empty' : `${m.contents}, ${Math.round(m.fill * 100)}% full`], ['Temperature', `${Math.round(m.tempC)} °C${m.tempC > 55 ? ', hot' : m.tempC > 35 ? ', warm' : ''}`]],
+  }) });
+  return { x, y };
+}
+
 /** Stars and worlds in a space view (exterior camera, or through a window when drawn full-frame). */
 export function registerSkyPick(o, x, y, r, sys) {
   const R = Math.max(5, r);

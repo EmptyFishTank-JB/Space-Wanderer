@@ -6,6 +6,7 @@ import { data, fresh, runCollect, DAY, HOUR } from './helpers.mjs';
 import { step } from '../src/sim/index.js';
 import { serialize, deserialize } from '../src/persist/snapshot.js';
 import { travelerPose, TravelerTracker } from '../src/render/actor.js';
+import * as mugModule from '../src/sim/traveler/mug.js';
 
 test('three days: regular toilet visits, a fresh outfit each day, no hour-long stares', () => {
   const s = fresh('idle');
@@ -56,4 +57,22 @@ test('standing still at the window, he turns, sips, thinks: several poses within
     seen.add(`${k.pose}:${k.beat || ''}`);
   }
   assert.ok(seen.size >= 3, `poses: ${[...seen]}`);
+});
+
+test('the mug: filled hot with a meal, sipped down while he sits and looks, cooling meanwhile', () => {
+  const s = fresh('mug');
+  const evs = runCollect(s, 2 * DAY, ['meal']);
+  assert.ok(evs.length > 0);
+  const m = s.traveler.mug;
+  assert.ok(m && ['tea', 'coffee', 'water', 'empty'].includes(m.contents));
+  assert.ok(m.tempC >= 20 && m.tempC <= 80);
+  // fresh brew, then an hour of looking out of the lounge window
+  s.traveler.mug = { contents: 'tea', fill: 1, tempC: 78, room: 'galley', station: 'table', carried: false };
+  s.traveler.pos.room = 'lounge';
+  s.traveler.activity = { id: 'gaze_viewport', phase: 'perform', params: { interest: 0.3 }, elapsed: 0, duration: 3600, startT: s.t, score: 0.5, commitUntil: s.t, loc: { room: 'lounge', station: 'viewport' } };
+  const { updateMug } = mugModule;
+  updateMug(s, 3600);
+  assert.equal(s.traveler.mug.room, 'lounge');
+  assert.ok(s.traveler.mug.fill < 0.7 && s.traveler.mug.fill > 0.6);
+  assert.ok(s.traveler.mug.tempC < 30);
 });

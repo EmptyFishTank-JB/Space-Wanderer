@@ -28,6 +28,7 @@ import { pickMemory, markRecalled } from '../../memory/recall.js';
 import { FLIGHT_ACTIONS } from '../../space/actions.js';
 import { viewSubject } from '../../space/view.js';
 import { feelWonder } from '../../space/discovery.js';
+import { mealDrink, fillMug, ensureMug } from '../traveler/mug.js';
 
 const sinceH = (s, key) => (s.t - s.traveler.history[key]) / HOUR;
 const at = (room, station) => ({ room, station });
@@ -207,6 +208,7 @@ const CORE_ACTIONS = {
       const meal = s.ship.food.mealReady;
       s.ship.food.mealReady = null;
       eatEffects(s, meal);
+      mealDrink(s); // a hot drink with the meal, carried off afterwards
       s.ship.clutter.galley = clamp(s.ship.clutter.galley + 0.05);
       emit(s, 'meal', { kcal: meal.kcal, quality: round2(meal.quality), freshShare: round2(meal.freshShare), algaeShare: round2(meal.algaeShare), hot: meal.hot, crops: meal.crops, room: tr.pos.room });
     },
@@ -241,6 +243,7 @@ const CORE_ACTIONS = {
       const got = useWater(s, 0.4);
       s.traveler.needs.thirst = clamp(s.traveler.needs.thirst - 0.45 * (got / 0.4));
       s.traveler.needs.bladder = clamp(s.traveler.needs.bladder + 0.1 * (got / 0.4));
+      if (ensureMug(s).fill < 0.15) fillMug(s, 'water', 0.6, 18); // tops up the mug while he's at the tap
       s.ship.water.grey += got * 0.8;
       s.ship.atmo.airWater += got * 0.2;
       if (got < 0.4) s.traveler.needs.stress = clamp(s.traveler.needs.stress + 0.05);

@@ -7,7 +7,7 @@ import { drawTraveler } from './traveler.js';
 import { drawSpaceScene, makeCanvas } from './celestial.js';
 import { drawSurfaceScene } from './terrain.js';
 import { travelerPose } from './actor.js';
-import { registerRoomPicks } from './picks.js';
+import { registerRoomPicks, registerMugPick } from './picks.js';
 
 let layer = null;
 function roomLayer() {
@@ -77,6 +77,15 @@ export function renderRoomFeed(ctx, m) {
     }
   }
   registerRoomPicks(rc, seen);
+  const mug = registerMugPick(rc);
+  if (mug) {
+    // a small mug on the furniture, steaming a little while hot
+    rect(lc, [206, 204, 196], mug.x - 2, mug.y - 4, 4, 5);
+    rect(lc, [206, 204, 196], mug.x + 2, mug.y - 3, 1, 2);
+    const m = state.traveler.mug;
+    if (m.fill > 0) rect(lc, m.contents === 'water' ? [150, 190, 210] : [110, 70, 45], mug.x - 1, mug.y - 4, 2, 1);
+    if (m.tempC > 50 && m.fill > 0) for (let i = 0; i < 3; i++) rect(lc, [230, 230, 230], mug.x - 1 + Math.round(Math.sin(t * 2 + i) * 1.2), mug.y - 7 - i * 2, 1, 1, 0.35 - i * 0.1);
+  }
   // 3. lighting, applied only to the room (windows stay transparent)
   lc.globalCompositeOperation = 'source-atop';
   const dark = 1 - (0.12 + 0.88 * light.L);
