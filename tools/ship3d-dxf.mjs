@@ -13,11 +13,11 @@
 //   ROOM_<id>             box of 3DFACEs per compartment
 //   MOD_<id>              machinery: boxes or faceted cylinders
 //   SHAFT_<id>, DUCT_<id> ladder wells, lifts, vents and crawl ducts
-//   WIN_<id>              window panes
+//   WIN_<id>              window panes, lying flush on the hull surface
 //   CAM_<id>              exterior camera: a point plus a 3 m line along its view direction
 //   TEXT                  labels
 import { readFileSync, writeFileSync } from 'node:fs';
-import { hullParts, station, profile, partY, withDecks, moduleExtent, segmentBox } from '../src/ship3d/geometry.js';
+import { hullParts, station, profile, partY, withDecks, moduleExtent, segmentBox, windowQuads } from '../src/ship3d/geometry.js';
 
 const root = new URL('..', import.meta.url);
 const ship = JSON.parse(readFileSync(new URL('data/ship3d.json', root), 'utf8'));
@@ -83,7 +83,7 @@ for (const m of ship.modules) {
 }
 for (const s of ship.shafts || []) box(layer(`SHAFT_${s.id}`, COLOR[s.kind] ?? COLOR.ladder), s.x, s.y, s.z);
 for (const d of ship.ducts || []) for (const seg of d.segments) { const b = segmentBox(seg, d.size); box(layer(`DUCT_${d.id}`, COLOR.duct), b.x, b.y, b.z); }
-for (const w of ship.windows || []) box(layer(`WIN_${w.id}`, COLOR.window), w.x, w.y, w.z);
+for (const w of ship.windows || []) for (const q of windowQuads(ship, w, 1)) face(layer(`WIN_${w.id}`, COLOR.window), ...q);
 for (const c of ship.cameras.exterior) {
   const ly = layer(`CAM_${c.id.replace(/[^A-Za-z0-9_]/g, '_')}`, COLOR.cam);
   const l = Math.hypot(...c.look);

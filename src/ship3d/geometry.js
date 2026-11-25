@@ -28,6 +28,11 @@ export function station(stations, x) {
 export function profile(kind, st) {
   const { b, zk, zt } = st;
   const h = zt - zk;
+  if (kind === 'krait') {
+    // flat, wide top deck with a short chine; the belly hangs below it, narrower
+    const c = Math.min(0.8, h * 0.4);
+    return [[b, zt], [b, zt - c], [0.62 * b, zk + 0.42 * h], [0.52 * b, zk], [-0.52 * b, zk], [-0.62 * b, zk + 0.42 * h], [-b, zt - c], [-b, zt]];
+  }
   if (kind === 'box' || kind === 'head') {
     const ch = Math.min(0.8, h * 0.3);
     return [[0.75 * b, zt], [b, zt - ch], [b, zk], [-b, zk], [-b, zt - ch], [-0.75 * b, zt]];
@@ -210,4 +215,37 @@ export function proposedChanges(report, tolerance = 0.6) {
     if (Math.abs(h.uB - h.curB) > tolerance) out.push({ hatch: h.id, side: 'b', room: h.b, from: h.curB, to: h.uB });
   }
   return out;
+}
+
+/**
+ * A window lying flush on a hull part: the strip of one profile edge
+ * (`edge`, from vertex i to i+1, between fractions t[0]..t[1]) swept from
+ * x[0] to x[1], nudged a few centimetres outward. Returns quads [[x,y,z] ×4].
+ * A window with `cap` instead sits on a flat transverse face at that x.
+ */
+export function windowQuads(ship, w, step = 1) {
+  if (w.cap) {
+    const x = w.cap, [y0, y1] = w.y, [z0, z1] = w.z;
+    return [[[x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z1]]];
+  }
+  const part = hullParts(ship).find((p) => p.id === w.part);
+  if (!part) return [];
+  const xs = [];
+  for (let x = w.x[0]; x < w.x[1] - 1e-6; x += step) xs.push(x);
+  xs.push(w.x[1]);
+  const strip = xs.map((x) => {
+    const st = station(part.stations, x);
+    if (!st) return null;
+    const pts = profile(part.profile, st);
+    const yc = partY(part, st);
+    const A = pts[w.edge], B = pts[(w.edge + 1) % pts.length];
+    const dy = B[0] - A[0], dz = B[1] - A[1];
+    const l = Math.hypot(dy, dz) || 1;
+    const ny = -dz / l * 0.04, nz = dy / l * 0.04; // profiles run clockwise: (-dz, dy) points out
+    const at = (t) => [x, yc + A[0] + dy * t + ny, A[1] + dz * t + nz];
+    return [at(w.t[0]), at(w.t[1])];
+  });
+  const quads = [];
+  for (let i = 0; i < strip.length - 1; i++) if (strip[i] && strip[i + 1]) quads.push([strip[i][0], strip[i][1], strip[i + 1][1], strip[i + 1][0]]);
+  return quads;
 }

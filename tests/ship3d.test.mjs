@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkArrangement, proposedChanges, station, insideHull, roomU, profile, hullParts, segmentBox } from '../src/ship3d/geometry.js';
+import { checkArrangement, proposedChanges, station, insideHull, roomU, profile, hullParts, segmentBox, windowQuads } from '../src/ship3d/geometry.js';
 
 const load = (p) => JSON.parse(readFileSync(new URL(`../${p}`, import.meta.url)));
 const ship = load('data/ship3d.json');
@@ -43,9 +43,10 @@ test('hull parts interpolate and bound the hull', () => {
   assert.ok(insideHull(ship, 0, 0, 1));
   assert.ok(!insideHull(ship, 0, 0, 20));
   assert.ok(insideHull(ship, -24, 0, 11), 'the bridge sits in the tower');
-  assert.ok(insideHull(ship, 60, 11.5, 0), 'the starboard prong');
+  assert.ok(insideHull(ship, 60, 12.3, 1.2), 'the starboard tine');
   assert.ok(!insideHull(ship, 60, 0, 0), 'the gap between the prongs');
   assert.equal(profile('hex', st).length, 8);
+  assert.equal(profile('krait', st).length, 8);
   const box = segmentBox([[0, 2, 4], [-10, 2, 4]], 0.9);
   assert.deepEqual(box, { x: [-10, 0], y: [1.55, 2.45], z: [3.55, 4.45] });
 });
@@ -63,4 +64,20 @@ test('room-local coordinates follow each room axis', () => {
   assert.equal(roomU(byId.corridor_fore, [-10, 0, 5]), 14);
   assert.equal(roomU(byId.engineering, [-28, 5.5, 0]), 0);
   assert.equal(roomU(byId.lounge, [-28, 3, 5]), 8);
+});
+
+test('windows lie on the hull surface, and the tines share the main hull\'s section where they join', () => {
+  for (const w of ship.windows) {
+    const quads = windowQuads(ship, w, 1);
+    assert.ok(quads.length > 0, w.id);
+    for (const q of quads) for (const p of q) {
+      // a few centimetres off the skin: inside at 10 cm below, outside at 10 cm above
+      if (!w.cap) assert.ok(!insideHull(ship, p[0], p[1], p[2] + 0.1) || insideHull(ship, p[0], p[1], p[2] - 0.12), `${w.id} floats`);
+    }
+  }
+  const main = hullParts(ship).find((p) => p.id === 'main');
+  const tine = hullParts(ship).find((p) => p.id === 'prong_s');
+  const m = station(main.stations, 52), t = station(tine.stations, 52);
+  assert.equal(m.zt, t.zt);
+  assert.ok(Math.abs(m.b - (t.yc + t.b)) < 0.05, 'outer edges meet');
 });
