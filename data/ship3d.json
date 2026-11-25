@@ -603,6 +603,139 @@
    "new": true,
    "name": "Rover suit lock",
    "info": "Small lock between the lower passage and the unpressurized rover bay: suit up here, cycle, walk out to the rover."
+  },
+  {
+   "id": "biolab",
+   "deck": "main",
+   "x": [
+    14.2,
+    22.2
+   ],
+   "y": [
+    6.2,
+    14.0
+   ],
+   "axis": "+y",
+   "origin": 6.2,
+   "view": "fore",
+   "role": "science",
+   "new": true,
+   "name": "Biology lab",
+   "info": "Living samples: an isolation glovebox, incubators, a culture library and a microscope bench. Anything alive from a world's surface is examined here before it goes near the grow trays."
+  },
+  {
+   "id": "coldstore",
+   "deck": "main",
+   "x": [
+    22.4,
+    28.4
+   ],
+   "y": [
+    6.2,
+    12.5
+   ],
+   "axis": "+y",
+   "origin": 6.2,
+   "view": "fore",
+   "role": "science",
+   "new": true,
+   "name": "Sample cold store",
+   "info": "Freezers and a cryo cabinet for cores, ice and tissue samples, held at their home temperature until the labs are ready for them."
+  },
+  {
+   "id": "observatory",
+   "deck": "main",
+   "x": [
+    14.2,
+    22.2
+   ],
+   "y": [
+    -14.0,
+    -6.2
+   ],
+   "axis": "-y",
+   "origin": -6.2,
+   "view": "aft",
+   "role": "science",
+   "new": true,
+   "name": "Observatory",
+   "info": "Telescope control and the spectrograph: the turret on the deck above feeds this room. Star and planet surveys are planned and run from here."
+  },
+  {
+   "id": "dronebay",
+   "deck": "main",
+   "x": [
+    22.4,
+    29.4
+   ],
+   "y": [
+    -12.5,
+    -6.2
+   ],
+   "axis": "-y",
+   "origin": -6.2,
+   "view": "aft",
+   "role": "service",
+   "new": true,
+   "name": "Drone bay",
+   "info": "Racks of small survey drones and their charging cradles. They launch through a hatch in the deck to map moons and rings the ship won't visit."
+  },
+  {
+   "id": "study",
+   "deck": "living",
+   "x": [
+    -35.0,
+    -28.2
+   ],
+   "y": [
+    2.6,
+    6.8
+   ],
+   "axis": "-x",
+   "origin": -28.2,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Study & library",
+   "info": "A quiet room behind the lounge: shelves of books, a writing desk, a reading chair and an old record player."
+  },
+  {
+   "id": "powerroom",
+   "deck": "lower",
+   "x": [
+    -31.0,
+    -24.4
+   ],
+   "y": [
+    1.2,
+    10.0
+   ],
+   "axis": "+y",
+   "origin": 1.2,
+   "view": "fore",
+   "role": "power",
+   "new": true,
+   "name": "Power room",
+   "info": "Main switchboards, the battery banks and the power distribution for the whole ship, under engineering."
+  },
+  {
+   "id": "shelter",
+   "deck": "lower",
+   "x": [
+    -3.6,
+    2.0
+   ],
+   "y": [
+    1.4,
+    7.0
+   ],
+   "axis": "+y",
+   "origin": 1.4,
+   "view": "fore",
+   "role": "life",
+   "new": true,
+   "name": "Storm shelter",
+   "info": "A small room walled in by the water tanks, which make it the best-shielded space on board: bunk, rations and a console, for solar storms and close passes of hot stars."
   }
  ],
  "hatches": [
@@ -930,6 +1063,83 @@
    "at": [
     -20.0,
     -5.5,
+    -5.0
+   ]
+  },
+  {
+   "between": [
+    "biolab",
+    "cross_main"
+   ],
+   "at": [
+    14.1,
+    8.0,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "coldstore",
+    "biolab"
+   ],
+   "at": [
+    22.3,
+    9.0,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "observatory",
+    "cross_main"
+   ],
+   "at": [
+    14.1,
+    -8.0,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "dronebay",
+    "observatory"
+   ],
+   "at": [
+    22.3,
+    -9.0,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "study",
+    "lounge"
+   ],
+   "at": [
+    -28.1,
+    4.0,
+    4.8
+   ]
+  },
+  {
+   "between": [
+    "powerroom",
+    "hold"
+   ],
+   "at": [
+    -24.2,
+    5.0,
+    -5.0
+   ]
+  },
+  {
+   "between": [
+    "shelter",
+    "lower_passage"
+   ],
+   "at": [
+    -1.0,
+    1.1,
     -5.0
    ]
   }
@@ -1776,7 +1986,7 @@
    "name": "Water & consumables tanks",
    "shape": "box",
    "x": [
-    -3.6,
+    2.2,
     11.8
    ],
    "y": [
@@ -1788,7 +1998,7 @@
     -1.4
    ],
    "role": "life",
-   "info": "Potable water, grey water and bulk nutrient stock."
+   "info": "Potable water, grey water and bulk nutrient stock. Their bulk also shields the storm shelter beside them."
   },
   {
    "id": "ore_bunkers",
@@ -2713,6 +2923,39 @@
     2.65
    ],
    "role": "service"
+  },
+  {
+   "id": "telescope",
+   "name": "Telescope turret",
+   "shape": "cyl-z",
+   "x": 18.2,
+   "y": -10.0,
+   "z": [
+    4.2,
+    6.0
+   ],
+   "r": 1.7,
+   "role": "sensor",
+   "info": "A 1.2 m survey telescope under a sliding dome on the deck, feeding the observatory below."
+  },
+  {
+   "id": "lifeboat",
+   "name": "Lifeboat",
+   "shape": "box",
+   "x": [
+    -14.0,
+    -6.0
+   ],
+   "y": [
+    11.0,
+    14.6
+   ],
+   "z": [
+    4.8,
+    7.4
+   ],
+   "role": "service",
+   "info": "A small sealed boat docked on the deck, enough to keep one person alive for weeks. Boarded through a hatch from the starboard gallery."
   }
  ],
  "cameras": {
@@ -3087,6 +3330,38 @@
    ],
    "faces": "out to port",
    "info": "The porthole in the airlock's outer door, set in the port flank."
+  },
+  {
+   "id": "win_biolab",
+   "name": "Biology lab window",
+   "part": "main",
+   "edge": 1,
+   "t": [
+    0.25,
+    0.6
+   ],
+   "x": [
+    15.0,
+    21.5
+   ],
+   "faces": "out and down to starboard",
+   "info": "Daylight for the culture shelves."
+  },
+  {
+   "id": "win_observatory",
+   "name": "Observatory window",
+   "part": "main",
+   "edge": 5,
+   "t": [
+    0.4,
+    0.75
+   ],
+   "x": [
+    15.0,
+    21.5
+   ],
+   "faces": "out and down to port",
+   "info": "A wide port beside the telescope controls."
   }
  ],
  "windowShutters": "Every window has an armoured shutter. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."
