@@ -101,3 +101,4 @@ test('fatigue makes repairs sloppier', async () => {
   };
   assert.ok(trial(0.95) > trial(0.2) * 2);
 });
+

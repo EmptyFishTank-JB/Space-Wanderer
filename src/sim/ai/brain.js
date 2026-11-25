@@ -242,7 +242,10 @@ function maybeInterrupt(state, data) {
   if (tr.move && tr.move.segs[tr.move.i].kind === 'hatch') return; // finish cycling the hatch first
   const def = actionDef(a.id);
   if (def.uninterruptible && a.phase === 'perform') return; // EVA, torpor: they manage their own exits
-  const hold = a.score + (state.t < a.commitUntil ? 0.25 : 0.12) + (def.category === 'sleep' ? 0.3 : 0);
+  // a major fault half-fixed is not left for bed: the repair holds against ordinary needs (alarms still cut in)
+  const comp = a.id === 'repair' && a.params && state.ship.components[a.params.component];
+  const fixingMajor = !!(comp && comp.fault && comp.fault.severity === 'major');
+  const hold = a.score + (state.t < a.commitUntil ? 0.25 : 0.12) + (def.category === 'sleep' ? 0.3 : 0) + (fixingMajor && state.traveler.needs.fatigue < 0.97 ? 0.3 : 0);
   let best = null;
   for (const c of gather(state, data, { interruptOnly: true })) {
     if (c.id === a.id && sameTarget(c.params, a.params)) continue;
