@@ -9,7 +9,7 @@ import { drain } from './events.js';
 import { catchUp } from './catchup.js';
 
 export class LiveRunner {
-  constructor({ state, data, now = () => Date.now(), onEvents = null, inlineLimit = 900, intervalMs = 250 }) {
+  constructor({ state, data, now = () => Date.now(), onEvents = null, inlineLimit = 900, intervalMs = 250, yieldFn }) {
     this.state = state;
     this.data = data;
     this.now = now;
@@ -18,6 +18,7 @@ export class LiveRunner {
     this.intervalMs = intervalMs;
     this.timer = null;
     this.catchingUp = null;
+    this.yieldFn = yieldFn;
   }
 
   start() {
@@ -43,9 +44,10 @@ export class LiveRunner {
       return 0;
     }
     if (due > this.inlineLimit) {
-      this.catchingUp = catchUp(s, this.data, due, { onEvents: this.onEvents })
-        .then((plan) => { s.wallMs += (plan.simulate + plan.torpor) * 1000; })
-        .finally(() => { this.catchingUp = null; });
+      // wallMs advances with each simulated chunk, so an autosave mid-catch-up is a consistent checkpoint
+      const opts = { onEvents: this.onEvents, advanceWall: true };
+      if (this.yieldFn) opts.yieldFn = this.yieldFn;
+      this.catchingUp = catchUp(s, this.data, due, opts).finally(() => { this.catchingUp = null; });
       return 0;
     }
     for (let i = 0; i < due; i++) step(s, this.data);

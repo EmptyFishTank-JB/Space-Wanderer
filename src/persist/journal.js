@@ -91,38 +91,70 @@ export class IndexedDBJournal {
     return req(this.db.transaction('events', 'readonly').objectStore('events').getAll());
   }
 
-  async replaceAll(events) {
-    const tx = this.db.transaction('events', 'readwrite');
-    const store = tx.objectStore('events');
-    store.clear();
-    for (const e of events) store.put(e);
+  /** Everything the voyage has archived: events, visited systems, memories. */
+  async exportArchive() {
+    const tx = this.db.transaction(['events', 'systems', 'memories'], 'readonly');
+    const [events, systems, memories] = await Promise.all(['events', 'systems', 'memories'].map((n) => req(tx.objectStore(n).getAll())));
+    return { events, systems, memories };
+  }
+
+  /**
+   * Replace all three stores in ONE transaction: either the whole archive is
+   * swapped in, or (on any failure) the previous one is left untouched.
+   */
+  async importArchive({ events = [], systems = [], memories = [] }) {
+    const tx = this.db.transaction(['events', 'systems', 'memories'], 'readwrite');
+    const put = (name, rows) => { const st = tx.objectStore(name); st.clear(); for (const r of rows) st.put(r); };
+    try {
+      put('events', events);
+      put('systems', systems);
+      put('memories', memories);
+    } catch (err) {
+      tx.abort();
+      throw err;
+    }
     await done(tx);
   }
 
-  async clear() { await this.replaceAll([]); }
+  async clear() { await this.importArchive({}); }
 }
 
 /** Same API, in memory — Node tools, tests, and a fallback when IndexedDB is blocked. */
 export class MemoryJournal {
-  constructor() { this.events = []; this.systemRecords = new Map(); this.memoryRecords = new Map(); }
+  constructor() { this.eventMap = new Map(); this.systemRecords = new Map(); this.memoryRecords = new Map(); }
+  get events() { return [...this.eventMap.values()].sort((a, b) => a.id - b.id); }
   async append(events) {
     for (const e of events) {
       if (e.type === 'system_record') this.systemRecords.set(e.record.id, e.record);
       if (e.type === 'memory_formed') this.memoryRecords.set(e.record.id, { ...e.record });
       if (e.type === 'memory_recalled' && this.memoryRecords.has(e.memoryId)) Object.assign(this.memoryRecords.get(e.memoryId), { callback_count: e.callback_count, last_recalled_t: e.t });
     }
+    // keyed by event id, like the IndexedDB store: replaying a chunk is harmless
     const keep = notableOnly(events).filter((e) => e.type !== 'system_record');
-    this.events.push(...keep);
+    for (const e of keep) this.eventMap.set(e.id, e);
     return keep.length;
   }
   async memories(limit = 50) { return [...this.memoryRecords.values()].sort((a, b) => b.emotional_weight - a.emotional_weight || b.t - a.t).slice(0, limit); }
   async systems(limit = 50) { return [...this.systemRecords.values()].sort((a, b) => b.departedT - a.departedT).slice(0, limit); }
   async recent(limit = 50, type = null) {
-    const src = type ? this.events.filter((e) => e.type === type) : this.events;
+    const all = this.events;
+    const src = type ? all.filter((e) => e.type === type) : all;
     return src.slice(-limit).reverse();
   }
-  async count() { return this.events.length; }
-  async all() { return this.events.slice(); }
-  async replaceAll(events) { this.events = events.slice(); }
-  async clear() { this.events = []; }
+  async count() { return this.eventMap.size; }
+  async all() { return this.events; }
+  async exportArchive() {
+    const clone = (x) => JSON.parse(JSON.stringify(x));
+    return { events: clone(this.events), systems: clone([...this.systemRecords.values()]), memories: clone([...this.memoryRecords.values()]) };
+  }
+  async importArchive({ events = [], systems = [], memories = [] }) {
+    // build everything first, then swap: all or nothing
+    const ev = new Map(events.map((e) => [e.id, e]));
+    const sy = new Map(systems.map((r) => [r.id, r]));
+    const me = new Map(memories.map((r) => [r.id, { ...r }]));
+    this.eventMap = ev;
+    this.systemRecords = sy;
+    this.memoryRecords = me;
+  }
+  async clear() { await this.importArchive({}); }
 }

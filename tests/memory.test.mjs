@@ -188,3 +188,20 @@ test('Phase 2–4 (v2) snapshots upgrade with an empty memory', () => {
   assert.ok(up.space.systemName && up.space.starClass);
   runCollect(up, DAY);
 });
+
+test('chronology: an earlier stop that day is written as earlier, not as here', () => {
+  const s = fresh('chrono');
+  const f = buildLogFacts(s, data);
+  f.repairs = []; f.harvests = []; f.hobbies = {}; f.mood = { wonder: 0.4, weariness: 0.2, stress: 0.1, solitude: 0.2 };
+  f.voyage = {
+    ...f.voyage, system: 'Dray 7813', scoops: [], awe: [], evas: [], landings: [],
+    arrivals: [{ system: 'Brask 4212', label: 'white dwarf', ly: 30, via: 'jump' }, { system: 'Dray 7813', label: 'white dwarf', ly: 31, via: 'jump' }],
+    discoveries: [{ kind: 'star', system: 'Brask 4212', label: 'white dwarf', star: 'D', first: true }],
+  };
+  for (let e = 0; e < 30; e++) {
+    const t = writeLog({ state: s, data, facts: f, entry: e }).text;
+    if (!/white dwarf/.test(t) || !/Brask/.test(t)) continue;
+    assert.ok(/Earlier, at Brask 4212/.test(t), `earlier stop not marked: ${t}`);
+    assert.ok(!/(^|\. )Never been near a white dwarf before/.test(t), `reads as if Dray were the first: ${t}`);
+  }
+});

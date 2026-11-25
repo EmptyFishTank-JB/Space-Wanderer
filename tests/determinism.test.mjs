@@ -50,16 +50,16 @@ test('offline catch-up equals watching it live', () => {
   assert.equal(strip(away), strip(watched));
 });
 
-test('catch-up beyond the cap is booked as torpor on the mission calendar', () => {
+test('catch-up beyond the cap books whole days of torpor first, then lives the most recent stretch', () => {
   const s = fresh('torpor');
-  const capSeconds = data.config.catchup.maxDays * DAY;
   const smallData = { ...data, config: { ...data.config, catchup: { ...data.config.catchup, maxDays: 1 } } };
+  const hour0 = s.calendar.baseSeconds % DAY;
   const plan = catchUpSync(s, smallData, 3 * DAY + 5);
-  assert.equal(plan.simulate, DAY);
-  assert.equal(plan.torpor, 2 * DAY + 5);
-  assert.equal(s.t, DAY);
-  assert.equal(s.calendar.torporSeconds, 2 * DAY + 5);
-  assert.ok(capSeconds > DAY);
+  assert.equal(plan.torpor, 2 * DAY, 'torpor is booked in whole days');
+  assert.equal(plan.simulate, DAY + 5, 'the remainder is simulated');
+  assert.equal(s.t, DAY + 5);
+  assert.equal(s.calendar.torporSeconds, 2 * DAY);
+  assert.equal(s.calendar.baseSeconds % DAY, hour0, 'ship clock keeps its rhythm');
 });
 
 test('live runner never rewinds when the wall clock jumps backwards', () => {

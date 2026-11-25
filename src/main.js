@@ -5,7 +5,7 @@ import { bootSimulation, LiveRunner } from './sim/index.js';
 import { loadData, fetchJson } from './load.js';
 import { SnapshotStore, MemoryStorage } from './persist/snapshot.js';
 import { IndexedDBJournal, MemoryJournal } from './persist/journal.js';
-import { buildBackup, parseBackup } from './persist/backup.js';
+import { buildBackup, importVoyage } from './persist/backup.js';
 import { TerrariumRenderer } from './render/app.js';
 import { mountSwitcher } from './ui/switcher.js';
 import { AudioEngine } from './audio/engine.js';
@@ -73,7 +73,9 @@ async function main() {
   mountSound({ audio });
   renderer.start();
 
-  const save = () => { try { snapshots.save(runner.state); } catch (e) { console.warn('terrarium: save failed', e); } };
+  // `frozen` stops autosave/pagehide from writing the old voyage over an import in progress
+  let frozen = false;
+  const save = () => { if (frozen) return; try { snapshots.save(runner.state); } catch (e) { console.warn('terrarium: save failed', e); } };
   setInterval(save, data.config.autosaveSeconds * 1000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else runner.pump(); });
   window.addEventListener('pagehide', save);
@@ -83,7 +85,8 @@ async function main() {
     if (!(e.ctrlKey && e.altKey && e.shiftKey)) return;
     if (e.code === 'KeyE') {
       e.preventDefault();
-      const blob = new Blob([buildBackup(runner.state, await journal.all())], { type: 'application/json' });
+      save(); // export the latest checkpoint
+      const blob = new Blob([buildBackup(runner.state, await journal.exportArchive())], { type: 'application/json' });
       const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `terrarium-backup-${Date.now()}.json` });
       a.click();
       URL.revokeObjectURL(a.href);
@@ -91,14 +94,16 @@ async function main() {
       e.preventDefault();
       const input = Object.assign(document.createElement('input'), { type: 'file', accept: 'application/json' });
       input.onchange = async () => {
+        runner.stop();
+        frozen = true;
         try {
-          const { state: restored, events } = parseBackup(await input.files[0].text(), data);
-          runner.stop();
-          snapshots.save(restored);
-          await journal.replaceAll(events);
+          const { partial } = await importVoyage({ text: await input.files[0].text(), data, snapshots, journal });
+          if (partial) console.info('terrarium: imported an older backup; systems were rebuilt from the journal and only recent memories survived');
           location.reload(); // reboot through the normal catch-up path
         } catch (err) {
-          console.error('terrarium: import failed', err);
+          console.error('terrarium: import failed; the current voyage is unchanged', err);
+          frozen = false;
+          runner.start();
         }
       };
       input.click();

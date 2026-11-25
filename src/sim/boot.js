@@ -5,7 +5,7 @@ import { createInitialState } from './state.js';
 import { catchUp } from './catchup.js';
 import { emit, drain } from './events.js';
 
-export async function bootSimulation({ data, snapshots, journal, now = () => Date.now(), seed, onProgress }) {
+export async function bootSimulation({ data, snapshots, journal, now = () => Date.now(), seed, onProgress, checkpointEvery = 4, yieldFn }) {
   let state = snapshots.load();
   if (!state) {
     state = createInitialState(data, { seed: seed ?? `traveler-${now()}` });
@@ -16,8 +16,16 @@ export async function bootSimulation({ data, snapshots, journal, now = () => Dat
     return { state, fresh: true, plan: { simulate: 0, torpor: 0 } };
   }
   const elapsed = Math.max(0, (now() - state.wallMs) / 1000);
-  const plan = await catchUp(state, data, elapsed, { onEvents: (evs) => journal.append(evs), onProgress });
-  state.wallMs += (plan.simulate + plan.torpor) * 1000;
+  // Long catch-ups save consistent checkpoints as they go, so closing the
+  // tab part-way loses nothing and never double-counts the gap.
+  const opts = {
+    onEvents: (evs) => journal.append(evs),
+    onProgress,
+    advanceWall: true,
+    onCheckpoint: (s, n) => { if (n % checkpointEvery === 0) snapshots.save(s); },
+  };
+  if (yieldFn) opts.yieldFn = yieldFn;
+  const plan = await catchUp(state, data, elapsed, opts);
   if (plan.simulate > 0) {
     emit(state, 'catchup', { mode: 'simulated', seconds: plan.simulate });
     await journal.append(drain(state));

@@ -62,6 +62,14 @@ export class SnapshotStore {
     return text.length;
   }
 
+  /** Make `state` the only voyage here: main and backup slots both, so a fallback can never resurrect the old one. */
+  replace(state) {
+    const text = serialize(state);
+    this.storage.setItem(SNAPSHOT_KEY, text);
+    this.storage.setItem(BACKUP_KEY, text);
+    return text.length;
+  }
+
   load() {
     for (const key of [SNAPSHOT_KEY, BACKUP_KEY]) {
       const text = this.storage.getItem(key);

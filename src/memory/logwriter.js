@@ -110,20 +110,29 @@ export function writeLog({ state, data, facts, entry }) {
   if (facts.avgMealQuality > 0.68 && r() < 0.4) lines.food.push(pick(['Fresh tomatoes with dinner. Small thing; it helped.', 'Ate well tonight.', 'Basil on the potatoes. Worth growing.']));
 
   // ── finds ──
+  // Chronology: when the entry ends at a later system, finds from an earlier
+  // stop that day get an explicit time reference instead of reading as "here".
+  const here = v.system || '';
+  const elsewhere = (sysName, bodyName) => {
+    const s0 = sysName || (bodyName && here && !bodyName.startsWith(here) ? bodyName : '');
+    return !!(s0 && here && !s0.startsWith(here) && jumps.length > 0);
+  };
+  const earlier = (line, sysName, bodyName) => (elsewhere(sysName, bodyName) ? `Earlier, ${line.charAt(0).toLowerCase()}${line.slice(1)}` : line);
   for (const d of (v.discoveries || []).slice(0, 3)) {
-    if (d.kind === 'life') lines.find.push(pick([`The mats on ${d.body} are alive. Took a sealed sample. Checked the seal three times.`, `Confirmed it: ${d.body} has life. Microbial mats in a sheltered hollow, slow and green-brown.`]));
-    else if (d.kind === 'anomaly') lines.find.push(`Something on ${d.body} the sensors won't classify. Logged it, will look again.`);
-    else if (d.kind === 'bio_signal') lines.find.push(`Bio signals on ${d.body}. Want a closer look before we leave.`);
-    else if (d.kind === 'body' && d.bodyType === 'earth_like') lines.find.push(`${d.body} reads as earth-like: open water, a nitrogen-oxygen atmosphere.`);
-    else if (d.kind === 'body' && d.bodyType === 'water_world') lines.find.push(`${d.body} is a water world. No land anywhere on the scans.`);
-    else if (d.kind === 'body' && d.rings) lines.find.push(`${d.body} has rings. Narrow, dust-grey, with a gap near the inner edge.`);
+    const before = elsewhere(d.system, d.body);
+    if (d.kind === 'life') lines.find.push(before ? `Earlier, on ${d.body}: the mats there are alive. Took a sealed sample.` : pick([`The mats on ${d.body} are alive. Took a sealed sample. Checked the seal three times.`, `Confirmed it: ${d.body} has life. Microbial mats in a sheltered hollow, slow and green-brown.`]));
+    else if (d.kind === 'anomaly') lines.find.push(before ? `Earlier, on ${d.body}: something the sensors wouldn't classify. Logged it.` : `Something on ${d.body} the sensors won't classify. Logged it, will look again.`);
+    else if (d.kind === 'bio_signal') lines.find.push(before ? `Picked up bio signals on ${d.body} before we moved on.` : `Bio signals on ${d.body}. Want a closer look before we leave.`);
+    else if (d.kind === 'body' && d.bodyType === 'earth_like') lines.find.push(before ? `Earlier we passed ${d.body}, an earth-like world: open water, a nitrogen-oxygen atmosphere.` : `${d.body} reads as earth-like: open water, a nitrogen-oxygen atmosphere.`);
+    else if (d.kind === 'body' && d.bodyType === 'water_world') lines.find.push(before ? `Earlier, ${d.body} turned out to be a water world. No land on the scans.` : `${d.body} is a water world. No land anywhere on the scans.`);
+    else if (d.kind === 'body' && d.rings) lines.find.push(before ? `Earlier, ${d.body} had rings: narrow, dust-grey, with a gap near the inner edge.` : `${d.body} has rings. Narrow, dust-grey, with a gap near the inner edge.`);
     else if (d.kind === 'star' && d.label) {
-      const named = out0(lines.travel).includes(d.system);
-      if (d.first) lines.find.push(named ? `Never been near a ${d.label} before.` : pick([`First ${d.label} I've seen up close, at ${d.system}.`, `${d.system} is a ${d.label}. Never been near one before.`]));
-      else lines.find.push(pick([`Another ${d.label}. They still make me stop and look.`, `${named ? 'The' : `${d.system}'s`} ${d.label} is worth the detour.`]));
+      const named = out0(lines.travel).includes(d.system) && !before;
+      if (d.first) lines.find.push(before ? `Earlier, at ${d.system}: my first ${d.label} up close.` : named ? `Never been near a ${d.label} before.` : pick([`First ${d.label} I've seen up close, at ${d.system}.`, `${d.system} is a ${d.label}. Never been near one before.`]));
+      else lines.find.push(before ? `Passed another ${d.label} at ${d.system} on the way.` : pick([`Another ${d.label}. They still make me stop and look.`, `${named ? 'The' : `${d.system}'s`} ${d.label} is worth the detour.`]));
     }
   }
-  for (const l of (v.landings || []).slice(0, 1)) lines.find.push(`Set down on ${l.body}. ${l.gravity} g, ${Math.round(l.tempK - 273)} °C outside.`);
+  for (const l of (v.landings || []).slice(0, 1)) lines.find.push(earlier(`Set down on ${l.body}. ${l.gravity} g, ${Math.round(l.tempK - 273)} °C outside.`, null, l.body));
   for (const e of (v.evas || []).slice(0, 1)) {
     const feats = (e.features || []).filter((f) => FEATURE[f]).map((f) => FEATURE[f]);
     const samples = [];
@@ -179,6 +188,8 @@ export function writeLog({ state, data, facts, entry }) {
       used += k;
     }
   };
+  // now and then a personal detail carries the entry instead of the itinerary
+  if (!v.torpor && lines.self.length && r() < 0.18) take([lines.self.splice(Math.floor(r() * lines.self.length), 1)[0]], 1);
   take(lines.travel, v.torpor ? 2 : 1);
   take(lines.find, 2);
   take(lines.tech, 2);
