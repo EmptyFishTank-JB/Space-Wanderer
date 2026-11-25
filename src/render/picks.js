@@ -4,6 +4,7 @@
 // Floors and bare walls never register.
 import { PPM, FLOOR, CEIL } from './gfx.js';
 import { viewSubject } from '../space/view.js';
+import { activityLabel } from '../ui/telemetry-model.js';
 
 let list = [];
 export const picks = {
@@ -70,6 +71,13 @@ function stationInfo(state, data, room, name) {
   }
   if (name === 'seedbank' && sh.seeds) lines.push(['Seeds', Object.entries(sh.seeds).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(', ') || 'empty']);
   if (name === 'algae' && sh.algae) lines.push(['Culture', sh.algae.health !== undefined ? `health ${pct(sh.algae.health)}` : 'growing']);
+  const act = tr.activity && tr.activity.phase === 'perform' && tr.pos.room === room ? tr.activity : null;
+  const lib = tr.library, books = data.traveler.library;
+  const book = lib && books && books.length ? books[lib.book % books.length] : null;
+  if ((name === 'couch' || name === 'bunk') && act && act.id === 'read' && book) lines.push(['Reading', `${book.title}, page ${lib.page} of ${book.pages}`]);
+  if (name === 'desk' && book) lines.push(['On the desk', `${book.title} (page ${lib.page} of ${book.pages})`], ['Books read', String(lib.finished || 0)]);
+  if (name === 'speaker') lines.push(['Playing', act && act.id === 'listen_music' ? 'music, softly' : 'nothing']);
+  if (name === 'easel') lines.push(['Status', act && act.id === 'sketch' ? 'a sketch in progress' : 'covered, a sketch half done']);
   if (name === 'torpor_pod') lines.push(['Status', tr.activity && tr.activity.id === 'enter_torpor' ? 'occupied' : 'empty, ready']);
   if (name === 'toilet') lines.push(['Status', tr.activity && tr.activity.id === 'use_toilet' && tr.activity.phase === 'perform' ? 'occupied (screen out)' : 'free']);
   if (name === 'helm' || name === 'nav') lines.push(['Flight', sh.flight.mode]);
@@ -102,7 +110,12 @@ export function registerRoomPicks(rc, k) {
     const tr = state.traveler;
     picks.add({ id: 'traveler', x: k.x + rc.ox - 8, y: k.y - 40, w: 16, h: 40, info: () => {
       const a = tr.activity;
-      return { name: 'The traveler', sub: data.rooms[tr.pos.room] ? data.rooms[tr.pos.room].name : '', lines: [['Doing', a ? a.id.replace(/_/g, ' ') : 'idle'], ['Hunger', pct(tr.needs.hunger)], ['Fatigue', pct(tr.needs.fatigue)], ['Mood', `wonder ${pct(tr.mood.wonder)}`]] };
+      const w = data.traveler.wardrobe;
+      const nm = (list, id) => (list && (list.find((x) => x.id === id) || {}).name) || id;
+      const lines = [['Doing', activityLabel(a)], ['Hunger', pct(tr.needs.hunger)], ['Fatigue', pct(tr.needs.fatigue)], ['Mood', `wonder ${pct(tr.mood.wonder)}, weariness ${pct(tr.mood.weariness)}`]];
+      if (tr.outfit && w) lines.push(['Wearing', `${nm(w.tops, tr.outfit.top)}, ${nm(w.bottoms, tr.outfit.bottom)}`]);
+      if (tr.mug && tr.mug.carried) lines.push(['In hand', `mug of ${tr.mug.contents}, ${Math.round(tr.mug.tempC)} °C`]);
+      return { name: 'The traveler', sub: data.rooms[tr.pos.room] ? data.rooms[tr.pos.room].name : '', lines };
     } });
   }
 }
