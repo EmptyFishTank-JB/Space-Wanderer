@@ -80,6 +80,7 @@ async function main() {
     onFrame: (fr) => {
       try { audio.update(fr); } catch (e) { console.warn('terrarium: audio frame failed', e); }
       if (captions) captions.update(fr);
+      renderer.chart = telemetry.on;
       try { telemetry.update(fr); } catch (e) { console.warn('terrarium: telemetry frame failed', e); }
       try { if (selection) selection.update(fr); } catch (e) { console.warn('terrarium: selection frame failed', e); }
     },

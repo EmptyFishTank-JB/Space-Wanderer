@@ -1,6 +1,6 @@
 // Celestial painting: starfield, stars, planets (textured spheres with
 // terminators, atmospheres, clouds and rings), hyperspace, the void.
-import { W, H, hex, mix, mul, css, rect, px, glow, hash, strHash, fbm3, noise3, clamp01, line } from './gfx.js';
+import { W, H, hex, mix, mul, css, rect, px, glow, hash, strHash, fbm3, noise3, clamp01, line, text } from './gfx.js';
 import { registerSkyPick } from './picks.js';
 
 export const FOV = 1.25; // horizontal field of view (radians)
@@ -32,7 +32,7 @@ for (let i = 0; i < 1400; i++) {
  * from system to system and drift as the ship travels. Without it (the
  * ground view, the gallery) it falls back to the old per-system sky.
  */
-export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band = true, sky = null } = {}) {
+export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band = true, sky = null, chart = false } = {}) {
   const rot = sky ? 0 : (seed % 1000) / 1000 * Math.PI * 2;
   const wrapA = (b) => ((b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
   const toScreen = (az, el) => {
@@ -91,6 +91,17 @@ export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band 
     }
   }
   drawNebulae(ctx, sky, toScreen, yaw, pitch, dim, 'dark');
+  if (chart && sky.asterisms) {
+    // star chart overlay (with telemetry on): faint figure lines and their names
+    for (const a of sky.asterisms) {
+      const pts = a.stars.map((s) => toScreen(s.az, s.el));
+      if (pts.some((q) => !q)) continue;
+      for (let i = 0; i < pts.length - 1; i++) line(ctx, [120, 200, 170], pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], 0.22);
+      // name it at its first star that is comfortably on screen
+      const lab = pts.find(([x, y]) => x > 4 && x < W - 70 && y > 10 && y < H - 6);
+      if (lab) text(ctx, a.name, lab[0] + 4, lab[1] - 7, [150, 230, 195], 0.8);
+    }
+  }
 }
 
 const MAG_FAINT = 6.2;
@@ -479,7 +490,7 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0,
   if (view.scene === 'void') { drawVoid(ctx, t, yaw); return; }
   if (view.scene === 'hyperspace') { drawHyperspace(ctx, view, t); return; }
   const y0 = yaw + parallax;
-  drawStarfield(ctx, view.seed, view.heading + y0, pitch, { speed: view.speed, sky: view.sky });
+  drawStarfield(ctx, view.seed, view.heading + y0, pitch, { speed: view.speed, sky: view.sky, chart: view.chart });
   for (const o of view.objects) {
     const p = project(o.bearing, o.elev, y0, pitch);
     if (!p) continue;

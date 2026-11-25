@@ -55,9 +55,44 @@ export function skyFor(seed, sys, space) {
     nebulae.push({ id: n.id, kind: n.kind, az, el, ang, inside, depth: inside ? 1 - r / n.radius : 0, bright, color: n.color, shape: n.shape, dist: r });
   }
   nebulae.sort((a, b) => b.dist - a.dist);
+  const asterisms = findAsterisms(stars);
   const coreAz = space.galaxy.missionHeading ? Math.atan2(space.galaxy.missionHeading[1], space.galaxy.missionHeading[0]) : 0;
-  const sky = { stars, nebulae, coreAz };
+  const sky = { stars, nebulae, coreAz, asterisms };
   if (cache.size > 24) cache.delete(cache.keys().next().value);
   cache.set(key, sky);
   return sky;
+}
+
+const FIGURES = ['the Lantern', 'the Heron', 'the Anvil', 'the Kettle', 'the Two Sisters', 'the Plough Horse', 'the Harp', 'the Long Road', 'the Key',
+  'the Lamplighter', 'the Fisher', 'the Little Gate', 'the Comb', 'the Sleeper', 'the Kite', 'the Bell', 'the Spindle', 'the Crow', 'the Wheel', 'the Sail'];
+const sep = (a, b) => Math.acos(Math.max(-1, Math.min(1, Math.sin(a.el) * Math.sin(b.el) + Math.cos(a.el) * Math.cos(b.el) * Math.cos(a.az - b.az))));
+
+/**
+ * Constellations: a few bright stars are anchors (chosen by their own id, so
+ * the same figure turns up from system to system and drifts slowly as the
+ * ship travels); each anchor strings together its nearest bright neighbours
+ * on the sky into a short figure.
+ */
+function findAsterisms(stars) {
+  const bright = stars.filter((s) => s.m < 4.6);
+  const used = new Set();
+  const out = [];
+  const anchors = bright.filter((s) => s.m < 3.0 && hash(strHash(s.id), 11) < 0.3).sort((a, b) => a.m - b.m).slice(0, 8);
+  for (const a of anchors) {
+    if (used.has(a.id)) continue;
+    const path = [a];
+    used.add(a.id);
+    let cur = a;
+    for (let k = 0; k < 5; k++) {
+      let best = null, bd = 0.32;
+      for (const s of bright) { if (used.has(s.id)) continue; const d = sep(cur, s); if (d < bd) { bd = d; best = s; } }
+      if (!best) break;
+      path.push(best); used.add(best.id); cur = best;
+    }
+    if (path.length < 3) continue;
+    let n = strHash(a.id) % FIGURES.length;
+    while (out.some((o) => o.name === FIGURES[n])) n = (n + 1) % FIGURES.length; // one name per figure in a sky
+    out.push({ name: FIGURES[n], stars: path.map((s) => ({ az: s.az, el: s.el })) });
+  }
+  return out;
 }
