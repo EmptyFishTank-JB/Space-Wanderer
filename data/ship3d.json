@@ -491,6 +491,63 @@
    "new": true,
    "name": "Skiff bay",
    "info": "Hangar for the survey skiff, at the forward end of the lower passage. The bay depressurizes and its belly doors open to drop the skiff clear of the hull."
+  },
+  {
+   "id": "gallery_s",
+   "deck": "main",
+   "x": [
+    -10.0,
+    14.0
+   ],
+   "y": [
+    16.0,
+    19.0
+   ],
+   "axis": "-x",
+   "origin": 14.0,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Starboard gallery",
+   "info": "A long observation walkway against the starboard side of the hull, with windows in the sloping wall looking out and down. Reached by the cross passage."
+  },
+  {
+   "id": "gallery_p",
+   "deck": "main",
+   "x": [
+    -10.0,
+    14.0
+   ],
+   "y": [
+    -19.0,
+    -16.0
+   ],
+   "axis": "+x",
+   "origin": -10.0,
+   "view": "port",
+   "role": "hab",
+   "new": true,
+   "name": "Port gallery",
+   "info": "A long observation walkway against the port side of the hull, looking out and down."
+  },
+  {
+   "id": "cross_main",
+   "deck": "main",
+   "x": [
+    12.2,
+    14.0
+   ],
+   "y": [
+    -16.0,
+    16.0
+   ],
+   "axis": "+y",
+   "origin": -16.0,
+   "view": "fore",
+   "role": "passage",
+   "new": true,
+   "name": "Cross passage",
+   "info": "Runs across the ship from the end of the forward service passage to both galleries."
   }
  ],
  "hatches": [
@@ -757,6 +814,39 @@
     0.0,
     -5.0
    ]
+  },
+  {
+   "between": [
+    "cross_main",
+    "fwd_main"
+   ],
+   "at": [
+    12.1,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "cross_main",
+    "gallery_s"
+   ],
+   "at": [
+    13.1,
+    16.0,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "cross_main",
+    "gallery_p"
+   ],
+   "at": [
+    13.1,
+    -16.0,
+    0.0
+   ]
   }
  ],
  "shafts": [
@@ -918,8 +1008,8 @@
    "kind": "vent",
    "name": "Forward vent shaft",
    "x": [
-    12.55,
-    13.45
+    14.3,
+    15.2
    ],
    "y": [
     1.55,
@@ -966,7 +1056,7 @@
    "segments": [
     [
      [
-      13.0,
+      14.75,
       2.0,
       3.95
      ],
@@ -1072,7 +1162,7 @@
    "segments": [
     [
      [
-      13.0,
+      14.75,
       2.0,
       -0.6
      ],
@@ -1323,35 +1413,35 @@
     "y": -13.0,
     "stations": [
      {
-      "x": -34,
-      "b": 0.6,
+      "x": -30,
+      "b": 0.8,
       "z": [
-       -1.0,
+       0.5,
        4.7
       ]
      },
      {
-      "x": -42,
+      "x": -40,
       "b": 6.2,
       "z": [
-       -5.6,
-       4.7
+       -3.6,
+       6.2
       ]
      },
      {
-      "x": -64,
+      "x": -62,
       "b": 6.2,
       "z": [
-       -5.6,
-       4.4
+       -3.6,
+       6.2
       ]
      },
      {
-      "x": -66.5,
-      "b": 5.6,
+      "x": -64.6,
+      "b": 6.0,
       "z": [
-       -5.2,
-       4.0
+       -3.4,
+       6.0
       ]
      }
     ]
@@ -1363,35 +1453,67 @@
     "y": 13.0,
     "stations": [
      {
-      "x": -34,
-      "b": 0.6,
+      "x": -30,
+      "b": 0.8,
       "z": [
-       -1.0,
+       0.5,
        4.7
       ]
      },
      {
-      "x": -42,
+      "x": -40,
       "b": 6.2,
       "z": [
-       -5.6,
-       4.7
+       -3.6,
+       6.2
       ]
      },
      {
-      "x": -64,
+      "x": -62,
       "b": 6.2,
       "z": [
-       -5.6,
-       4.4
+       -3.6,
+       6.2
       ]
      },
      {
-      "x": -66.5,
-      "b": 5.6,
+      "x": -64.6,
+      "b": 6.0,
       "z": [
-       -5.2,
-       4.0
+       -3.4,
+       6.0
+      ]
+     }
+    ]
+   },
+   {
+    "id": "housing_c",
+    "name": "Inboard engine housing",
+    "profile": "box",
+    "y": 0,
+    "stations": [
+     {
+      "x": -54,
+      "b": 0.8,
+      "z": [
+       -2.0,
+       2.4
+      ]
+     },
+     {
+      "x": -58,
+      "b": 5.4,
+      "z": [
+       -3.4,
+       3.2
+      ]
+     },
+     {
+      "x": -64.6,
+      "b": 5.2,
+      "z": [
+       -3.2,
+       3.0
       ]
      }
     ]
@@ -1687,80 +1809,54 @@
    "name": "Main drive block",
    "shape": "box",
    "x": [
-    -59,
-    -52
+    -58,
+    -50
    ],
    "y": [
-    -6.5,
-    6.5
+    -5.5,
+    5.5
    ],
    "z": [
-    -3.4,
+    -3.0,
     2.4
    ],
    "role": "drive",
    "info": "Thruster feed, gimbals and the supercruise field generator."
   },
   {
-   "id": "engine_pi",
-   "name": "Inboard engine (port)",
-   "shape": "cyl-x",
-   "x": [
-    -66,
-    -61
-   ],
-   "y": -5.5,
-   "z": -0.2,
-   "r": 2.3,
-   "role": "drive"
-  },
-  {
-   "id": "engine_si",
-   "name": "Inboard engine (starboard)",
-   "shape": "cyl-x",
-   "x": [
-    -66,
-    -61
-   ],
-   "y": 5.5,
-   "z": -0.2,
-   "r": 2.3,
-   "role": "drive"
-  },
-  {
    "id": "radiator_p",
    "name": "Radiator panels (port)",
    "shape": "box",
    "x": [
-    -56,
-    -36
+    -62,
+    -42
    ],
    "y": [
-    -18,
-    -8
+    -17.4,
+    -8.6
    ],
    "z": [
-    5.2,
-    5.35
+    6.2,
+    6.3
    ],
    "role": "thermal",
-   "info": "Dorsal radiators on struts. Glow on the stern camera when the ship runs hot."
+   "info": "Radiator panels laid flush on top of the port thruster housing. They glow on the stern camera when the ship runs hot."
   },
   {
    "id": "radiator_s",
    "name": "Radiator panels (starboard)",
    "shape": "box",
    "x": [
-    -56,
-    -36
+    -62,
+    -42
    ],
    "y": [
-    8,
-    18
+    8.6,
+    17.4
    ],
    "z": [
-    5.2,
-    5.35
+    6.2,
+    6.3
    ],
    "role": "thermal"
   },
@@ -1934,34 +2030,6 @@
    "info": "Under the forward belly. The ship skims a star belly-first, so the intake faces the plasma while the windows look away."
   },
   {
-   "id": "thruster_p",
-   "name": "Port main thruster",
-   "shape": "cyl-x",
-   "x": [
-    -70,
-    -65.5
-   ],
-   "y": -13.0,
-   "z": -0.5,
-   "r": 3.8,
-   "role": "drive",
-   "info": "One of the two big main thrusters, set into its housing in the rear corner of the hull. They do most of the pushing; the two inboard engines trim and take over if one fails."
-  },
-  {
-   "id": "thruster_s",
-   "name": "Starboard main thruster",
-   "shape": "cyl-x",
-   "x": [
-    -70,
-    -65.5
-   ],
-   "y": 13.0,
-   "z": -0.5,
-   "r": 3.8,
-   "role": "drive",
-   "info": "One of the two big main thrusters, set into its housing in the rear corner of the hull. They do most of the pushing; the two inboard engines trim and take over if one fails."
-  },
-  {
    "id": "skiff",
    "name": "Survey skiff",
    "shape": "skiff",
@@ -1980,6 +2048,586 @@
    "role": "rover",
    "inRoom": "flyerbay",
    "info": "A small two-seat VTOL flyer for aerial survey: it drops out of the belly bay, maps terrain from the air, grabs samples from places the rover can't reach (cliff faces, ice shelves, the far side of a ravine) and flies them home."
+  },
+  {
+   "id": "nozzle_p00",
+   "name": "Port main thruster, nozzle 1 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -17.2,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p10",
+   "name": "Port main thruster, nozzle 5 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -17.2,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p20",
+   "name": "Port main thruster, nozzle 9 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -17.2,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p01",
+   "name": "Port main thruster, nozzle 2 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -14.4,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p11",
+   "name": "Port main thruster, nozzle 6 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -14.4,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p21",
+   "name": "Port main thruster, nozzle 10 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -14.4,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p02",
+   "name": "Port main thruster, nozzle 3 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -11.6,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p12",
+   "name": "Port main thruster, nozzle 7 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -11.6,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p22",
+   "name": "Port main thruster, nozzle 11 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -11.6,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p03",
+   "name": "Port main thruster, nozzle 4 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -8.8,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p13",
+   "name": "Port main thruster, nozzle 8 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -8.8,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_p23",
+   "name": "Port main thruster, nozzle 12 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -8.8,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "rim_p_t",
+   "name": "Port main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -18.9,
+    -7.1
+   ],
+   "z": [
+    5.5,
+    5.85
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_p_b",
+   "name": "Port main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -18.9,
+    -7.1
+   ],
+   "z": [
+    -3.25,
+    -2.9
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_p_l",
+   "name": "Port main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -18.9,
+    -18.549999999999997
+   ],
+   "z": [
+    -3.25,
+    5.85
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_p_r",
+   "name": "Port main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -7.449999999999999,
+    -7.1
+   ],
+   "z": [
+    -3.25,
+    5.85
+   ],
+   "role": "service"
+  },
+  {
+   "id": "nozzle_s00",
+   "name": "Starboard main thruster, nozzle 1 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 8.8,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s10",
+   "name": "Starboard main thruster, nozzle 5 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 8.8,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s20",
+   "name": "Starboard main thruster, nozzle 9 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 8.8,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s01",
+   "name": "Starboard main thruster, nozzle 2 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 11.6,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s11",
+   "name": "Starboard main thruster, nozzle 6 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 11.6,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s21",
+   "name": "Starboard main thruster, nozzle 10 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 11.6,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s02",
+   "name": "Starboard main thruster, nozzle 3 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 14.4,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s12",
+   "name": "Starboard main thruster, nozzle 7 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 14.4,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s22",
+   "name": "Starboard main thruster, nozzle 11 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 14.4,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s03",
+   "name": "Starboard main thruster, nozzle 4 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 17.2,
+   "z": 4.2,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s13",
+   "name": "Starboard main thruster, nozzle 8 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 17.2,
+   "z": 1.3,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "nozzle_s23",
+   "name": "Starboard main thruster, nozzle 12 of 12",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 17.2,
+   "z": -1.6,
+   "r": 1.2,
+   "role": "drive",
+   "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
+  },
+  {
+   "id": "rim_s_t",
+   "name": "Starboard main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    7.1,
+    18.9
+   ],
+   "z": [
+    5.5,
+    5.85
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_s_b",
+   "name": "Starboard main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    7.1,
+    18.9
+   ],
+   "z": [
+    -3.25,
+    -2.9
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_s_l",
+   "name": "Starboard main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    7.1,
+    7.449999999999999
+   ],
+   "z": [
+    -3.25,
+    5.85
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_s_r",
+   "name": "Starboard main thruster (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    18.549999999999997,
+    18.9
+   ],
+   "z": [
+    -3.25,
+    5.85
+   ],
+   "role": "service"
+  },
+  {
+   "id": "engine_pi",
+   "name": "Port inboard engine",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": -2.6,
+   "z": -0.1,
+   "r": 2.0,
+   "role": "drive",
+   "info": "Trim and backup engine, recessed in the inboard housing between the two main banks."
+  },
+  {
+   "id": "engine_si",
+   "name": "Starboard inboard engine",
+   "shape": "cyl-x",
+   "x": [
+    -65.9,
+    -64.6
+   ],
+   "y": 2.6,
+   "z": -0.1,
+   "r": 2.0,
+   "role": "drive",
+   "info": "Trim and backup engine, recessed in the inboard housing between the two main banks."
+  },
+  {
+   "id": "rim_c_t",
+   "name": "Inboard engines (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -5.0,
+    5.0
+   ],
+   "z": [
+    2.3,
+    2.65
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_c_b",
+   "name": "Inboard engines (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -5.0,
+    5.0
+   ],
+   "z": [
+    -2.85,
+    -2.5
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_c_l",
+   "name": "Inboard engines (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    -5.0,
+    -4.65
+   ],
+   "z": [
+    -2.85,
+    2.65
+   ],
+   "role": "service"
+  },
+  {
+   "id": "rim_c_r",
+   "name": "Inboard engines (rim)",
+   "shape": "box",
+   "x": [
+    -66.4,
+    -64.4
+   ],
+   "y": [
+    4.65,
+    5.0
+   ],
+   "z": [
+    -2.85,
+    2.65
+   ],
+   "role": "service"
   }
  ],
  "cameras": {
@@ -2226,6 +2874,102 @@
    ],
    "faces": "up",
    "info": "Flush in the top of the starboard tine."
+  },
+  {
+   "id": "win_gal_s",
+   "name": "Starboard gallery windows",
+   "part": "main",
+   "edge": 1,
+   "t": [
+    0.22,
+    0.62
+   ],
+   "x": [
+    -9,
+    13
+   ],
+   "faces": "out and down to starboard",
+   "info": "Glazing in the sloping underside of the starboard wing, along the gallery."
+  },
+  {
+   "id": "win_gal_p",
+   "name": "Port gallery windows",
+   "part": "main",
+   "edge": 5,
+   "t": [
+    0.38,
+    0.78
+   ],
+   "x": [
+    -9,
+    13
+   ],
+   "faces": "out and down to port",
+   "info": "Glazing in the sloping underside of the port wing, along the gallery."
+  },
+  {
+   "id": "win_belly_bay",
+   "name": "Rover bay windows",
+   "part": "main",
+   "edge": 4,
+   "t": [
+    0.35,
+    0.85
+   ],
+   "x": [
+    -24,
+    -8
+   ],
+   "faces": "out to port, below the wing",
+   "info": "Ports in the port wall of the belly, looking out from the rover bay."
+  },
+  {
+   "id": "win_belly_hold",
+   "name": "Hold windows",
+   "part": "main",
+   "edge": 2,
+   "t": [
+    0.15,
+    0.65
+   ],
+   "x": [
+    -22,
+    -6
+   ],
+   "faces": "out to starboard, below the wing",
+   "info": "Ports in the starboard wall of the belly, beside the hold."
+  },
+  {
+   "id": "win_belly_skiff_s",
+   "name": "Skiff bay windows (starboard)",
+   "part": "main",
+   "edge": 2,
+   "t": [
+    0.15,
+    0.6
+   ],
+   "x": [
+    15,
+    25
+   ],
+   "faces": "out to starboard",
+   "info": "Ports in the belly wall of the skiff bay."
+  },
+  {
+   "id": "win_belly_skiff_p",
+   "name": "Skiff bay windows (port)",
+   "part": "main",
+   "edge": 4,
+   "t": [
+    0.4,
+    0.85
+   ],
+   "x": [
+    15,
+    25
+   ],
+   "faces": "out to port",
+   "info": "Ports in the belly wall of the skiff bay."
   }
  ],
  "windowShutters": "Every window has an armoured shutter. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."
