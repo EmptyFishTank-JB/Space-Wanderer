@@ -1,0 +1,116 @@
+// Composes one camera feed into the 320×180 framebuffer:
+//   space (or surface) behind the glass → room layer (shell, props,
+//   traveler) → lighting on the room layer → glare, strobes, sparks.
+import { W, H, PPM, FLOOR, CEIL, css, mix, mul, hex, rect, glow, hash, clamp01, text, px } from './gfx.js';
+import { drawRoom, roomWindows } from './rooms.js';
+import { drawTraveler } from './traveler.js';
+import { drawSpaceScene, makeCanvas } from './celestial.js';
+import { drawSurfaceScene } from './terrain.js';
+import { travelerPose } from './actor.js';
+
+let layer = null;
+function roomLayer() {
+  if (!layer) layer = makeCanvas(W, H);
+  return layer;
+}
+
+/** How bright a compartment is right now (0..1) and its tint. */
+export function roomLight(state, room, t) {
+  const p = state.ship.power;
+  let L = p.lightLevel;
+  const tr = state.traveler;
+  const a = tr.activity;
+  const asleepHere = a && a.phase === 'perform' && tr.pos.room === room && ['sleep', 'enter_torpor', 'nap'].includes(a.id);
+  if (asleepHere && room === 'quarters') L = 0.2;
+  if (room === 'corridor_aft') {
+    const f = state.ship.components.corridor_lights_aft.fault;
+    if (f) L *= f.severity === 'major' ? 0.25 : (hash(Math.floor(t * 11), 1, 3) > 0.22 ? 1 : 0.2);
+  }
+  if (room === 'corridor_fore' || room === 'galley' || room === 'quarters') {
+    const jb = state.ship.components.junction_box_fore.fault;
+    if (jb && jb.severity === 'major') L *= 0.45;
+  }
+  let tint = null;
+  if (p.mode === 'limp') tint = { c: [200, 30, 20], a: 0.28 };
+  else if (room === 'hydro' && state.ship.ops.lampOn && !state.ship.hydroDormant) tint = { c: [200, 70, 170], a: 0.12 * p.lampLevel };
+  return { L: clamp01(L), tint };
+}
+
+export function renderRoomFeed(ctx, m) {
+  const { state, data, view, room, camX, t, alpha, feed } = m;
+  const roomW = data.rooms[room].width * PPM;
+  const ox = Math.round(-camX);
+  const wins = roomWindows(room);
+  // 1. what's outside the glass
+  if (wins.length || room === 'airlock') {
+    if (view.scene === 'surface') drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: feed.yaw || 0, pitch: 0.05, entryHeat: view.entryHeat });
+    else drawSpaceScene(ctx, view, t, { yaw: feed.yaw || 0, parallax: camX * 0.0006 });
+  } else {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+  }
+  // 2. the room layer
+  const lc = roomLayer().getContext('2d');
+  lc.clearRect(0, 0, W, H);
+  const light = roomLight(state, room, t);
+  const rc = {
+    ctx: lc, state, s: state, data, d: data, room, ox, M: (xm) => ox + xm * PPM, t, alpha,
+    lights: [], lamps: [], windows: [], seed: view.seed || 1, powerDim: light.L, flash: 0,
+  };
+  drawRoom(lc, rc);
+  if (m.pos && m.pos.room === room) {
+    const k = travelerPose(state, data, m.tracker, m.pos, t);
+    if (k) drawTraveler(lc, ox + k.x, k.y, k, t);
+  }
+  // 3. lighting, applied only to the room (windows stay transparent)
+  lc.globalCompositeOperation = 'source-atop';
+  const dark = 1 - (0.12 + 0.88 * light.L);
+  if (dark > 0.01) { lc.fillStyle = `rgba(4,5,10,${dark})`; lc.fillRect(0, 0, W, H); }
+  if (light.tint) { lc.fillStyle = css(light.tint.c, light.tint.a); lc.fillRect(0, 0, W, H); }
+  lc.globalCompositeOperation = 'lighter';
+  if (light.L > 0.25) for (const l of rc.lamps) glow(lc, [255, 236, 200], l.x, l.y + 30, 46, 0.07 * light.L);
+  for (const l of rc.lights) {
+    if (l.wide) { const g = lc.createLinearGradient(0, l.y - 20, 0, FLOOR); g.addColorStop(0, css(l.c, l.a)); g.addColorStop(1, css(l.c, 0)); lc.fillStyle = g; lc.fillRect(l.x - l.r / 2, l.y - 20, l.r, FLOOR - l.y + 20); }
+    else glow(lc, l.c, l.x, l.y, l.r, l.a);
+  }
+  lc.globalCompositeOperation = 'source-over';
+  ctx.drawImage(roomLayer(), 0, 0);
+
+  // 4. stellar glare flooding in through the glass
+  if (rc.windows.length && view.scene === 'space' && view.glare > 0.15) {
+    const sc = hex(view.star.color);
+    const k = clamp01(view.glare) * (view.mode === 'scooping' ? 0.75 + 0.25 * Math.sin(t * 7) : 0.6);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const w of rc.windows) {
+      const cx = (w.x0 + w.x1) / 2, cy = (w.y0 + w.y1) / 2;
+      glow(ctx, mix(sc, [255, 255, 255], 0.3), cx, cy, 160 * k + 40, 0.35 * k);
+      const g = ctx.createLinearGradient(0, w.y1, 0, FLOOR);
+      g.addColorStop(0, css(sc, 0.25 * k)); g.addColorStop(1, css(sc, 0));
+      ctx.fillStyle = g; ctx.fillRect(w.x0 - 30, w.y1, w.x1 - w.x0 + 60, FLOOR - w.y1);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // 5. caution strobes when the ship runs hot (amber, then red)
+  const heat = state.ship.thermal.heat;
+  if (heat > 0.78) {
+    const red = heat > 0.95;
+    const on = Math.sin(t * (red ? 9 : 5)) > 0.35;
+    if (on) { ctx.fillStyle = red ? 'rgba(255,40,30,0.16)' : 'rgba(255,160,30,0.11)'; ctx.fillRect(0, 0, W, H); }
+  }
+  if (rc.flash > 0) { ctx.fillStyle = `rgba(210,225,255,${rc.flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
+  return { roomW };
+}
+
+/** Static & "NO SIGNAL" for a feed with nothing to show (e.g. helmet cam aboard). */
+export function renderNoSignal(ctx, t, label = 'NO SIGNAL') {
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  const f = Math.floor(t * 24);
+  for (let i = 0; i < W * H; i++) {
+    const v = hash(i, f, 3) * 60;
+    d[i * 4] = v; d[i * 4 + 1] = v; d[i * 4 + 2] = v + 6; d[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  rect(ctx, [0, 0, 0], W / 2 - 26, H / 2 - 5, 52, 11, 0.8);
+  text(ctx, label, W / 2 - label.length * 2 + 1, H / 2 - 2, [200, 200, 200]);
+}

@@ -3,18 +3,32 @@
 A passive observation window into the life of a solitary traveler aboard a
 deep-space vessel. Not a game: the viewer never steers anything.
 
-**Status: Phases 1–2 complete — headless life-support simulation, persistence,
-and Elite Dangerous-scale spaceflight.** There is nothing to *see* yet (the
-pixel-art renderer is Phase 3). Open with `?debug` for a developer-only inspector.
+**Status: Phases 1–3 complete — life-support simulation, persistence,
+Elite Dangerous-scale spaceflight, and the pixel-art observation window.**
+Sound arrives in Phase 4. Open with `?debug` for a developer-only inspector, or
+`dev/gallery.html` to see every camera feed rendered from staged scenarios.
+
+### Watching
+
+The window is passive. Move the mouse or press a key and a faint feed
+selector appears for three seconds; that is the only interface.
+
+| Input | Effect |
+|---|---|
+| click a feed code, `[` / `]`, ↑ / ↓ | switch camera (`CAM-01 BRIDGE` … `CAM-08 EXT-HULL` … `EVA-POV`) |
+| drag, ← / → | pan within the current camera's physical bounds |
+| `F` / ⛶ | fullscreen |
+
+After 30 s without camera input the director fades back to the traveler.
 
 ## Running
 
 ```bash
-npm test                                   # 34 tests, ~15 s
+npm test                                   # 47 tests, ~15 s
 node tools/run.mjs --hours 8 --timeline    # watch a slice of life in the terminal
 node tools/run.mjs --days 30 --summary     # long run + hours-by-activity
 node tools/run.mjs --days 2 --logs         # dump structured log-entry facts
-python3 -m http.server 8080                # then http://localhost:8080/?debug
+python3 -m http.server 8080                # then http://localhost:8080/  (or /?debug, /dev/gallery.html)
 ```
 
 No build step, no dependencies. Deploys to GitHub Pages as static files.
@@ -29,6 +43,7 @@ data/                 JSON definitions (all tuning lives here)
   routines.json       chained habits (morning, meal, evening, rounds)
   traveler.json       personality traits, schedule, hobby weights
   space.json          galaxy density/rifts, star classes, drive, supercruise, scoop, descent, EVA tuning
+  cameras.json        feeds, viewport yaw per room, director timings (linger, min shot, idle return…)
   config.json         tick cadences, catch-up cap, autosave
 src/sim/              headless simulation — zero DOM, deterministic
   engine.js           fixed 1 s step; slow (10 s) and hazard (60 s) cadences
@@ -52,6 +67,22 @@ src/space/            spaceflight & exploration — zero DOM, deterministic
   torpor.js           void crossings: years on the calendar in one long night
   actions.js          flight actions for the utility AI (survey, plot, jump, scoop, land, EVA…)
   view.js             what is outside the viewport and how much it pulls
+src/render/           pixel-art renderer — reads the sim, never writes it
+  gfx.js              320×180 framebuffer primitives, hash/value noise, 3×5 pixel font
+  spaceview.js        true-scale view model: bearings + angular radii from Ls geometry
+  celestial.js        starfield, stars (limb darkening, granulation, prominences),
+                      textured planets (terminator, atmosphere rim, clouds, rings),
+                      hyperspace tunnel, the void
+  terrain.js          planetary skies, parallax ridges, ground clutter, EVA features
+  rooms.js            twelve compartments: shell, doors, windows, props, diegetic cues
+  traveler.js         procedural pixel figure, ~15 poses, walk cycle, yawns, slouch
+  actor.js            1 Hz sim → 60 fps: interpolation, facing, pose selection
+  feed.js             composition: space behind glass → room → lighting → glare/strobes
+  exterior.js         hull camera (radiator glow, shield shimmer, scorch, frost)
+  eva.js              helmet cam (visor, suit LED, dust, frost, breath, head-bob)
+  director.js         autonomous camera director + viewer feed/pan controls (no DOM)
+  app.js              frame loop, integer-scale blit
+src/ui/switcher.js    the auto-hiding feed selector
 src/persist/          localStorage snapshots (+backup slot), IndexedDB journal, export/import
 src/dev/inspector.js  ?debug overlay — QA only, never part of the experience
 src/main.js           browser entry
@@ -148,6 +179,38 @@ traveler did and found goes into the snapshot (~40–70 KB after months).
   strain and solitude. Microbial life is rare (a few times a season, mostly
   on earth-likes) and is confirmed only in person on an EVA.
 
+### The observation window (Phase 3)
+
+Everything is drawn procedurally into a 320×180 framebuffer at 32 px/m. It is
+blitted at the largest whole-number scale (4× at 1280×720, 6× at 1080p) with
+no smoothing. There are no image assets.
+
+* **Room cameras.** Fixed side-on views. In rooms wider than the frame
+  (hydroponics, engineering, corridors) the camera tracks the traveler with an
+  eased, dead-zoned pan. Doors slide open as the traveler cycles a hatch.
+* **Director.** When the traveler leaves a room the camera lingers 2–4 s on
+  the empty room, then cuts. Corridor transits shorter than the linger are
+  skipped. Jumps, arrivals, scooping, orbit insertion, entry, touchdown and
+  liftoff cut to the hull camera. Discretionary cuts wait out a 20–90 s
+  minimum shot. Every 12–25 min there is a brief hold on a room where
+  something is happening (misting racks, an arcing junction box, a fault
+  relay). Stepping outside switches to the helmet cam until the airlock
+  closes again.
+* **True scale through the glass.** Bodies are drawn from their actual
+  angular size, so a world 1000 Ls away is a pinpoint and in orbital cruise it
+  fills the viewport. Planets are textured spheres lit by their real star
+  direction, with atmospheres, drifting clouds, rings and terminators.
+* **Diegetic cues (spec §4)**, all drawn in the world:
+  * **Scooping:** glare floods the bridge, amber then red caution strobes, waveform spikes, glowing radiator fins and vents, shield shimmer.
+  * **Hydroponics:** crop stages by species, water gauges, grow-lamp colour and ballast flicker, misting, condensation on the bay glass.
+  * **Life support:** status LEDs per machine, the OGS bubbling, the dehumidifier fan stopping when it seizes.
+  * **Wear and faults:** flickering corridor lights, sparks at the junction box, juddering pumps and reactor, scorch on the hull.
+  * **Traveler:** slouch and yawns when tired, clutter on desk and counters, keepsakes on the quarters shelf, sketches pinned in the lounge.
+  * **Logs:** text typing on the terminal while a log is written.
+* **Lighting.** Circadian dimming, a dark quarters while the traveler sleeps
+  (just the bunk lamp and the porthole), red emergency light in limp mode, and
+  pink grow-lamp spill in the bay.
+
 ### Persistence
 
 * `localStorage`: snapshot (~7 KB) with a previous-snapshot backup slot;
@@ -161,7 +224,8 @@ traveler did and found goes into the snapshot (~40–70 KB after months).
 
 ## Hooks left for later phases
 
-* **Phase 3 (renderer and camera director):**
+* **Phase 3 (done):** see above.
+* **Phase 3 hooks used:**
   * Interior: events carry `room`, `station`, `x` and `posture`; `gait()` gives walking speed.
   * Flight: `flight.mode`, `altitudeKm`, `buffeting`, `entryHeat`, `wellRatio` (supercruise speed fraction), `starRadii` and `externalHeat` (glare and caution strobes).
   * Exterior views: `viewSubject()` picks the shot; bodies carry `type`, `rings`, `atmosphere`, `hue` and `beauty`.

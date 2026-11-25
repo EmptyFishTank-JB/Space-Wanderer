@@ -1,21 +1,13 @@
-// Browser entry point (Phase 1): load data, restore + catch up the traveler,
-// run the sim live at 1:1, persist continuously. There is nothing to *see*
-// yet — the pixel-art renderer arrives in Phase 3. Append ?debug to the URL
-// for a developer inspector (not part of the experience).
-import { prepareData, DATA_FILES, bootSimulation, LiveRunner } from './sim/index.js';
+// Browser entry point: load data, restore + catch up the traveler, run the
+// sim live at 1:1, persist continuously, and open the observation window.
+// Append ?debug to the URL for a developer inspector (not part of the experience).
+import { bootSimulation, LiveRunner } from './sim/index.js';
+import { loadData, fetchJson } from './load.js';
 import { SnapshotStore, MemoryStorage } from './persist/snapshot.js';
 import { IndexedDBJournal, MemoryJournal } from './persist/journal.js';
 import { buildBackup, parseBackup } from './persist/backup.js';
-
-async function loadData() {
-  const raw = {};
-  await Promise.all(DATA_FILES.map(async (k) => {
-    const res = await fetch(new URL(`../data/${k}.json`, import.meta.url));
-    if (!res.ok) throw new Error(`failed to load data/${k}.json`);
-    raw[k] = await res.json();
-  }));
-  return prepareData(raw);
-}
+import { TerrariumRenderer } from './render/app.js';
+import { mountSwitcher } from './ui/switcher.js';
 
 function pickStorage() {
   try {
@@ -39,7 +31,7 @@ async function openJournal() {
 }
 
 async function main() {
-  const data = await loadData();
+  const [data, cameras] = await Promise.all([loadData(), fetchJson('cameras')]);
   const snapshots = new SnapshotStore(pickStorage(), data);
   const journal = await openJournal();
   const params = new URLSearchParams(location.search);
@@ -59,6 +51,14 @@ async function main() {
     },
   });
   runner.start();
+
+  // the observation window
+  const canvas = document.getElementById('feed');
+  let switcher = null;
+  const renderer = new TerrariumRenderer({ canvas, runner, data, cameras, onFeedChange: (f) => switcher && switcher.setActive(f) });
+  listeners.add((evs) => renderer.push(evs));
+  switcher = mountSwitcher({ director: renderer.director, cameras, canvas });
+  renderer.start();
 
   const save = () => { try { snapshots.save(runner.state); } catch (e) { console.warn('terrarium: save failed', e); } };
   setInterval(save, data.config.autosaveSeconds * 1000);
@@ -93,7 +93,7 @@ async function main() {
   });
 
   // Devtools handle (read-only by convention: the viewer never steers the traveler).
-  window.terrarium = { data, runner, journal, get state() { return runner.state; }, onEvents: (fn) => listeners.add(fn) };
+  window.terrarium = { data, runner, journal, renderer, get state() { return runner.state; }, onEvents: (fn) => listeners.add(fn) };
 
   if (params.has('debug')) {
     const { mountInspector } = await import('./dev/inspector.js');

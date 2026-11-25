@@ -1,0 +1,166 @@
+// DEVELOPER GALLERY — renders every camera feed from staged sim scenarios
+// (scooping, orbit, EVA, hyperspace, night, faults…) for visual QA. It builds
+// its own throwaway simulations; it never touches the viewer's saved traveler.
+import { createInitialState, step, drain } from '../sim/index.js';
+import { loadData, fetchJson } from '../load.js';
+import { neighbors } from '../space/galaxy.js';
+import { getSystem } from '../space/system.js';
+import { startJump, startDescent } from '../space/flight.js';
+import { plotRoute } from '../space/navigator.js';
+import { renderFeed } from '../render/app.js';
+import { Director } from '../render/director.js';
+import { spaceView } from '../render/spaceview.js';
+import { TravelerTracker } from '../render/actor.js';
+import { startFault } from '../sim/ship/wear.js';
+import { W, H } from '../render/gfx.js';
+
+const ROOM_FEEDS = ['CAM-01', 'CAM-02', 'CAM-03', 'CAM-04', 'CAM-05', 'CAM-06', 'CAM-07', 'CAM-09', 'CAM-10', 'CAM-11', 'CAM-12', 'CAM-13'];
+
+function runUntil(s, d, pred, max = 86400 * 2) {
+  for (let i = 0; i < max; i++) {
+    step(s, d);
+    drain(s);
+    if (pred(s)) return true;
+  }
+  return false;
+}
+
+function findBody(s, d, test, range = 160) {
+  for (const c of neighbors(s.space.galaxySeed, s.space.pos, range, d.space)) {
+    const sys = getSystem(s.space.galaxySeed, c.id, d.space);
+    const b = sys.bodies.find((x) => test(x, sys));
+    if (b) return { sys, b };
+  }
+  return null;
+}
+
+function moveTo(s, sys, b, mode = 'orbit') {
+  Object.assign(s.space, { systemId: sys.id, pos: sys.pos.slice(), surveyed: true, detected: sys.bodies.map((x) => x.id), scanned: { [b.id]: true }, agenda: [] });
+  Object.assign(s.ship.flight, { mode, at: b.id, target: null, v: 0 });
+}
+
+const SCENARIOS = {
+  day(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: [...ROOM_FEEDS, 'CAM-08'] }; },
+  scoop(d) {
+    const s = createInitialState(d, { seed: 'gallery-scoop' });
+    runUntil(s, d, (x) => x.t > 3 * 3600);
+    Object.assign(s.space, { surveyed: true, agenda: [{ kind: 'scoop' }] });
+    s.ship.fuel.tons = 4;
+    runUntil(s, d, (x) => x.ship.flight.mode === 'scooping' && x.ship.thermal.heat > 0.72);
+    return { s, feeds: ['CAM-01', 'CAM-08', 'CAM-07', 'CAM-02'] };
+  },
+  ringed(d) {
+    const s = createInitialState(d, { seed: 'gallery-ring' });
+    runUntil(s, d, (x) => x.t > 4 * 3600);
+    const f = findBody(s, d, (b) => b.rings && (b.type === 'gas_giant' || b.type === 'ice_giant'), 300);
+    if (f) moveTo(s, f.sys, f.b);
+    return { s, feeds: ['CAM-08', 'CAM-01', 'CAM-02', 'CAM-05'] };
+  },
+  earthlike(d) {
+    const s = createInitialState(d, { seed: 'gallery-earth' });
+    runUntil(s, d, (x) => x.t > 4 * 3600);
+    const f = findBody(s, d, (b) => b.type === 'earth_like' || b.type === 'water_world', 600);
+    if (f) moveTo(s, f.sys, f.b);
+    return { s, feeds: ['CAM-08', 'CAM-02'] };
+  },
+  eva(d) {
+    const s = createInitialState(d, { seed: 'gallery-eva' });
+    runUntil(s, d, (x) => x.t > 3 * 3600);
+    const f = findBody(s, d, (b) => b.landable && b.kind !== 'belt' && b.gravity < 1.5 && (b.signals.geo > 0 || b.ice));
+    if (f) {
+      moveTo(s, f.sys, f.b);
+      s.space.agenda = [{ kind: 'visit', body: f.b.id, land: true, eva: 1, lingerH: 0, done: { scanned: true, landed: false, evas: 0, lingerUntil: null, leftSurface: false } }];
+      runUntil(s, d, (x) => x.traveler.pos.room === 'surface' && x.traveler.activity.params.plan.x > 60);
+    }
+    return { s, feeds: ['EVA-POV', 'CAM-08', 'CAM-13', 'CAM-01'] };
+  },
+  descent(d) {
+    const s = createInitialState(d, { seed: 'gallery-descent' });
+    runUntil(s, d, (x) => x.t > 3 * 3600);
+    const f = findBody(s, d, (b) => b.landable && (b.atmosphere === 'thin' || b.atmosphere === 'thick'), 400);
+    if (f) {
+      moveTo(s, f.sys, f.b);
+      startDescent(s, d);
+      runUntil(s, d, (x) => x.ship.flight.phases && x.ship.flight.phases.list[x.ship.flight.phases.i].name === 'entry' && x.ship.flight.phases.t > 60, 3000);
+    }
+    return { s, feeds: ['CAM-08', 'CAM-01'] };
+  },
+  hyperspace(d) {
+    const s = createInitialState(d, { seed: 'gallery-jump' });
+    runUntil(s, d, (x) => x.t > 3 * 3600);
+    s.space.surveyed = true;
+    const r = plotRoute(s, d);
+    if (r.kind === 'jump') { startJump(s, d, r); runUntil(s, d, (x) => x.ship.flight.mode === 'hyperspace' && x.ship.flight.timer < 25, 200); }
+    return { s, feeds: ['CAM-08', 'CAM-07', 'CAM-01'] };
+  },
+  night(d) {
+    const s = createInitialState(d, { seed: 'gallery-night' });
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'sleep' && x.traveler.activity.elapsed > 3600 && x.t > 10 * 3600);
+    return { s, feeds: ['CAM-03', 'CAM-10', 'CAM-05'] };
+  },
+  faults(d) {
+    const s = createInitialState(d, { seed: 'gallery-faults' });
+    runUntil(s, d, (x) => x.t > 5 * 3600);
+    startFault(s, d, 'corridor_lights_aft', 'minor');
+    startFault(s, d, 'junction_box_fore', 'minor');
+    startFault(s, d, 'hydro_pump_1', 'minor');
+    startFault(s, d, 'grow_lamps_b', 'minor');
+    s.ship.thermal.heat = 0.92;
+    s.ship.atmo.airWater = 5.2;
+    return { s, feeds: ['CAM-11', 'CAM-10', 'CAM-05', 'CAM-07', 'CAM-06'] };
+  },
+  torpor(d) {
+    const s = createInitialState(d, { seed: 'gallery-torpor' });
+    runUntil(s, d, (x) => x.t > 10 * 3600);
+    const target = neighbors(s.space.galaxySeed, s.space.pos, 200, d.space).find((c) => c.dist > 120 && d.space.starClasses[c.cls].scoopable);
+    Object.assign(s.space, { surveyed: true, agenda: [], route: null, void: { ly: target.dist, years: target.dist / 38, star: target.id, name: 'gallery' } });
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'enter_torpor' && x.traveler.activity.phase === 'perform' && x.traveler.activity.elapsed > 600);
+    return { s, feeds: ['CAM-03', 'CAM-08', 'CAM-05'] };
+  },
+};
+
+async function main() {
+  const [data, cameras] = await Promise.all([loadData(), fetchJson('cameras')]);
+  const params = new URLSearchParams(location.search);
+  const only = params.get('scenario');
+  const root = document.getElementById('gallery');
+  const shots = [];
+  for (const [name, build] of Object.entries(SCENARIOS)) {
+    if (only && only !== name) continue;
+    const h = document.createElement('h2');
+    h.textContent = `${name} — building…`;
+    root.appendChild(h);
+    await new Promise((r) => setTimeout(r, 0));
+    const { s, feeds } = build(data);
+    h.textContent = `${name} — ${s.ship.flight.mode}, traveler ${s.traveler.pos.room} / ${s.traveler.activity ? s.traveler.activity.id : 'idle'}, heat ${s.ship.thermal.heat.toFixed(2)}`;
+    const row = document.createElement('div');
+    row.className = 'row';
+    root.appendChild(row);
+    for (const feed of feeds) {
+      const fig = document.createElement('figure');
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const cap = document.createElement('figcaption');
+      cap.textContent = feed;
+      fig.append(cv, cap);
+      row.appendChild(fig);
+      const director = new Director(cameras, { rng: () => 0.5 });
+      const tracker = new TravelerTracker();
+      shots.push({ cv, feed, s, director, tracker });
+    }
+  }
+  const t0 = performance.now() / 1000;
+  const draw = () => {
+    const t = params.has('t') ? Number(params.get('t')) : performance.now() / 1000 - t0 + 100;
+    for (const sh of shots) {
+      const ctx = sh.cv.getContext('2d', { willReadFrequently: true });
+      const pos = sh.tracker.update(sh.s, 0, t);
+      renderFeed(ctx, sh.feed, { state: sh.s, data, view: spaceView(sh.s, data), t, alpha: 0, pos, tracker: sh.tracker, dt: 1 }, sh.director);
+    }
+    document.body.dataset.ready = '1';
+    if (params.has('animate')) requestAnimationFrame(draw);
+  };
+  draw();
+}
+
+main().catch((e) => { document.body.dataset.error = String(e.stack || e); console.error(e); });

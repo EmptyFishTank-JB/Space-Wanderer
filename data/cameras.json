@@ -1,0 +1,43 @@
+{
+  "_comment": "Observation feeds. Room cameras are fixed side-on views that may pan within the room (pan bounds derive from room width). 'yaw' is where the room's viewports look, in radians relative to the ship's view direction. Director timings are in real seconds.",
+  "feeds": [
+    { "id": "CAM-01", "label": "BRIDGE",      "room": "bridge",        "yaw": 0.0 },
+    { "id": "CAM-02", "label": "OBS-LOUNGE",  "room": "lounge",        "yaw": 0.9 },
+    { "id": "CAM-03", "label": "QUARTERS",    "room": "quarters",      "yaw": 1.6 },
+    { "id": "CAM-04", "label": "GALLEY",      "room": "galley",        "yaw": -1.4 },
+    { "id": "CAM-05", "label": "HYDRO",       "room": "hydro",         "yaw": 2.4 },
+    { "id": "CAM-06", "label": "LIFE-SUP",    "room": "lifesupport",   "yaw": 0 },
+    { "id": "CAM-07", "label": "ENGINEERING", "room": "engineering",   "yaw": 0 },
+    { "id": "CAM-08", "label": "EXT-HULL",    "exterior": true },
+    { "id": "CAM-09", "label": "WORKSHOP",    "room": "workshop",      "yaw": 0 },
+    { "id": "CAM-10", "label": "CORRIDOR-F",  "room": "corridor_fore", "yaw": 0 },
+    { "id": "CAM-11", "label": "CORRIDOR-A",  "room": "corridor_aft",  "yaw": 0 },
+    { "id": "CAM-12", "label": "STORAGE",     "room": "storage",       "yaw": 0 },
+    { "id": "CAM-13", "label": "AIRLOCK",     "room": "airlock",       "yaw": -2.6 },
+    { "id": "EVA-POV", "label": "HELMET",     "eva": true }
+  ],
+  "director": {
+    "idleReturnSeconds": 30,
+    "idleReturnRange": [20, 45],
+    "switcherFadeSeconds": 3,
+    "lingerSeconds": [2, 4],
+    "minShotSeconds": [20, 90],
+    "foreshadowEveryMinutes": [12, 25],
+    "foreshadowHoldSeconds": [6, 10],
+    "exteriorEveryMinutes": [20, 40],
+    "exteriorHoldSeconds": [18, 30],
+    "eventExterior": {
+      "hyperspace_charge": 75,
+      "hyperspace_exit": 30,
+      "scoop_start": 45,
+      "supercruise_engage": 25,
+      "orbit_entered": 40,
+      "touchdown": 30,
+      "liftoff": 35,
+      "torpor_start": 40
+    },
+    "descentExteriorPhases": ["entry", "glide", "powered"],
+    "fadeSeconds": 0.35,
+    "bootFadeSeconds": 2.5
+  }
+}

@@ -6,13 +6,24 @@
   <title>Deep-Space Terrarium</title>
   <meta name="description" content="A passive observation window into a solitary traveler's life aboard a deep-space vessel.">
   <style>
-    html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
-    /* Phase 3 draws the pixel-art feed into this canvas at integer scale. */
-    #feed { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; background: #05060a; }
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    body { display: grid; place-items: center; }
+    /* The pixel-art feed: a 320×180 framebuffer blitted at whole-number scale. */
+    #feed { display: block; image-rendering: pixelated; image-rendering: crisp-edges; background: #000; touch-action: none; cursor: default; }
+    /* Feed selector: invisible until the viewer moves the mouse or presses a key. */
+    .feeds { position: fixed; left: 12px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 10px; max-width: calc(100vw - 24px);
+      opacity: 0; transition: opacity 0.9s ease; pointer-events: none; font: 10px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.06em; }
+    .feeds.shown { opacity: 1; pointer-events: auto; transition-duration: 0.25s; }
+    .feeds button { all: unset; cursor: pointer; color: rgba(190, 210, 200, 0.42); padding: 2px 0; }
+    .feeds button:hover { color: rgba(220, 235, 228, 0.8); }
+    .feeds button.on { color: rgba(150, 240, 190, 0.85); }
+    .feeds button:focus-visible { outline: 1px solid rgba(150, 240, 190, 0.6); }
+    .feeds .fs { margin-left: 6px; }
+    body.passive, body.passive #feed { cursor: none; }
   </style>
 </head>
 <body>
-  <canvas id="feed" width="480" height="270" aria-label="Observation feed"></canvas>
+  <canvas id="feed" width="320" height="180" aria-label="Observation feed"></canvas>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

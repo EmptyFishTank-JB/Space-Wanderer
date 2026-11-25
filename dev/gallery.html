@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feed Gallery (dev)</title>
+  <style>
+    body { margin: 0; padding: 16px; background: #0b0c10; color: #9fb4c8; font: 12px ui-monospace, Menlo, monospace; }
+    h2 { font-size: 12px; font-weight: normal; margin: 18px 0 6px; color: #cfe; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+    figure { margin: 0; }
+    canvas { width: 640px; height: 360px; image-rendering: pixelated; display: block; }
+    figcaption { margin-top: 3px; color: #7a8; }
+  </style>
+</head>
+<body>
+  <p>Developer gallery: every feed rendered from staged, throwaway simulations. Add <code>?scenario=eva</code> and <code>&amp;animate</code>.</p>
+  <div id="gallery"></div>
+  <script type="module" src="../src/dev/gallery.js"></script>
+</body>
+</html>

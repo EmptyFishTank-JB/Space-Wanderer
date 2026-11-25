@@ -1,0 +1,101 @@
+// What the ship can see, at true scale. Converts the sim's light-second
+// geometry into camera space: bearings and angular radii. A world 1000 Ls
+// away is a pinpoint; in orbital cruise it fills the glass.
+import { missionSeconds } from '../sim/clock.js';
+import { currentSystem, shipPos, orbitArrive } from '../space/flight.js';
+import { bodyPos, KM_PER_LS } from '../space/system.js';
+import { starById } from '../space/galaxy.js';
+import { hash, strHash } from './gfx.js';
+
+const len = (x, y) => Math.sqrt(x * x + y * y);
+const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+
+/** Ship's actual position for viewing (orbit standoff is off-axis so terminators show). */
+function viewerPos(state, data, sys, mt) {
+  const f = state.ship.flight;
+  if (f.at && ['orbit', 'descent', 'landed', 'ascent'].includes(f.mode)) {
+    const c = bodyPos(sys, f.at, mt);
+    const r = len(c.x, c.y) || 1;
+    const ux = -c.x / r, uy = -c.y / r; // toward the star
+    const ang = 1.05; // standing a little off the sunward line
+    const dx = ux * Math.cos(ang) - uy * Math.sin(ang);
+    const dy = ux * Math.sin(ang) + uy * Math.cos(ang);
+    let stand = orbitArrive(sys, f.at);
+    if (f.mode !== 'orbit' && f.altitudeKm !== undefined) stand = sys.byId[f.at].radius + Math.max(0.0001, f.altitudeKm / KM_PER_LS);
+    return { x: c.x + dx * stand, y: c.y + dy * stand };
+  }
+  return shipPos(state, data);
+}
+
+export function spaceView(state, data) {
+  const f = state.ship.flight;
+  const sp = state.space;
+  const sys = currentSystem(state, data);
+  const mt = missionSeconds(state);
+  const view = { mode: f.mode, scene: 'space', sys, star: sys.star, objects: [], heading: 0, speed: 0, seed: strHash(sys.id) };
+
+  if (f.mode === 'void') { view.scene = 'void'; return view; }
+  if (f.mode === 'hyperspace') {
+    view.scene = 'hyperspace';
+    const dest = f.jump ? starById(sp.galaxySeed, f.jump.to, data.space) : null;
+    view.tunnelColor = dest ? data.space.starClasses[dest.cls].color : '#cfe0ff';
+    view.timer = f.timer;
+    return view;
+  }
+  const at = f.at ? sys.byId[f.at] : null;
+  if (at && (f.mode === 'landed' || ((f.mode === 'descent' || f.mode === 'ascent') && f.phases && ['entry', 'glide', 'powered', 'touchdown', 'liftoff', 'climb'].includes(f.phases.list[f.phases.i].name)))) {
+    view.scene = 'surface';
+    view.body = at;
+    view.altitudeKm = f.mode === 'landed' ? 0 : f.altitudeKm;
+    view.phase = f.phases ? f.phases.list[f.phases.i].name : 'landed';
+    view.entryHeat = f.entryHeat || 0;
+    view.buffeting = f.buffeting || 0;
+  }
+
+  const p = viewerPos(state, data, sys, mt);
+  // where the ship is looking
+  let heading;
+  if (at) {
+    const c = bodyPos(sys, at.id, mt);
+    heading = Math.atan2(c.y - p.y, c.x - p.x);
+  } else if (f.mode === 'cruise' && f.target) {
+    const c = bodyPos(sys, f.target.body, mt);
+    heading = Math.atan2(c.y - p.y, c.x - p.x);
+    view.speed = f.wellRatio || 0;
+  } else if (f.mode === 'scooping') {
+    heading = Math.atan2(-p.y, -p.x);
+  } else {
+    heading = Math.atan2(-p.y, -p.x) + 0.3; // parked: the star hangs off to one side
+  }
+  view.heading = heading;
+  view.charging = f.mode === 'charging' ? 1 - f.timer / data.space.drive.chargeSeconds : 0;
+
+  // the star
+  const rs = len(p.x, p.y) || 1e-6;
+  const starAng = Math.asin(Math.min(1, sys.star.radius / rs));
+  view.objects.push({ kind: 'star', id: 'star', bearing: wrap(Math.atan2(-p.y, -p.x) - heading), elev: 0.04, angR: starAng, dist: rs, color: sys.star.color, star: sys.star });
+
+  // bodies (the one we orbit sits low, its limb a horizon)
+  for (const b of sys.bodies) {
+    if (b.kind === 'belt') continue;
+    const c = bodyPos(sys, b.id, mt);
+    const dx = c.x - p.x, dy = c.y - p.y;
+    const d = Math.max(len(dx, dy), b.radius * 1.0001);
+    const angR = Math.asin(Math.min(1, b.radius / d));
+    if (angR < 0.0006 && b.id !== (f.target && f.target.body)) continue; // below a pixel and not our destination
+    const bearing = wrap(Math.atan2(dy, dx) - heading);
+    let elev = (hash(strHash(b.id), 3) - 0.5) * 0.18;
+    if (at && b.id === at.id) elev = -Math.min(1.2, angR * 0.78);
+    if (f.mode === 'cruise' && f.target && b.id === f.target.body) elev = -0.02;
+    // light direction from the body toward the star, in camera terms
+    const lx = -c.x, ly = -c.y;
+    const ll = len(lx, ly) || 1;
+    const fwdx = dx / d, fwdy = dy / d;
+    const rightx = -fwdy, righty = fwdx;
+    const light = [(lx * rightx + ly * righty) / ll, 0.12, -(lx * fwdx + ly * fwdy) / ll];
+    view.objects.push({ kind: 'body', id: b.id, bearing, elev, angR, dist: d, body: b, light, at: at && b.id === at.id });
+  }
+  view.objects.sort((a, b) => b.dist - a.dist); // far first
+  view.glare = Math.min(1, starAng * 6 + (f.mode === 'scooping' ? 0.6 : 0));
+  return view;
+}
