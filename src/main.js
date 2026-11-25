@@ -12,6 +12,7 @@ import { AudioEngine } from './audio/engine.js';
 import { mountSound } from './ui/sound.js';
 import { mountCaptions } from './ui/captions.js';
 import { mountTelemetry } from './ui/telemetry.js';
+import { mountSelection } from './ui/select.js';
 
 function pickStorage() {
   try {
@@ -59,6 +60,7 @@ async function main() {
   // the observation window
   const canvas = document.getElementById('feed');
   let switcher = null;
+  let selection = null;
   const audio = new AudioEngine({ data, cameras });
   const captions = cameras.captions === false ? null : mountCaptions();
   const telemetry = mountTelemetry({ canvas });
@@ -69,10 +71,12 @@ async function main() {
       try { audio.update(fr); } catch (e) { console.warn('terrarium: audio frame failed', e); }
       if (captions) captions.update(fr);
       try { telemetry.update(fr); } catch (e) { console.warn('terrarium: telemetry frame failed', e); }
+      try { if (selection) selection.update(fr); } catch (e) { console.warn('terrarium: selection frame failed', e); }
     },
   });
   listeners.add((evs) => { renderer.push(evs); audio.push(evs); });
-  switcher = mountSwitcher({ director: renderer.director, cameras, canvas, telemetry });
+  selection = mountSelection({ canvas, director: renderer.director });
+  switcher = mountSwitcher({ director: renderer.director, cameras, canvas, telemetry, selection });
   mountSound({ audio });
   renderer.start();
 

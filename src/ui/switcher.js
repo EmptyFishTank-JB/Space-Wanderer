@@ -31,7 +31,7 @@ const STYLE = `
 .feeds .toggle.on { color: rgba(150, 240, 190, 0.95); }
 `;
 
-export function mountSwitcher({ director, cameras, canvas, telemetry = null }) {
+export function mountSwitcher({ director, cameras, canvas, telemetry = null, selection = null }) {
   const fadeMs = cameras.director.switcherFadeSeconds * 1000;
   const style = document.createElement('style');
   style.textContent = STYLE;
@@ -83,6 +83,17 @@ export function mountSwitcher({ director, cameras, canvas, telemetry = null }) {
     telemetry.onChange(sync);
     tmBtn.addEventListener('click', () => telemetry.toggle());
     menu.appendChild(tmBtn);
+  }
+  if (selection) {
+    const sb = document.createElement('button');
+    sb.type = 'button';
+    sb.className = 'toggle';
+    sb.setAttribute('role', 'menuitemcheckbox');
+    const sync = (v) => { sb.textContent = `SELECT ${v ? 'ON' : 'OFF'}  (S)`; sb.classList.toggle('on', v); sb.setAttribute('aria-checked', String(v)); };
+    sync(selection.on);
+    selection.onChange(sync);
+    sb.addEventListener('click', () => selection.toggle());
+    menu.appendChild(sb);
   }
   const fs = document.createElement('button');
   fs.type = 'button';

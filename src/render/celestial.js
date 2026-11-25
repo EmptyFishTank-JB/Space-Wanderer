@@ -1,6 +1,7 @@
 // Celestial painting: starfield, stars, planets (textured spheres with
 // terminators, atmospheres, clouds and rings), hyperspace, the void.
 import { W, H, hex, mix, mul, css, rect, px, glow, hash, strHash, fbm3, noise3, clamp01, line } from './gfx.js';
+import { registerSkyPick } from './picks.js';
 
 export const FOV = 1.25; // horizontal field of view (radians)
 export const FOCAL = W / 2 / Math.tan(FOV / 2);
@@ -472,7 +473,7 @@ function paintBody(d, cw, ch, bx0, by0, x, y, r, b, light, sysSeed, t, ring) {
  * Paint the space scene for a view model into the full frame.
  * `yaw` turns the virtual camera (each room's viewports look a different way).
  */
-export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0 } = {}) {
+export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0, pick = false } = {}) {
   ctx.fillStyle = '#020308';
   ctx.fillRect(0, 0, W, H);
   if (view.scene === 'void') { drawVoid(ctx, t, yaw); return; }
@@ -484,6 +485,7 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0 
     if (!p) continue;
     const r = angToPx(o.angR);
     if (p.x + r < -W || p.x - r > 2 * W) continue;
+    if (pick && p.x > -r && p.x < W + r) registerSkyPick(o, p.x, p.y, r, view.sys);
     if (o.kind === 'star') drawStar(ctx, p.x, p.y, o.angR, o.star, t, 1 + (view.glare || 0));
     else drawBody(ctx, p.x, p.y, r, o.body, o.light, view.seed, t);
   }

@@ -107,6 +107,8 @@ src/memory/           episodic memory and the log voice — deterministic, in th
 src/ui/captions.js    quiet subtitles while an entry is being written
 src/ui/switcher.js    the auto-hiding camera menu (sectioned; T telemetry, F fullscreen, C menu)
 src/ui/telemetry.js   the ship-telemetry overlay (off by default; camera, location, traveler, ship)
+src/ui/select.js      selection mode (S): [brackets] on anything with data, click to pin its details
+src/render/picks.js   what is selectable in the current frame, and what it reports
 src/ui/sound.js       click-to-enable hint, mute toggle
 src/persist/          localStorage snapshots (+backup slot), IndexedDB journal, export/import
 src/dev/inspector.js  ?debug overlay — QA only, never part of the experience

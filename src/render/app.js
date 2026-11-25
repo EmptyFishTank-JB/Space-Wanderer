@@ -9,8 +9,10 @@ import { renderRoomFeed } from './feed.js';
 import { renderExteriorFeed } from './exterior.js';
 import { renderEvaFeed, evaActive } from './eva.js';
 import { makeCanvas } from './celestial.js';
+import { picks } from './picks.js';
 
 export function renderFeed(ctx, feedId, m, director) {
+  picks.begin();
   const def = director.feedDef(feedId);
   if (feedId === EVA) return renderEvaFeed(ctx, m);
   if (feedId === EXT || def.exterior) return renderExteriorFeed(ctx, m);

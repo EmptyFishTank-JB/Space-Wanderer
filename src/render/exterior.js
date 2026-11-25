@@ -11,7 +11,7 @@ export function renderExteriorFeed(ctx, m) {
   if (view.scene === 'surface') {
     drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: 0.25, pitch: view.altitudeKm > 0 ? -0.05 : 0.04, entryHeat: view.entryHeat, buffeting: view.buffeting });
   } else {
-    drawSpaceScene(ctx, view, t, { yaw: 0, pitch: -0.08 });
+    drawSpaceScene(ctx, view, t, { yaw: 0, pitch: -0.08, pick: true });
   }
   const shake = view.buffeting ? Math.round(Math.sin(t * 31) * 2 * view.buffeting) : 0;
   drawHull(ctx, state, view, t, shake);

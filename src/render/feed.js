@@ -7,6 +7,7 @@ import { drawTraveler } from './traveler.js';
 import { drawSpaceScene, makeCanvas } from './celestial.js';
 import { drawSurfaceScene } from './terrain.js';
 import { travelerPose } from './actor.js';
+import { registerRoomPicks } from './picks.js';
 
 let layer = null;
 function roomLayer() {
@@ -58,8 +59,10 @@ export function renderRoomFeed(ctx, m) {
     lights: [], lamps: [], windows: [], seed: view.seed || 1, powerDim: light.L, flash: 0,
   };
   drawRoom(lc, rc);
+  let seen = null;
   if (m.pos && m.pos.room === room) {
     const k = travelerPose(state, data, m.tracker, m.pos, t);
+    seen = k;
     if (k) {
       drawTraveler(lc, ox + k.x, k.y, k, t);
       if (k.privacy) mosaic(lc, ox + k.x, k.y, k.pose);
@@ -73,6 +76,7 @@ export function renderRoomFeed(ctx, m) {
       }
     }
   }
+  registerRoomPicks(rc, seen);
   // 3. lighting, applied only to the room (windows stay transparent)
   lc.globalCompositeOperation = 'source-atop';
   const dark = 1 - (0.12 + 0.88 * light.L);
