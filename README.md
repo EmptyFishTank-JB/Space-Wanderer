@@ -9,6 +9,14 @@ procedural soundscape, and the traveler's episodic memory, written logs and
 living details. Open with `?debug` for a developer-only inspector, or
 `dev/gallery.html` to see every camera feed rendered from staged scenarios.
 
+---
+
+## AI Contribution Policy
+
+Notes, reviews, and documentation added by AI assistants other than Claude are considered **final**. They should not be edited afterwards.
+
+The only AI authorized to edit the actual source code of this project is Claude.
+
 ### Watching
 
 The window is passive. Move the mouse or press a key and a faint feed
@@ -316,32 +324,6 @@ oscillators, filters and envelopes. There are no audio files.
 
 ### Persistence
 
-* `localStorage`: snapshot (~7 KB) with a previous-snapshot backup slot;
-  autosave every 30 s, on tab hide, and on `pagehide`.
-* `IndexedDB` (`deep-space-terrarium`): `events` (notable events, the raw
-  material for Phase 5 memories), `systems` (one record per visited system:
-  star, bodies visited/landed, discoveries), and a reserved `memories` store.
-* Older snapshots upgrade automatically. A Phase 1 save (v1) gains a galaxy
-  and a home system; a Phases 2–4 save (v2) gains an empty memory, skills and
-  the bookshelf. Either way the traveler, ship and history are kept.
-* Hidden backup shortcuts: **Ctrl+Alt+Shift+E** export, **Ctrl+Alt+Shift+I** import.
-
-## Hooks left for later phases
-
-* **Phase 3 (done):** see above.
-* **Phase 3 hooks used:**
-  * Interior: events carry `room`, `station`, `x` and `posture`; `gait()` gives walking speed.
-  * Flight: `flight.mode`, `altitudeKm`, `buffeting`, `entryHeat`, `wellRatio` (supercruise speed fraction), `starRadii` and `externalHeat` (glare and caution strobes).
-  * Exterior views: `viewSubject()` picks the shot; bodies carry `type`, `rings`, `atmosphere`, `hue` and `beauty`.
-  * EVA: the head-cam is the `surface` pseudo-room with `x` in metres; `eva_feature` events say what is being looked at.
-* **Phase 4 (done):** see above.
-* **Phase 4 hooks used:**
-  * Supercruise: `supercruise_engage`, `wellRatio` for gravitational drag pitch.
-  * Hyperspace and scooping: `hyperspace_charge/enter/exit`, `scoop_start`, `heat_warning`, `heat_damage`.
-  * Planetary: `descent_phase` (entry wind shear), `touchdown`, `liftoff`.
-  * EVA: `eva_phase` for suit breathing and airlock cycling.
-* **Phase 5 (done):** see above.
-* **Phase 5 hooks used:**
-  * `log_entry.facts.voyage` lists arrivals, discoveries, landings, EVAs, scoops, awe and torpor since the last entry.
-  * `traveler.keepsakes` holds mineral specimens, sealed bio vials and anomaly fragments for the quarters shelf.
-  * Visited systems are stored in IndexedDB `systems`.
+* `localStorage`: snapshot of the full simulation state (including RNG).
+* IndexedDB: event journal, memories, and system records.
+* Backup export/import via Ctrl+Alt+Shift+E / Ctrl+Alt+Shift+I.
