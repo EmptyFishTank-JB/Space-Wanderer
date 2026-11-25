@@ -70,9 +70,16 @@ test('windows lie on the hull surface, and the tines share the main hull\'s sect
   for (const w of ship.windows) {
     const quads = windowQuads(ship, w, 1);
     assert.ok(quads.length > 0, w.id);
-    for (const q of quads) for (const p of q) {
-      // a few centimetres off the skin: inside at 10 cm below, outside at 10 cm above
-      if (!w.cap) assert.ok(!insideHull(ship, p[0], p[1], p[2] + 0.1) || insideHull(ship, p[0], p[1], p[2] - 0.12), `${w.id} floats`);
+    if (w.cap) continue;
+    for (const q of quads) {
+      // step across the pane along its own normal: one side is hull, the other is space
+      const u = q[1].map((v, i) => v - q[0][i]), v = q[3].map((x, i) => x - q[0][i]);
+      const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      const l = Math.hypot(...n);
+      const c = [0, 1, 2].map((i) => (q[0][i] + q[1][i] + q[2][i] + q[3][i]) / 4);
+      const a = insideHull(ship, ...c.map((x, i) => x + (n[i] / l) * 0.25));
+      const b = insideHull(ship, ...c.map((x, i) => x - (n[i] / l) * 0.25));
+      assert.notEqual(a, b, `${w.id} does not sit on the skin`);
     }
   }
   const main = hullParts(ship).find((p) => p.id === 'main');
