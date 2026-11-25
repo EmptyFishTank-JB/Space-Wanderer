@@ -151,13 +151,14 @@
    ],
    "y": [
     1.1,
-    13.1
+    21.0
    ],
    "axis": "+y",
    "origin": 1.1,
    "view": "fore",
    "role": "life",
-   "info": "Starboard, running outboard from the corridor: ten grow trays, the algae tank, the seed bank and two pumps. It sits deep in the hull now, so its window strip becomes a grow-light panel."
+   "info": "Starboard, running outboard from the corridor all the way to the hull: ten grow trays, the algae tank, the seed bank and two pumps, with a long window in the sloping flank at the far end. The plumbing crawlway leaves from its aft side.",
+   "resize": "lengthened from 12 m to 19.9 m so the bay reaches the hull's starboard flank and gets daylight through its own window strip"
   },
   {
    "id": "lifesupport",
@@ -174,7 +175,11 @@
    "origin": 1.1,
    "view": "fore",
    "role": "life",
-   "info": "Starboard, back to back with hydroponics so the water mains are short. Recycler, oxygen generator, CO₂ scrubber and dehumidifier."
+   "info": "Starboard, back to back with hydroponics so the water mains are short. Recycler, oxygen generator, CO₂ scrubber and dehumidifier.",
+   "virtualWindow": {
+    "feed": "EXT-DORSAL",
+    "note": "a wall screen showing that exterior camera, in place of a real window"
+   }
   },
   {
    "id": "workshop",
@@ -191,7 +196,11 @@
    "origin": 1.1,
    "view": "fore",
    "role": "service",
-   "info": "Starboard, aft. Bench, fabricator and lathe, with a door straight through to engineering."
+   "info": "Starboard, aft. Bench, fabricator and lathe, with a door straight through to engineering.",
+   "virtualWindow": {
+    "feed": "EXT-STBD",
+    "note": "a wall screen showing that exterior camera, in place of a real window"
+   }
   },
   {
    "id": "storage",
@@ -208,7 +217,11 @@
    "origin": -1.1,
    "view": "aft",
    "role": "service",
-   "info": "Port side. Shelves and crates of spares, feedstock and food."
+   "info": "Port side. Shelves and crates of spares, feedstock and food.",
+   "virtualWindow": {
+    "feed": "EXT-PORT",
+    "note": "a wall screen showing that exterior camera, in place of a real window"
+   }
   },
   {
    "id": "airlock",
@@ -218,14 +231,14 @@
     -19.0
    ],
    "y": [
-    -6.1,
-    -1.1
+    -21.4,
+    -16.4
    ],
    "axis": "-y",
-   "origin": -1.1,
+   "origin": -16.4,
    "view": "aft",
    "role": "service",
-   "info": "Port side. Inner door from the corridor, suit rack, and an outer hatch in the floor at the far end: a ladder drops from it into the rover bay."
+   "info": "Against the port hull now, at the end of its own passage: inner door from the passage, suit rack, and an outer door straight to space that opens onto an external lift down to the ground."
   },
   {
    "id": "engineering",
@@ -242,7 +255,11 @@
    "origin": 5.5,
    "view": "aft",
    "role": "power",
-   "info": "Full-width compartment at the aft end of the pressurized decks. Its camera looks aft at the shadow-shield bulkhead: scoop manifold to starboard, the reactor face on the centreline, drive coupling to port."
+   "info": "Full-width compartment at the aft end of the pressurized decks. Its camera looks aft at the shadow-shield bulkhead: scoop manifold to starboard, the reactor face on the centreline, drive coupling to port.",
+   "virtualWindow": {
+    "feed": "EXT-STERN",
+    "note": "a wall screen showing that exterior camera, in place of a real window"
+   }
   },
   {
    "id": "gym",
@@ -548,6 +565,44 @@
    "new": true,
    "name": "Cross passage",
    "info": "Runs across the ship from the end of the forward service passage to both galleries."
+  },
+  {
+   "id": "airlock_passage",
+   "deck": "main",
+   "x": [
+    -20.4,
+    -19.0
+   ],
+   "y": [
+    -16.2,
+    -1.1
+   ],
+   "axis": "-y",
+   "origin": -1.1,
+   "view": "aft",
+   "role": "passage",
+   "new": true,
+   "name": "Airlock passage",
+   "info": "Runs from the service spine out to the airlock against the port hull. The sim's corridor-to-airlock crossing would grow from 7 s to about 20 s."
+  },
+  {
+   "id": "suitlock",
+   "deck": "lower",
+   "x": [
+    -22.0,
+    -18.0
+   ],
+   "y": [
+    -5.4,
+    -1.2
+   ],
+   "axis": "-y",
+   "origin": -1.2,
+   "view": "aft",
+   "role": "service",
+   "new": true,
+   "name": "Rover suit lock",
+   "info": "Small lock between the lower passage and the unpressurized rover bay: suit up here, cycle, walk out to the rover."
   }
  ],
  "hatches": [
@@ -641,12 +696,20 @@
   },
   {
    "id": "h_airlock",
-   "at": [
-    -19.5,
-    -1.0,
-    0.0
+   "kind": "passage",
+   "path": [
+    [
+     -19.5,
+     -1.0,
+     0.0
+    ],
+    [
+     -19.7,
+     -16.3,
+     0.0
+    ]
    ],
-   "kind": "door"
+   "note": "through the airlock passage (about 15 m)"
   },
   {
    "id": "h_workshop",
@@ -847,6 +910,28 @@
     -16.0,
     0.0
    ]
+  },
+  {
+   "between": [
+    "suitlock",
+    "lower_passage"
+   ],
+   "at": [
+    -20.0,
+    -1.1,
+    -5.0
+   ]
+  },
+  {
+   "between": [
+    "suitlock",
+    "roverbay"
+   ],
+   "at": [
+    -20.0,
+    -5.5,
+    -5.0
+   ]
   }
  ],
  "shafts": [
@@ -916,28 +1001,6 @@
     "lower_passage"
    ],
    "info": "Second way between the main and lower decks, so the hold and rover bay are never one hatch from being cut off."
-  },
-  {
-   "id": "eva_ladder",
-   "kind": "ladder",
-   "name": "EVA ladder",
-   "x": [
-    -22.0,
-    -21.0
-   ],
-   "y": [
-    -6.1,
-    -5.1
-   ],
-   "z": [
-    -5.0,
-    3.4
-   ],
-   "opensTo": [
-    "airlock",
-    "roverbay"
-   ],
-   "info": "Drops from the airlock's outer hatch into the rover bay. Suited, the traveler climbs down to the rover or onto the bay platform."
   },
   {
    "id": "freight_lift",
@@ -1043,6 +1106,28 @@
     "flyerbay"
    ],
    "info": "Clamshell doors in the belly. The skiff drops out on its own lift fans and comes back up the same way."
+  },
+  {
+   "id": "eva_lift",
+   "kind": "bay-lift",
+   "name": "External EVA lift",
+   "x": [
+    -23.6,
+    -21.2
+   ],
+   "y": [
+    -23.6,
+    -21.6
+   ],
+   "z": [
+    -9.8,
+    3.4
+   ],
+   "exterior": true,
+   "opensTo": [
+    "airlock"
+   ],
+   "info": "A cage on the outside of the hull by the airlock's outer door. It lowers a suited traveler to the ground and brings them back up."
   }
  ],
  "ducts": [
@@ -1074,7 +1159,7 @@
      ],
      [
       -12.0,
-      12.4,
+      20.0,
       3.95
      ]
     ],
@@ -1729,28 +1814,28 @@
    "name": "Fuel tank (port)",
    "shape": "cyl-x",
    "x": [
-    -34,
-    -12
+    -44.5,
+    -35.0
    ],
    "y": -15.8,
    "z": 0.8,
-   "r": 2.0,
+   "r": 2.6,
    "role": "fuel",
-   "info": "Liquid hydrogen. With its twin, about 32 t usable."
+   "info": "Liquid hydrogen, moved aft into the thruster housing. With its twin, about 30 t usable."
   },
   {
    "id": "fuel_stbd",
    "name": "Fuel tank (starboard)",
    "shape": "cyl-x",
    "x": [
-    -34,
-    -12
+    -44.5,
+    -35.0
    ],
    "y": 15.8,
    "z": 0.8,
-   "r": 2.0,
+   "r": 2.6,
    "role": "fuel",
-   "info": "Liquid hydrogen."
+   "info": "Liquid hydrogen, moved aft into the thruster housing. With its twin, about 30 t usable."
   },
   {
    "id": "shadow_shield",
@@ -2970,6 +3055,38 @@
    ],
    "faces": "out to port",
    "info": "Ports in the belly wall of the skiff bay."
+  },
+  {
+   "id": "win_hydro",
+   "name": "Hydroponics window",
+   "part": "main",
+   "edge": 1,
+   "t": [
+    0.18,
+    0.6
+   ],
+   "x": [
+    -14.0,
+    -10.3
+   ],
+   "faces": "out and down to starboard",
+   "info": "Daylight for the grow trays: a strip in the sloping starboard flank at the outboard end of the bay."
+  },
+  {
+   "id": "win_airlock",
+   "name": "Airlock outer door port",
+   "part": "main",
+   "edge": 5,
+   "t": [
+    0.4,
+    0.62
+   ],
+   "x": [
+    -22.6,
+    -20.6
+   ],
+   "faces": "out to port",
+   "info": "The porthole in the airlock's outer door, set in the port flank."
   }
  ],
  "windowShutters": "Every window has an armoured shutter. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."

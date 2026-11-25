@@ -303,7 +303,7 @@ const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', pas
 const SHORT = {
   bridge: 'Bridge', lounge: 'Lounge', quarters: 'Quarters', galley: 'Galley', corridor_fore: 'Living spine', corridor_aft: 'Service spine', hydro: 'Hydroponics', lifesupport: 'Life support',
   storage: 'Storage', airlock: 'Airlock', workshop: 'Workshop', engineering: 'Engineering', gym: 'Gym', fwd_living: 'Lookout', medbay: 'Medbay', washroom: 'Washroom', fwd_main: 'Fwd passage',
-  lab: 'Lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage',
+  lab: 'Lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock',
 };
 const DECK_NAME = Object.fromEntries(S.decks.map((d) => [d.id, d.name]));
 const deckOf = Object.fromEntries(S.decks.map((d) => [d.id, d]));
@@ -396,6 +396,7 @@ function infoFor(id) {
       .concat(shafts.filter((s) => (s.opensTo || []).includes(key)).map((s) => s.name));
     if (links.length) rows.push(['Opens to', [...new Set(links)].join(' · ')]);
     if (simRoom[key]) rows.push(['Camera', `looks ${VIEW_WORD[r.view]}`]);
+    if (r.virtualWindow) rows.push(['Window', `virtual: a wall screen showing ${r.virtualWindow.feed}`]);
     if (r.new) rows.push(['Status', 'New: not in the sim yet']);
     if (r.unpressurized) rows.push(['Air', 'Unpressurized']);
     if (simRoom[key]) rows.push(['In the game', 'Live status: lights, faults, wear, who is inside.']);
@@ -1162,7 +1163,7 @@ const sideWord = (y) => (y > 0.1 ? 'to starboard' : y < -0.1 ? 'to port' : 'forw
 const yawNotes = Object.entries(S.cameras.windows).filter(([room, y]) => Math.abs((CAMYAW[room] ?? 0) - y) > 0.05).map(([room, y]) => `${SHORT[room]} ${sideWord(y)}`);
 $('else').innerHTML = [
   `Window views follow the hull (<code>cameras.json</code>): ${yawNotes.join(', ')}.`,
-  'Hydroponics is deep in the hull now, so its window strip becomes a grow-light panel. The airlock\'s outer door becomes a floor hatch down to the rover bay.',
+  'Windows for the service rooms: hydroponics is lengthened to reach the starboard flank (its own window strip); the airlock moves out to the port hull at the end of a passage, so its outer door opens to space; engineering, life support, storage and the workshop get virtual windows, wall screens showing an exterior camera.',
   'The two corridors become the living-deck and service-deck spines, stacked one above the other; the sim\'s names (forward / aft) would change to match.',
   'EXT-HULL becomes nine exterior feeds, and the director gets rules for when each is worth cutting to.',
   'The bridge ladder and the trunk ladder are climbs now, so crossing them could show a short climbing animation.',
