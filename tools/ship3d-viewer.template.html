@@ -130,6 +130,7 @@ svg .camg { fill: var(--accent); fill-opacity: 0.35; stroke: none; pointer-event
 svg .camd { fill: var(--accent); pointer-events: none; }
 svg .xcam { fill: var(--cam); fill-opacity: 0.35; stroke: var(--cam); stroke-width: 1.2; vector-effect: non-scaling-stroke; cursor: pointer; }
 svg .xdot { fill: var(--cam); pointer-events: none; }
+svg .win { fill: var(--glass); fill-opacity: 0.6; stroke: var(--glass); stroke-width: 1.4; vector-effect: non-scaling-stroke; cursor: pointer; }
 svg .cutline { stroke: var(--select); stroke-width: 1.4; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
 svg .trav, svg .trav * { fill: var(--traveler); stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
 svg .lbl { font-family: var(--display); font-weight: 600; fill: var(--ink); pointer-events: none; paint-order: stroke; stroke: var(--panel); stroke-linejoin: round; stroke-opacity: 0.85; }
@@ -196,6 +197,11 @@ footer { font: 12px var(--mono); color: var(--muted); }
           <button type="button" data-hull="solid" aria-pressed="false">Solid</button>
           <button type="button" data-hull="off" aria-pressed="false">Off</button>
         </span></span>
+        <span class="tgroup"><span class="tlabel">Shutters</span>
+        <span class="seg" id="shutters">
+          <button type="button" data-shutters="open" aria-pressed="true">Open</button>
+          <button type="button" data-shutters="closed" aria-pressed="false">Closed</button>
+        </span></span>
         <span class="tgroup"><span class="tlabel">Decks</span>
         <span class="seg" id="decks">
           <button type="button" data-decks="all" aria-pressed="true">All</button>
@@ -248,7 +254,7 @@ footer { font: 12px var(--mono); color: var(--muted); }
           <div><svg viewBox="0 0 34 18" aria-hidden="true"><circle cx="17" cy="9" r="5" fill="var(--traveler)"/></svg>The traveler</div>
         </div>
       </div>
-      <div class="sheet wide"><div class="head"><h3>Exterior cameras · plan view</h3></div><div class="draw" id="camplan"></div><div class="cap">Each cone shows where a camera sits and which way it looks. Click one for what it shows.</div></div>
+      <div class="sheet wide"><div class="head"><h3>Exterior cameras and windows · plan view</h3></div><div class="draw" id="camplan"></div><div class="cap">Each cone shows where a camera sits and which way it looks; blue strips are windows. Click any of them for details.</div></div>
     </div>
   </section>
 
@@ -341,14 +347,15 @@ const specs = [['Length', `${Math.round(X_MAX - X_MIN)} m`], ['Beam', `${Math.ro
   ['Decks', String(S.decks.length)], ['Spaces', `${rooms.length - newRooms.length} + ${newRooms.length} new`], ['Fuel', `${SIM.fuelCapacity} t LH₂`], ['Crew', '1']];
 $('specs').innerHTML = specs.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
 $('revb').innerHTML = [
-  '<b>Bigger and reshaped.</b> 94 m becomes 138 m: a long, Anaconda-style wedge with a forked, Krait-style bow and a broad aft body with four engines.',
+  '<b>Rev B.2:</b> prongs flare outward so the hull edge runs straight to their tips; the scoop moves under the bow and a window takes its place; flank windows with shutters; two large outboard thrusters replace the outer pair of engines.',
+  '<b>Bigger and reshaped.</b> 94 m becomes 138 m: a long, Anaconda-style wedge with a forked, Krait-style bow and a broad aft body with two big outboard thrusters and two inboard engines.',
   '<b>Bridge moved aft</b> into a raised tower on the deckhouse, looking forward over the whole ship.',
   '<b>Four decks,</b> three ladder wells, a freight lift, an EVA ladder and a crawlable vent network in the voids between decks.',
   '<b>Rover bay</b> with a platform that lowers the rover through the belly, plus more new spaces: twelve in all.',
   '<b>Nine exterior cameras</b> instead of one. Info cards now appear only when you click or tap; hovering does nothing.',
 ].map((x) => `<li>${x}</li>`).join('');
 $('legend').innerHTML = Object.keys(ROLE).map((r) => `<span><i style="background:var(${ROLE[r]})"></i>${ROLE_NAME[r]}</span>`).join('')
-  + '<span><i style="background:var(--ladder)"></i>Ladder well</span><span><i style="background:var(--lift)"></i>Lift</span><span><i style="background:var(--duct)"></i>Crawl duct</span><span><i style="background:var(--cam)"></i>Exterior camera</span><span><i style="background:var(--traveler);border-radius:50%"></i>Traveler</span>';
+  + '<span><i style="background:var(--glass)"></i>Window (shuttered in flight)</span><span><i style="background:var(--ladder)"></i>Ladder well</span><span><i style="background:var(--lift)"></i>Lift</span><span><i style="background:var(--duct)"></i>Crawl duct</span><span><i style="background:var(--cam)"></i>Exterior camera</span><span><i style="background:var(--traveler);border-radius:50%"></i>Traveler</span>';
 
 // ───────── what the bracket card says ─────────
 const STATION_NAME = { ogs: 'oxygen generator', torpor_pod: 'torpor pod' };
@@ -365,8 +372,8 @@ const SHAFT_KIND = { ladder: 'Ladder well', lift: 'Freight lift', vent: 'Vent sh
 const deckSpan = (z) => S.decks.filter((d) => zOverlap(z, d.z)).map((d) => d.name.replace(' deck', '')).join(' · ');
 const HULL_INFO = {
   main: 'The long wedge that carries everything heavy: tanks, reactor, jump drive, engines, and the main and lower decks.',
-  prong_p: 'One of the two bow prongs, with a sensor array in its tip. The fuel scoop is set back in the gap between the prongs.',
-  prong_s: 'One of the two bow prongs, with a sensor array in its tip. The fuel scoop is set back in the gap between the prongs.',
+  prong_p: 'One of the two bow prongs, with a sensor array in its tip. Its outer edge runs straight back to the widest part of the hull; the gap between the prongs ends in the bow window.',
+  prong_s: 'One of the two bow prongs, with a sensor array in its tip. Its outer edge runs straight back to the widest part of the hull; the gap between the prongs ends in the bow window.',
   deckhouse: 'Raised superstructure amidships-aft holding the living deck, with a glazed front.',
   tower: 'The bridge tower on top of the deckhouse, with a raked canopy looking forward over the whole ship.',
 };
@@ -407,6 +414,10 @@ function infoFor(id) {
     if (!d) return null;
     const len = d.segments.reduce((a, [p, q]) => a + Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]), 0);
     return { name: d.name, tag: 'new', sub: `Crawl duct · ${d.size} m square · ${Math.round(len)} m of runs`, body: d.info || '', rows: [['Feel', 'The air shafts of Alien and Alien: Isolation: tight, ribbed, a grille every few metres.']] };
+  }
+  if (kind === 'win') {
+    const w = (S.windows || []).find((x) => x.id === key);
+    return w && { name: w.name, tag: 'new', sub: `Window · faces ${w.faces} · shutter ${view.shutters}`, body: w.info, rows: [['Shutter', S.windowShutters || '']] };
   }
   if (kind === 'cam') {
     const c = cams.find((x) => x.id === key);
@@ -483,7 +494,7 @@ function makeFocus(container, onHide, bounds) {
 }
 
 // ───────── 3D model (three.js, real depth buffer) ─────────
-const view = { yaw: 0.78, pitch: 0.42, dist: 134, target: [0, 1.5, 0], hull: 'ghost', decks: 'all', cut: NO_CUT, layers: { rooms: true, systems: true, machinery: true, cameras: true, labels: true } };
+const view = { yaw: 0.78, pitch: 0.42, dist: 134, target: [0, 1.5, 0], hull: 'ghost', decks: 'all', shutters: 'open', cut: NO_CUT, layers: { rooms: true, systems: true, machinery: true, cameras: true, labels: true } };
 const PRESETS = { iso: [0.78, 0.42, 134], top: [Math.PI / 2, 1.555, 140], side: [Math.PI / 2, 0.03, 128], front: [0, 0.14, 150], aft: [Math.PI, 0.2, 140], below: [0.9, -0.5, 120] };
 const coarse = matchMedia('(pointer: coarse)').matches;
 $('hint').textContent = coarse ? 'drag to turn · pinch to zoom · two fingers to move · tap for details' : 'drag to turn · right-drag or shift-drag to move · ctrl-scroll or ± to zoom · click for details';
@@ -609,6 +620,17 @@ if (!THREE) {
     g.add(cone, dot);
     groups.cameras.add(tag(g, `cam:${c.id}`, { kind: 'camera' }));
   }
+  // windows: glass when the shutters are open, armour plate when they are closed
+  const shutterMat = mat('hullSolid', { flatShading: true });
+  const paneMat = mat('glass', { transparent: true, opacity: 0.75 });
+  const panes = [], plates = [];
+  for (const w of S.windows || []) {
+    const pane = boxMesh(w.x, w.y, w.z, paneMat);
+    const plate = boxMesh(w.x, w.y, [w.z[0], w.z[1] + 0.12], shutterMat);
+    plate.add(new THREE.LineSegments(new THREE.EdgesGeometry(plate.geometry), lineMat('ink', 0.5)));
+    panes.push(pane); plates.push(plate);
+    groups.hull.add(tag(pane, `win:${w.id}`, { kind: 'window' }), tag(plate, `win:${w.id}`, { kind: 'window' }));
+  }
   // hull parts: lofted shells, glazing as its own layer, drafting lines for the ghost view
   const hullMat = mat('hullFill', { transparent: true, opacity: 0.1, depthWrite: false });
   const glassMat = mat('glass', { transparent: true, opacity: 0.3, depthWrite: false, flatShading: false });
@@ -702,6 +724,8 @@ if (!THREE) {
     hullMat.needsUpdate = true;
     glassMat.opacity = solid ? 0.6 : 0.3;
     for (const o of groups.hull.children) if (o.userData.lines) o.visible = !solid;
+    panes.forEach((m) => { m.visible = view.shutters === 'open'; });
+    plates.forEach((m) => { m.visible = view.shutters === 'closed'; });
   }
 
   let W = 0, H = 0;
@@ -875,6 +899,7 @@ if (!THREE) {
   document.querySelectorAll('#views button').forEach((b) => b.addEventListener('click', () => { const [y, p, d] = PRESETS[b.dataset.view]; Object.assign(view, { yaw: y, pitch: p, dist: d, target: [0, 1.5, 0] }); setPreset(b.dataset.view); render3d(); }));
   document.querySelectorAll('#zoom button').forEach((b) => b.addEventListener('click', () => { view.dist = clampDist(view.dist * (b.dataset.zoom === 'in' ? 0.8 : 1.25)); render3d(); }));
   segmented('#hullmode', 'hull', (v) => { view.hull = v; applyVisibility(); rebuildSection(); render3d(); });
+  segmented('#shutters', 'shutters', (v) => { view.shutters = v; focus3d.hide(); applyVisibility(); render3d(); });
   segmented('#decks', 'decks', (v) => { view.decks = v; focus3d.hide(); applyVisibility(); rebuildSection(); render3d(); });
   document.querySelectorAll('#layers button').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.layer;
@@ -1093,6 +1118,7 @@ function drawCamPlan() {
     const e = moduleExtent(m);
     g += rect('modf', `mod:${m.id}`, e.x[0], e.y[0], e.x[1] - e.x[0], e.y[1] - e.y[0], fillOf(m.role));
   }
+  for (const w of S.windows || []) g += rect('win', `win:${w.id}`, w.x[0], w.y[0], w.x[1] - w.x[0], w.y[1] - w.y[0]);
   for (const c of cams) {
     g += camGlyph(c, c.at[0], c.at[1], c.look[0], c.look[1] || 0.0001, 5.5);
     const fwd = c.look[0] > 0;
