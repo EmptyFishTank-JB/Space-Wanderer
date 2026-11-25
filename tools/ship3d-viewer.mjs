@@ -3,9 +3,11 @@
 // data/ship.json, data/cameras.json and src/ship3d/geometry.js.
 //   node tools/ship3d-viewer.mjs                 writes dev/ship3d.html
 //   node tools/ship3d-viewer.mjs --fragment out  also writes a bare page fragment (no <html>/<head>) to `out`
+// The 3D view loads three.js as an ES module from jsDelivr; the 2D drawings work without it.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { checkArrangement, proposedChanges } from '../src/ship3d/geometry.js';
 
+const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
 const root = new URL('..', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const ship = JSON.parse(read('data/ship3d.json'));
@@ -32,7 +34,8 @@ const data = [
 const geometry = read('src/ship3d/geometry.js').replace(/^export /gm, '');
 const fragment = read('tools/ship3d-viewer.template.html')
   .replace('/*__DATA__*/', () => data)
-  .replace('/*__GEOMETRY__*/', () => geometry);
+  .replace('/*__GEOMETRY__*/', () => geometry)
+  .replace('__THREE_URL__', THREE_URL);
 
 const page = `<!doctype html>
 <html lang="en">

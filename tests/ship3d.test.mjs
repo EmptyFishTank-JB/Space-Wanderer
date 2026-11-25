@@ -1,10 +1,11 @@
 // The proposed 3D arrangement (data/ship3d.json) must stay consistent with the
-// sim's room graph (data/ship.json): every compartment placed at the sim's
-// length, no overlaps, nothing outside the hull, every hatch on both walls.
+// sim's room graph (data/ship.json): every sim compartment placed at the sim's
+// length, nothing overlapping, nothing outside the hull, every hatch on both
+// walls, and ladders, lifts and crawl ducts clear of the rooms they don't serve.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkArrangement, proposedChanges, station, insideHull, roomU, profile } from '../src/ship3d/geometry.js';
+import { checkArrangement, proposedChanges, station, insideHull, roomU, profile, hullParts, segmentBox } from '../src/ship3d/geometry.js';
 
 const load = (p) => JSON.parse(readFileSync(new URL(`../${p}`, import.meta.url)));
 const ship = load('data/ship3d.json');
@@ -14,30 +15,52 @@ test('the proposed arrangement is consistent with the sim room graph', () => {
   const report = checkArrangement(ship, sim);
   assert.deepEqual(report.problems, []);
   assert.equal(report.hatches.length, sim.hatches.length);
-  for (const h of report.hatches) {
-    assert.ok(h.uA >= 0 && h.uB >= 0, `${h.id} has a negative door position`);
-  }
+  const simIds = new Set(sim.rooms.filter((r) => !r.exterior).map((r) => r.id));
+  for (const r of ship.rooms) assert.equal(!!r.new, !simIds.has(r.id), `${r.id} new flag`);
 });
 
 test('door changes are reported only beyond the tolerance', () => {
   const report = checkArrangement(ship, sim);
-  for (const c of proposedChanges(report)) assert.ok(Math.abs(c.to - c.from) > 0.6, `${c.hatch} ${c.room}`);
+  const changes = proposedChanges(report);
+  for (const c of changes) assert.ok(Math.abs(c.to - c.from) > 0.6, `${c.hatch} ${c.room}`);
+  assert.ok(changes.length <= 3, 'side rooms open at their inboard ends, so few doors move');
 });
 
-test('hull stations interpolate and bound the hull', () => {
-  const st = station(ship.hull.main, 26);
-  assert.ok(st.b > 8.2 && st.b < 13);
-  assert.equal(station(ship.hull.main, 60), null);
+test('the checker catches a duct cut through a room and a shaft through the wrong room', () => {
+  const broken = structuredClone(ship);
+  broken.ducts[0].segments.push([[-12, 2, 1.7], [-12, 10, 1.7]]); // through hydroponics at head height
+  broken.shafts.find((s) => s.id === 'lw_fwd').opensTo = ['fwd_main'];
+  const report = checkArrangement(broken, sim);
+  assert.ok(report.problems.some((p) => p.includes('cuts through hydro')));
+  assert.ok(report.problems.some((p) => p.includes('lw_fwd cuts through lower_passage')));
+});
+
+test('hull parts interpolate and bound the hull', () => {
+  const main = hullParts(ship).find((p) => p.id === 'main');
+  const st = station(main.stations, 26);
+  assert.ok(st.b > 21 && st.b < 26);
+  assert.equal(station(main.stations, 80), null);
   assert.ok(insideHull(ship, 0, 0, 1));
   assert.ok(!insideHull(ship, 0, 0, 20));
-  assert.ok(insideHull(ship, 34, 0, 5.5), 'the bridge sits inside the head superstructure');
-  assert.equal(profile('main', st).length, 8);
+  assert.ok(insideHull(ship, -24, 0, 11), 'the bridge sits in the tower');
+  assert.ok(insideHull(ship, 60, 11.5, 0), 'the starboard prong');
+  assert.ok(!insideHull(ship, 60, 0, 0), 'the gap between the prongs');
+  assert.equal(profile('hex', st).length, 8);
+  const box = segmentBox([[0, 2, 4], [-10, 2, 4]], 0.9);
+  assert.deepEqual(box, { x: [-10, 0], y: [1.55, 2.45], z: [3.55, 4.45] });
+});
+
+test('rev A hull layout (main/head) still reads', () => {
+  const legacy = { hull: { main: [{ x: 10, b: 5, z: [-2, 2] }, { x: -10, b: 5, z: [-2, 2] }], head: [{ x: 5, b: 2, z: [2, 4] }, { x: -5, b: 2, z: [2, 4] }] } };
+  assert.deepEqual(hullParts(legacy).map((p) => p.profile), ['hex', 'box']);
+  assert.ok(insideHull(legacy, 0, 0, 3));
 });
 
 test('room-local coordinates follow each room axis', () => {
   const byId = Object.fromEntries(ship.rooms.map((r) => [r.id, r]));
-  assert.equal(roomU(byId.bridge, [33, -4.5, 4]), 0);
-  assert.equal(roomU(byId.corridor_aft, [18, 0, 0]), 0);
-  assert.equal(roomU(byId.engineering, [-5, 5.5, 0]), 0);
-  assert.equal(roomU(byId.lounge, [30, -3, 4]), 8);
+  assert.equal(roomU(byId.bridge, [-24, -4.5, 10]), 0);
+  assert.equal(roomU(byId.corridor_aft, [-10, 0, 0]), 0);
+  assert.equal(roomU(byId.corridor_fore, [-10, 0, 5]), 14);
+  assert.equal(roomU(byId.engineering, [-28, 5.5, 0]), 0);
+  assert.equal(roomU(byId.lounge, [-28, 3, 5]), 8);
 });
