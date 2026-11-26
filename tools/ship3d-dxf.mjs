@@ -17,7 +17,7 @@
 //   CAM_<id>              exterior camera: a point plus a 3 m line along its view direction
 //   TEXT                  labels
 import { readFileSync, writeFileSync } from 'node:fs';
-import { hullParts, station, profile, partY, withDecks, moduleExtent, segmentBox, windowQuads, windowBays } from '../src/ship3d/geometry.js';
+import { hullParts, station, profile, partY, withDecks, moduleExtent, segmentBox, windowQuads, windowBays, ladderParts } from '../src/ship3d/geometry.js';
 
 const root = new URL('..', import.meta.url);
 const ship = JSON.parse(readFileSync(new URL('data/ship3d.json', root), 'utf8'));
@@ -92,6 +92,13 @@ for (const bay of windowBays(ship)) {
   if (bay.rail) box(layer(`PONY_${bay.window}`, COLOR.service), bay.x, [bay.rail.y - 0.06, bay.rail.y + 0.06], bay.rail.z);
 }
 for (const s of ship.shafts || []) box(layer(`SHAFT_${s.id}`, COLOR[s.kind] ?? COLOR.ladder), s.x, s.y, s.z);
+for (const s of (ship.shafts || []).filter((q) => q.kind === 'ladder' || q.kind === 'vent')) {
+  const lp = ladderParts(ship, s);
+  const ly = layer(`LADDER_${s.id}`, COLOR.ladder);
+  for (const b of [...lp.rails, ...lp.rungs]) box(ly, b.x, b.y, b.z);
+  const lf = layer(`HATCH_${s.id}`, COLOR.text);
+  for (const b of lp.frames) box(lf, b.x, b.y, b.z);
+}
 for (const d of ship.ducts || []) for (const seg of d.segments) { const b = segmentBox(seg, d.size); box(layer(`DUCT_${d.id}`, COLOR.duct), b.x, b.y, b.z); }
 for (const w of ship.windows || []) for (const q of windowQuads(ship, w, 1)) face(layer(`WIN_${w.id}`, COLOR.window), ...q);
 for (const c of ship.cameras.exterior) {

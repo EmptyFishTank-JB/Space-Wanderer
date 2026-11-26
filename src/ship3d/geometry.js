@@ -380,6 +380,40 @@ export function windowBays(ship) {
   return out;
 }
 
+/**
+ * The ladder in a ladder well (or the rungs in a vent shaft), mounted on the
+ * wall the shaft names (ladderWall: '-x' | '+x' | '-y' | '+y'), and a hatch
+ * frame wherever the well passes through a deck or a ceiling. Boxes {x, y, z}.
+ */
+export function ladderParts(ship, s) {
+  const wall = s.ladderWall || '-x';
+  const ax = wall[1] === 'x' ? 0 : 1; // the axis the wall faces along
+  const out = wall[0] === '+' ? 1 : -1;
+  const span = [s.x, s.y][ax], across = [s.x, s.y][1 - ax];
+  const off = s.kind === 'vent' ? 0.08 : 0.14; // rails stand off the wall
+  const face = out > 0 ? span[1] - off : span[0] + off;
+  const c = (across[0] + across[1]) / 2, half = Math.min(0.24, (across[1] - across[0]) / 2 - 0.06);
+  const box = (a, b, z) => (ax === 0 ? { x: a, y: b, z } : { x: b, y: a, z });
+  const rails = [-1, 1].map((k) => box([face - 0.03, face + 0.03], [c + k * half - 0.03, c + k * half + 0.03], [s.z[0], s.z[1]]));
+  const rungs = [];
+  for (let z = s.z[0] + 0.3; z < s.z[1] - 0.1; z += 0.3) rungs.push(box([face - 0.02, face + 0.02], [c - half, c + half], [z - 0.02, z + 0.02]));
+  // hatch frames: at every deck floor or ceiling the well passes through, and where it opens into something at either end
+  const frames = [];
+  if (s.kind === 'ladder') {
+    const planes = new Set();
+    for (const d of ship.decks || []) for (const z of d.z) if (z > s.z[0] + 0.01 && z < s.z[1] - 0.01) planes.add(z);
+    const ceilings = new Set((ship.decks || []).map((d) => d.z[1]));
+    if (ceilings.has(s.z[0])) planes.add(s.z[0]);
+    if (!ceilings.has(s.z[1])) planes.add(s.z[1]);
+    const t = 0.1, m = 0.08;
+    for (const z of [...planes].sort((p, q) => p - q)) {
+      const X = [s.x[0] - m, s.x[1] + m], Y = [s.y[0] - m, s.y[1] + m], Z = [z - 0.05, z + 0.05];
+      frames.push({ x: X, y: [Y[0], Y[0] + t], z: Z }, { x: X, y: [Y[1] - t, Y[1]], z: Z }, { x: [X[0], X[0] + t], y: Y, z: Z }, { x: [X[1] - t, X[1]], y: Y, z: Z });
+    }
+  }
+  return { rails, rungs, frames };
+}
+
 /** The ship.json edits this arrangement needs (doors that move by more than half a door width). */
 export function proposedChanges(report, tolerance = 0.6) {
   const out = [];

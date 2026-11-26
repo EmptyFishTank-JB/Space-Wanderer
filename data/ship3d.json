@@ -1732,7 +1732,8 @@
     "corridor_aft",
     "corridor_fore"
    ],
-   "info": "The main ladder well, through all three hull decks at the forward end of the two spines. The sim's spine hatch is its upper half."
+   "info": "The main ladder well, through all three hull decks at the forward end of the two spines. The sim's spine hatch is its upper half.",
+   "ladderWall": "+x"
   },
   {
    "id": "lw_bridge",
@@ -1754,7 +1755,8 @@
     "corridor_fore",
     "bridge"
    ],
-   "info": "From the aft end of the living spine up through the deckhouse roof into the bridge."
+   "info": "From the aft end of the living spine up through the deckhouse roof into the bridge.",
+   "ladderWall": "-x"
   },
   {
    "id": "lw_fwd",
@@ -1776,7 +1778,8 @@
     "fwd_main",
     "lower_passage"
    ],
-   "info": "Second way between the main and lower decks, so the hold and rover bay are never one hatch from being cut off."
+   "info": "Second way between the main and lower decks, so the hold and rover bay are never one hatch from being cut off.",
+   "ladderWall": "+x"
   },
   {
    "id": "freight_lift",
@@ -1840,7 +1843,8 @@
     9.2
    ],
    "opensTo": [],
-   "info": "Vertical vent with rungs, behind engineering: joins the main-deck overhead duct to the deckhouse roof duct."
+   "info": "Vertical vent with rungs, behind engineering: joins the main-deck overhead duct to the deckhouse roof duct.",
+   "ladderWall": "+x"
   },
   {
    "id": "vent_fwd",
@@ -1859,7 +1863,8 @@
     4.4
    ],
    "opensTo": [],
-   "info": "Vertical vent with rungs at the forward end of the service spine: joins the overhead duct to the under-floor crawl."
+   "info": "Vertical vent with rungs at the forward end of the service spine: joins the overhead duct to the under-floor crawl.",
+   "ladderWall": "-x"
   },
   {
    "id": "skiff_doors",
@@ -1924,7 +1929,8 @@
    "opensTo": [
     "gallery_s"
    ],
-   "info": "A short ladder up through the gallery ceiling into the lifeboat's hatch."
+   "info": "A short ladder up through the gallery ceiling into the lifeboat's hatch.",
+   "ladderWall": "+y"
   },
   {
    "id": "lb_p",
@@ -1945,7 +1951,8 @@
    "opensTo": [
     "gallery_p"
    ],
-   "info": "A short ladder up through the gallery ceiling into the lifeboat's hatch."
+   "info": "A short ladder up through the gallery ceiling into the lifeboat's hatch.",
+   "ladderWall": "-y"
   },
   {
    "id": "vent_lower",
@@ -1964,7 +1971,8 @@
     -0.15
    ],
    "opensTo": [],
-   "info": "Vertical vent with rungs: joins the under-floor crawl of the main deck to the lower deck's crawl."
+   "info": "Vertical vent with rungs: joins the under-floor crawl of the main deck to the lower deck's crawl.",
+   "ladderWall": "-x"
   }
  ],
  "ducts": [

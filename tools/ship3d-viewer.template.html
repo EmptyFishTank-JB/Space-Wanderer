@@ -360,7 +360,7 @@ function readPalette() {
   const cs = getComputedStyle(document.documentElement);
   const g = (n) => cs.getPropertyValue(n).trim();
   pal = { ink: g('--ink'), panel: g('--panel'), muted: g('--muted'), select: g('--select'), traveler: g('--traveler'), hullFill: g('--hull-fill'), hullLine: g('--hull-line'), hullSolid: g('--hull-solid'), glass: g('--glass'),
-    ladder: g('--ladder'), lift: g('--lift'), duct: g('--duct'), cam: g('--cam'), accent: g('--accent'), display: g('--display') };
+    ladder: g('--ladder'), lift: g('--lift'), duct: g('--duct'), cam: g('--cam'), accent: g('--accent'), display: g('--display'), ladderSteel: g('--muted') };
   for (const [k, v] of Object.entries(ROLE)) pal[k] = g(v);
 }
 readPalette();
@@ -609,12 +609,19 @@ if (!THREE) {
       groups.systems.add(tag(plate, `shaft:${s.id}`, { kind: 'shaft', z: s.z }));
       continue;
     }
-    const m = boxMesh(s.x, s.y, s.z, mat(key, { transparent: true, opacity: 0.85 }));
     if (s.kind === 'ladder' || s.kind === 'vent') {
-      const pts = [];
-      for (let z = s.z[0] + 0.3; z < s.z[1]; z += 0.35) pts.push(T(s.x[0] - 0.03, s.y[0] + 0.12, z).sub(m.position), T(s.x[0] - 0.03, s.y[1] - 0.12, z).sub(m.position));
-      m.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lineMat('ink', 0.55)));
+      // an open well: a faint shell with its edges, the ladder on its wall, hatch frames where it passes a deck
+      const g = new THREE.Group();
+      const shell = boxMesh(s.x, s.y, s.z, mat(key, { transparent: true, opacity: 0.16, depthWrite: false }));
+      shell.add(new THREE.LineSegments(new THREE.EdgesGeometry(shell.geometry), lineMat(key, 0.8)));
+      g.add(shell);
+      const lp = ladderParts(S, s), steel = mat('ladderSteel'), frameM = mat('ink');
+      for (const b of [...lp.rails, ...lp.rungs]) g.add(boxMesh(b.x, b.y, b.z, steel));
+      for (const b of lp.frames) g.add(boxMesh(b.x, b.y, b.z, frameM));
+      groups.systems.add(tag(g, `shaft:${s.id}`, { kind: 'shaft', z: s.z }));
+      continue;
     }
+    const m = boxMesh(s.x, s.y, s.z, mat(key, { transparent: true, opacity: 0.85 }));
     groups.systems.add(tag(m, `shaft:${s.id}`, { kind: 'shaft', z: s.z }));
   }
   for (const d of ducts) {
