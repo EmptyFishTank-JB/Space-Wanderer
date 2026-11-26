@@ -88,3 +88,26 @@ test('windows lie on the hull surface, and the tines share the main hull\'s sect
   assert.equal(m.zt, t.zt);
   assert.ok(Math.abs(m.b - (t.yc + t.b)) < 0.05, 'outer edges meet');
 });
+
+test('exterior fittings sit on the skin: attached at the base, clear of the hull everywhere else', () => {
+  const mid = (r) => (r[0] + r[1]) / 2;
+  for (const m of ship.modules) {
+    if (m.shape === 'rcs') {
+      // the inboard face touches the hull; every nozzle stands outside it
+      const c = [mid(m.x), mid(m.y), mid(m.z)];
+      const inboard = [c[0], m.out > 0 ? m.y[0] + 0.05 : m.y[1] - 0.05, c[2]];
+      assert.ok(insideHull(ship, ...inboard), `${m.id} is not attached to the hull`);
+      const hx = (m.x[1] - m.x[0]) / 2 + 0.2, hy = (m.y[1] - m.y[0]) / 2 + 0.2, hz = (m.z[1] - m.z[0]) / 2 + 0.2;
+      for (const n of [[0, 0, hz], [0, 0, -hz], [hx, 0, 0], [-hx, 0, 0], [0, m.out * hy, 0]]) assert.ok(!insideHull(ship, c[0] + n[0], c[1] + n[1], c[2] + n[2]), `${m.id}: a nozzle fires into the hull`);
+    }
+    if (m.shape === 'turret' || (m.id.startsWith('ut_') && m.shape === 'cyl-z')) {
+      const top = m.mount === 'top';
+      assert.ok(insideHull(ship, m.x, m.y, top ? m.z[0] + 0.02 : m.z[1] - 0.02), `${m.id} base is not on the hull`);
+      assert.ok(!insideHull(ship, m.x, m.y, top ? m.z[0] + 0.3 : m.z[1] - 0.3), `${m.id} is sunk into the hull`);
+    }
+    if (m.shape === 'rod') {
+      assert.ok(insideHull(ship, ...m.from), `${m.id} root is not in the hull`);
+      assert.ok(!insideHull(ship, ...m.to), `${m.id} tip ends inside the hull`);
+    }
+  }
+});

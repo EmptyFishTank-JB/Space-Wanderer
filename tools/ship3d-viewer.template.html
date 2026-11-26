@@ -9,7 +9,7 @@
 :root {
   --bg: #eef1f1; --panel: #f8fafa; --ink: #18232c; --muted: #56646e; --rule: #c9d2d5; --grid: #dfe6e8;
   --accent: #0c7a86; --select: #d4570f; --traveler: #d4570f;
-  --hab: #3c97a4; --life: #4e9a55; --service: #7d8a94; --passage: #a9b6bc; --power: #c98a1e; --drive: #6a6fc2; --fuel: #3f7fc4; --thermal: #c4583b; --sensor: #8e8e8e; --science: #9b67b5; --rover: #c9a227;
+  --hab: #3c97a4; --life: #4e9a55; --service: #7d8a94; --passage: #a9b6bc; --power: #c98a1e; --drive: #6a6fc2; --fuel: #3f7fc4; --thermal: #c4583b; --sensor: #8e8e8e; --science: #9b67b5; --rover: #c9a227; --weapon: #b23a48; --utility: #a0733a; --shield: #3a86c8; --security: #8a4b5c;
   --ladder: #b4632a; --lift: #c9a227; --duct: #8a7f6c; --cam: #0c7a86;
   --hull-fill: #2c4a5a; --hull-line: #2c4a5a; --hull-solid: #a3aeb4; --glass: #2b96b9;
   --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
@@ -19,14 +19,14 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0c1115; --panel: #11181d; --ink: #d3e1de; --muted: #8b9ca0; --rule: #26343c; --grid: #19242b;
   --accent: #5fc9bc; --select: #f08a3c; --traveler: #f08a3c;
-  --hab: #4fb3bf; --life: #66b56c; --service: #8c99a3; --passage: #5d6c74; --power: #e0a03a; --drive: #8f93e6; --fuel: #5b9be0; --thermal: #e07656; --sensor: #a4a4a4; --science: #b98ad3; --rover: #e3c14a;
+  --hab: #4fb3bf; --life: #66b56c; --service: #8c99a3; --passage: #5d6c74; --power: #e0a03a; --drive: #8f93e6; --fuel: #5b9be0; --thermal: #e07656; --sensor: #a4a4a4; --science: #b98ad3; --rover: #e3c14a; --weapon: #e0606e; --utility: #d29a55; --shield: #66aef0; --security: #b5707f;
   --ladder: #e08a4c; --lift: #e3c14a; --duct: #a89a82; --cam: #5fc9bc;
   --hull-fill: #8cc8d2; --hull-line: #8cc8d2; --hull-solid: #4a585f; --glass: #5ac8dc;
   color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0c1115; --panel: #11181d; --ink: #d3e1de; --muted: #8b9ca0; --rule: #26343c; --grid: #19242b;
   --accent: #5fc9bc; --select: #f08a3c; --traveler: #f08a3c;
-  --hab: #4fb3bf; --life: #66b56c; --service: #8c99a3; --passage: #5d6c74; --power: #e0a03a; --drive: #8f93e6; --fuel: #5b9be0; --thermal: #e07656; --sensor: #a4a4a4; --science: #b98ad3; --rover: #e3c14a;
+  --hab: #4fb3bf; --life: #66b56c; --service: #8c99a3; --passage: #5d6c74; --power: #e0a03a; --drive: #8f93e6; --fuel: #5b9be0; --thermal: #e07656; --sensor: #a4a4a4; --science: #b98ad3; --rover: #e3c14a; --weapon: #e0606e; --utility: #d29a55; --shield: #66aef0; --security: #b5707f;
   --ladder: #e08a4c; --lift: #e3c14a; --duct: #a89a82; --cam: #5fc9bc;
   --hull-fill: #8cc8d2; --hull-line: #8cc8d2; --hull-solid: #4a585f; --glass: #5ac8dc;
   color-scheme: dark; }
@@ -97,7 +97,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--select); ou
 .sheet { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 12px 10px; display: grid; gap: 8px; align-content: start; min-width: 0; position: relative; }
 .sheet.wide { grid-column: 1 / -1; }
 .sheet .head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
-.sheet .draw { overflow-x: auto; overscroll-behavior-x: contain; }
+.sheet .draw { overflow: auto; overscroll-behavior: contain; max-height: 78vh; }
+.sheet .draw.zoomed { cursor: grab; }
+.sheet .draw.panning { cursor: grabbing; user-select: none; }
+.zoomctl button { min-width: 2.2em; }
 .sheet svg { display: block; width: 100%; height: auto; }
 #profile svg, #camplan svg { min-width: 1100px; }
 #plan svg { min-width: 1240px; }
@@ -218,6 +221,7 @@ footer { font: 12px var(--mono); color: var(--muted); }
           <button type="button" data-layer="systems" aria-pressed="true">Ladders &amp; ducts</button>
           <button type="button" data-layer="machinery" aria-pressed="true">Machinery</button>
           <button type="button" data-layer="cameras" aria-pressed="true">Cameras</button>
+          <button type="button" data-layer="shield" aria-pressed="false">Shield</button>
           <button type="button" data-layer="labels" aria-pressed="true">Labels</button>
         </span></span>
         <label class="cut" for="cutx"><span class="tlabel">Cut</span><input id="cutx" type="range" min="-68" max="71" step="0.5" value="71"><output id="cutout" for="cutx">no cut</output></label>
@@ -228,7 +232,7 @@ footer { font: 12px var(--mono); color: var(--muted); }
 
   <section aria-labelledby="hga">
     <h2 id="hga">Sections and deck plans</h2>
-    <p class="lede">The general-arrangement set, drawn from the same numbers as the model. Click or tap anything on a drawing. The transverse section follows the cut slider above. <span class="swipe">Swipe a drawing sideways to see all of it.</span></p>
+    <p class="lede">The general-arrangement set, drawn from the same numbers as the model. Click or tap anything on a drawing. Zoom any drawing with its − / + buttons, ctrl-scroll or a pinch, and drag to move around once zoomed in. The transverse section follows the cut slider above. <span class="swipe">Swipe a drawing sideways to see all of it.</span></p>
     <div class="sheets">
       <div class="sheet wide">
         <div class="head"><h3 id="profiletitle">Inboard profile</h3>
@@ -305,12 +309,12 @@ footer { font: 12px var(--mono); color: var(--muted); }
 const THREE_URL = '__THREE_URL__';
 const S = SHIP;
 const $ = (id) => document.getElementById(id);
-const ROLE = { hab: '--hab', life: '--life', service: '--service', passage: '--passage', power: '--power', drive: '--drive', fuel: '--fuel', thermal: '--thermal', sensor: '--sensor', science: '--science', rover: '--rover' };
-const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', passage: 'Passage', power: 'Power', drive: 'Drive', fuel: 'Fuel', thermal: 'Thermal', sensor: 'Sensors', science: 'Science', rover: 'Vehicle' };
+const ROLE = { hab: '--hab', life: '--life', service: '--service', passage: '--passage', power: '--power', drive: '--drive', fuel: '--fuel', thermal: '--thermal', sensor: '--sensor', science: '--science', rover: '--rover', weapon: '--weapon', utility: '--utility', shield: '--shield', security: '--security' };
+const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', passage: 'Passage', power: 'Power', drive: 'Drive', fuel: 'Fuel', thermal: 'Thermal', sensor: 'Sensors', science: 'Science', rover: 'Vehicle', weapon: 'Weapons', utility: 'Utility mount', shield: 'Shields', security: 'Security' };
 const SHORT = {
   bridge: 'Bridge', lounge: 'Lounge', quarters: 'Quarters', galley: 'Galley', corridor_fore: 'Living spine', corridor_aft: 'Service spine', hydro: 'Hydroponics', lifesupport: 'Life support',
   storage: 'Storage', airlock: 'Airlock', workshop: 'Workshop', engineering: 'Engineering', gym: 'Gym', fwd_living: 'Lookout', medbay: 'Medbay', washroom: 'Washroom', fwd_main: 'Fwd passage',
-  lab: 'Lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores',
+  lab: 'Lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores', armoury: 'Armoury', firecontrol: 'Fire control', magazine: 'Magazine', shieldroom: 'Shield gen', cmstore: 'Countermeasures',
 };
 const DECK_NAME = Object.fromEntries(S.decks.map((d) => [d.id, d.name]));
 const deckOf = Object.fromEntries(S.decks.map((d) => [d.id, d]));
@@ -355,6 +359,7 @@ const specs = [['Length', `${Math.round(X_MAX - X_MIN)} m`], ['Beam', `${Math.ro
 $('specs').innerHTML = specs.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
 $('revb').innerHTML = [
   '<b>Rev C:</b> a Krait-style hull: flat top deck with the belly hung below it. The tines are part of the same skin, with blunt, flat tips. The two big thrusters sit in housings built into the rear corners, windows lie flush on the hull, and a survey skiff joins the rover.',
+  '<b>Armed and shielded:</b> six hardpoints (two large ventral, two medium dorsal, two small at the bow), six utility mounts, a shield generator (the Shield button shows its bubble), and an armoury, fire-control room, magazine and countermeasures store. Micro-thruster pods sit on the skin all round, and antennas and a magnetometer boom stand out from the tines.',
   '<b>Bigger and reshaped.</b> 94 m becomes 138 m: a long, Anaconda-style wedge with a forked, Krait-style bow and a broad aft body with two big outboard thrusters and two inboard engines.',
   '<b>Bridge moved aft</b> into a raised tower on the deckhouse, looking forward over the whole ship.',
   '<b>Four decks,</b> three ladder wells, a freight lift, an EVA ladder and a crawlable vent network in the voids between decks.',
@@ -502,7 +507,7 @@ function makeFocus(container, onHide, bounds) {
 }
 
 // ───────── 3D model (three.js, real depth buffer) ─────────
-const view = { yaw: 0.78, pitch: 0.42, dist: 134, target: [0, 1.5, 0], hull: 'ghost', decks: 'all', shutters: 'open', cut: NO_CUT, layers: { rooms: true, systems: true, machinery: true, cameras: true, labels: true } };
+const view = { yaw: 0.78, pitch: 0.42, dist: 134, target: [0, 1.5, 0], hull: 'ghost', decks: 'all', shutters: 'open', cut: NO_CUT, layers: { rooms: true, systems: true, machinery: true, cameras: true, labels: true, shield: false } };
 const PRESETS = { iso: [0.78, 0.42, 134], top: [Math.PI / 2, 1.555, 140], side: [Math.PI / 2, 0.03, 128], front: [0, 0.14, 150], aft: [Math.PI, 0.2, 140], below: [0.9, -0.5, 120] };
 const coarse = matchMedia('(pointer: coarse)').matches;
 $('hint').textContent = coarse ? 'drag to turn · pinch to zoom · two fingers to move · tap for details' : 'drag to turn · right-drag or shift-drag to move · ctrl-scroll or ± to zoom · click for details';
@@ -650,6 +655,37 @@ if (!THREE) {
         obj.add(n);
       }
     }
+    else if (m.shape === 'turret') {
+      // a gimballed hardpoint: a ring on the skin, a turret head and twin barrels pointing forward
+      obj = new THREE.Group();
+      const up = m.mount === 'top' ? 1 : -1, base = up > 0 ? m.z[0] : m.z[1], h = m.z[1] - m.z[0];
+      const ringM = new THREE.Mesh(new THREE.CylinderGeometry(m.r, m.r * 1.1, h * 0.4, 20), mat('service'));
+      ringM.position.copy(T(m.x, m.y, base + up * h * 0.2)); obj.add(ringM);
+      const head = boxMesh([m.x - m.r * 0.7, m.x + m.r * 0.8], [m.y - m.r * 0.6, m.y + m.r * 0.6], up > 0 ? [base + h * 0.4, base + h] : [base - h, base - h * 0.4], mat(m.role));
+      obj.add(head);
+      for (const dy of [-0.28, 0.28]) {
+        const L = m.r * 2.2, bar = new THREE.Mesh(new THREE.CylinderGeometry(m.r * 0.1, m.r * 0.12, L, 10), mat('ink'));
+        bar.rotation.z = Math.PI / 2; bar.position.copy(T(m.x + m.r * 0.8 + L / 2, m.y + dy * m.r, base + up * h * 0.7)); obj.add(bar);
+      }
+    }
+    else if (m.shape === 'rod') {
+      // an antenna or boom from its root on the hull out to its tip
+      const a = T(...m.from), b = T(...m.to), len = a.distanceTo(b);
+      obj = new THREE.Group();
+      const r = new THREE.Mesh(new THREE.CylinderGeometry(m.r * 0.6, m.r, len, 8), mat(m.role));
+      r.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+      r.position.copy(a.clone().add(b).multiplyScalar(0.5)); obj.add(r);
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(m.r * 1.8, 10, 8), mat(m.role)); tip.position.copy(b); obj.add(tip);
+    }
+    else if (m.shape === 'dish') {
+      obj = new THREE.Group();
+      const dir = T(...m.look).normalize();
+      const dish = new THREE.Mesh(new THREE.SphereGeometry(m.r, 20, 10, 0, Math.PI * 2, 0, 0.9), mat(m.role));
+      dish.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
+      const c = T(m.x, m.y, m.z + m.r * 0.9);
+      dish.position.copy(c.clone().add(dir.clone().multiplyScalar(m.r))); obj.add(dish);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, m.r * 0.9, 8), mat('service')); post.position.copy(T(m.x, m.y, m.z + m.r * 0.45)); obj.add(post);
+    }
     else if (m.shape === 'skiff') {
       // a small VTOL flyer: fuselage, canopy, stub wings with lift fans
       obj = new THREE.Group();
@@ -672,6 +708,11 @@ if (!THREE) {
     }
     groups.machinery.add(tag(obj, `mod:${m.id}`, { kind: 'module', z: e.z }));
   }
+  // the shield bubble: an ellipsoid round the whole hull, shown on request
+  const sx = (X_MAX - X_MIN) / 2 + 4, sy = beam / 2 + 4, sz = (crown - keel) / 2 + 4;
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), mat('shield', { transparent: true, opacity: 0.12, depthWrite: false, flatShading: false }));
+  bubble.scale.set(sx, sz, sy); bubble.position.copy(T((X_MAX + X_MIN) / 2, 0, (crown + keel) / 2)); bubble.renderOrder = 8;
+  scene.add(bubble);
   // exterior cameras: a small view cone at each mount
   for (const c of cams) {
     const dir = T(...c.look).normalize();
@@ -799,6 +840,7 @@ if (!THREE) {
     groups.systems.visible = view.layers.systems;
     groups.machinery.visible = view.layers.machinery;
     groups.cameras.visible = view.layers.cameras;
+    bubble.visible = view.layers.shield;
     for (const g of [groups.rooms, groups.systems, groups.machinery]) for (const o of g.children) o.visible = deckShown(o.userData.deck, o.userData.z);
     groups.hull.visible = view.hull !== 'off';
     const solid = view.hull === 'solid';
@@ -1024,8 +1066,48 @@ const fillOf = (role) => `fill:var(${ROLE[role] || '--service'})`;
 const fits = (label, size, w) => label.length * size * 0.5 + 0.3 < w;
 const roomCls = (r) => `room${r.role === 'passage' ? ' corr' : ''}${r.new ? ' new' : ''}`;
 
+const sheetZoom = {};
+function applyZoom(el, keep) {
+  const svg = el.querySelector('svg');
+  if (!svg) return;
+  const z = sheetZoom[el.id] || 1;
+  if (!svg.dataset.base) { svg.style.width = ''; svg.style.minWidth = ''; svg.dataset.base = String(Math.max(svg.getBoundingClientRect().width, el.clientWidth) || 800); }
+  const fx = keep ? (el.scrollLeft + keep[0]) / Math.max(1, el.scrollWidth) : 0, fy = keep ? (el.scrollTop + keep[1]) / Math.max(1, el.scrollHeight) : 0;
+  svg.style.minWidth = '0';
+  svg.style.width = `${Number(svg.dataset.base) * z}px`;
+  el.classList.toggle('zoomed', z > 1);
+  if (keep) { el.scrollLeft = fx * el.scrollWidth - keep[0]; el.scrollTop = fy * el.scrollHeight - keep[1]; }
+}
+function zoomSheet(el, f, at) {
+  sheetZoom[el.id] = Math.min(8, Math.max(1, (sheetZoom[el.id] || 1) * f));
+  applyZoom(el, at || [el.clientWidth / 2, el.clientHeight / 2]);
+}
+function addZoom(el) {
+  const head = el.parentElement.querySelector('.head');
+  const ctl = document.createElement('span');
+  ctl.className = 'seg zoomctl';
+  ctl.innerHTML = '<button type="button" aria-label="Zoom out">−</button><button type="button" aria-label="Zoom in">+</button><button type="button">Fit</button>';
+  const [out, inn, fit] = ctl.querySelectorAll('button');
+  out.addEventListener('click', () => zoomSheet(el, 1 / 1.5));
+  inn.addEventListener('click', () => zoomSheet(el, 1.5));
+  fit.addEventListener('click', () => { sheetZoom[el.id] = 1; applyZoom(el); });
+  if (head) head.appendChild(ctl); else el.parentElement.prepend(ctl);
+  el.addEventListener('wheel', (e) => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); const r = el.getBoundingClientRect(); zoomSheet(el, e.deltaY < 0 ? 1.2 : 1 / 1.2, [e.clientX - r.left, e.clientY - r.top]); }, { passive: false });
+  // drag to pan once zoomed in (a click without a drag still selects)
+  let drag = null;
+  el.addEventListener('pointerdown', (e) => { if ((sheetZoom[el.id] || 1) <= 1 || e.pointerType === 'touch') return; drag = { x: e.clientX, y: e.clientY, l: el.scrollLeft, t: el.scrollTop, moved: false }; });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; el.classList.add('panning'); } el.scrollLeft = drag.l - dx; el.scrollTop = drag.t - dy; });
+  window.addEventListener('pointerup', () => { if (drag && drag.moved) el.addEventListener('click', (e) => e.stopPropagation(), { capture: true, once: true }); drag = null; el.classList.remove('panning'); });
+  // two-finger pinch on touch screens
+  let pinch = null;
+  el.addEventListener('touchstart', (e) => { if (e.touches.length === 2) pinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }, { passive: true });
+  el.addEventListener('touchmove', (e) => { if (!pinch || e.touches.length !== 2) return; e.preventDefault(); const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); const r = el.getBoundingClientRect(); zoomSheet(el, d / pinch, [(e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left, (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top]); pinch = d; }, { passive: false });
+  el.addEventListener('touchend', () => { pinch = null; });
+}
 function mountSheet(el, vb, inner, focus, label) {
+  const keep = [el.scrollLeft, el.scrollTop];
   el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(n2).join(' ')}" role="img" aria-label="${label}">${inner}</svg>`;
+  if (sheetZoom[el.id] > 1) { applyZoom(el); el.scrollLeft = keep[0]; el.scrollTop = keep[1]; }
   el.querySelectorAll('[data-id]').forEach((node) => node.addEventListener('click', (e) => {
     e.stopPropagation();
     const cr = focus.container.getBoundingClientRect(), r = node.getBoundingClientRect();
@@ -1036,6 +1118,7 @@ function mountSheet(el, vb, inner, focus, label) {
 }
 function sheetFocus(id) {
   const el = $(id);
+  addZoom(el);
   const f = makeFocus(el.parentElement, () => el.querySelectorAll('.on').forEach((x) => x.classList.remove('on')));
   el.addEventListener('click', () => f.hide());
   return f;
@@ -1062,7 +1145,7 @@ function camGlyph(c, x, y, dx, dy, L) {
 }
 
 let half = 'port';
-const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive', scoop_plant: 'Scoop plant', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', water_tanks: 'Water tanks', ore_bunkers: 'Ore bunkers', engine_pi: 'Engines', engine_si: 'Engines', reactor_shield: 'Reactor', lifeboat_s: 'Lifeboat', lifeboat_p: 'Lifeboat' };
+const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive', scoop_plant: 'Scoop plant', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', water_tanks: 'Water tanks', ore_bunkers: 'Ore bunkers', engine_pi: 'Engines', engine_si: 'Engines', reactor_shield: 'Reactor', lifeboat_s: 'Lifeboat', lifeboat_p: 'Lifeboat', shield_gen: 'Shield gen' };
 function drawProfile() {
   const Z = (z) => -z, fs = 1.1;
   const inHalf = (y) => (half === 'port' ? y[0] < 0 : y[1] > 0);

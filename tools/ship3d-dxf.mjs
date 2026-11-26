@@ -28,7 +28,7 @@ const lines = [];
 const g = (code, v) => lines.push(String(code), typeof v === 'number' ? (Number.isInteger(v) ? String(v) : v.toFixed(4)) : String(v));
 const layers = new Map();
 const layer = (name, color) => { if (!layers.has(name)) layers.set(name, color); return name; };
-const COLOR = { hull: 8, skin: 9, hab: 4, life: 3, service: 252, passage: 254, power: 2, drive: 5, fuel: 150, thermal: 1, sensor: 251, science: 6, rover: 40, ladder: 30, lift: 50, vent: 33, duct: 33, window: 140, cam: 130, text: 7 };
+const COLOR = { hull: 8, skin: 9, hab: 4, life: 3, service: 252, passage: 254, power: 2, drive: 5, fuel: 150, thermal: 1, sensor: 251, science: 6, rover: 40, weapon: 10, utility: 42, shield: 160, security: 12, ladder: 30, lift: 50, vent: 33, duct: 33, window: 140, cam: 130, text: 7 };
 const ents = [];
 
 function face(ly, a, b, c, d = c) {

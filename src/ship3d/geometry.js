@@ -103,7 +103,8 @@ export function withDecks(ship) {
 /** Axis-aligned extent {x, y, z} of a module. */
 export function moduleExtent(m) {
   if (m.shape === 'cyl-x') return { x: m.x, y: [m.y - m.r, m.y + m.r], z: [m.z - m.r, m.z + m.r] };
-  if (m.shape === 'cyl-z') return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: m.z };
+  if (m.shape === 'cyl-z' || m.shape === 'turret') return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: m.z };
+  if (m.shape === 'dish') return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: [m.z, m.z + m.r] };
   return { x: m.x, y: m.y, z: m.z };
 }
 
