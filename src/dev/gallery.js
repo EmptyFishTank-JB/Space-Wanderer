@@ -41,13 +41,14 @@ function moveTo(s, sys, b, mode = 'orbit') {
 
 const SCENARIOS = {
   day(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: [...ROOM_FEEDS, 'CAM-08'] }; },
+  hull(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: ['CAM-08', 'CAM-14', 'CAM-15', 'CAM-16', 'CAM-17', 'CAM-18', 'CAM-19'] }; },
   scoop(d) {
     const s = createInitialState(d, { seed: 'gallery-scoop' });
     runUntil(s, d, (x) => x.t > 3 * 3600);
     Object.assign(s.space, { surveyed: true, agenda: [{ kind: 'scoop' }] });
     s.ship.fuel.tons = 4;
     runUntil(s, d, (x) => x.ship.flight.mode === 'scooping' && x.ship.thermal.heat > 0.72);
-    return { s, feeds: ['CAM-01', 'CAM-08', 'CAM-07', 'CAM-02'] };
+    return { s, feeds: ['CAM-15', 'CAM-16', 'CAM-01', 'CAM-08', 'CAM-07', 'CAM-02'] };
   },
   ringed(d) {
     const s = createInitialState(d, { seed: 'gallery-ring' });
@@ -72,7 +73,7 @@ const SCENARIOS = {
       s.space.agenda = [{ kind: 'visit', body: f.b.id, land: true, eva: 1, lingerH: 0, done: { scanned: true, landed: false, evas: 0, lingerUntil: null, leftSurface: false } }];
       runUntil(s, d, (x) => x.traveler.pos.room === 'surface' && x.traveler.activity.params.plan.x > 60);
     }
-    return { s, feeds: ['EVA-POV', 'CAM-08', 'CAM-13', 'CAM-01'] };
+    return { s, feeds: ['EVA-POV', 'CAM-19', 'CAM-17', 'CAM-08', 'CAM-13', 'CAM-01'] };
   },
   descent(d) {
     const s = createInitialState(d, { seed: 'gallery-descent' });
@@ -91,7 +92,7 @@ const SCENARIOS = {
     s.space.surveyed = true;
     const r = plotRoute(s, d);
     if (r.kind === 'jump') { startJump(s, d, r); runUntil(s, d, (x) => x.ship.flight.mode === 'hyperspace' && x.ship.flight.timer < 25, 200); }
-    return { s, feeds: ['CAM-08', 'CAM-07', 'CAM-01'] };
+    return { s, feeds: ['CAM-14', 'CAM-08', 'CAM-07', 'CAM-01'] };
   },
   // idle life: privacy mosaic, clothes, pastimes
   toilet(d) { const s = createInitialState(d, { seed: 'gallery-wc' }); runUntil(s, d, (x) => x.traveler.activity?.id === 'use_toilet' && x.traveler.activity.phase === 'perform' && x.traveler.activity.elapsed > 20); return { s, feeds: ['CAM-03'] }; },

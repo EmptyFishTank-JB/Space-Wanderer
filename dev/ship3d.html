@@ -1939,11 +1939,12 @@ $('else').innerHTML = [
   `Window views follow the hull (<code>cameras.json</code>): the lounge, galley and hydroponics look to starboard, the quarters and airlock to port${yawOff.length ? ` (still to match: ${yawOff.join(', ')})` : ''}.`,
   'The two corridors are now the Living Deck Spine and the Service Deck Spine, one above the other.',
   'Engineering, life support, storage and the workshop have virtual windows: wall screens showing an exterior camera.',
+  'Seven hull cameras replace the single EXT-HULL feed: dorsal, bow, scoop, stern, port, starboard and ventral. The director picks the one that suits the moment: the scoop camera while scooping, the ventral one for touchdown, the bow for a jump, the stern radiators when the ship runs hot.',
+  'Ladders are climbs: the bridge ladder and the trunk ladder come up through floor hatches with grab rails and go up the wall to ceiling hatches.',
 ].map((x) => `<li>${x}</li>`).join('');
 $('untouched').innerHTML = [
   `The ${newRooms.length} new spaces, the ducts and lifts, the weapons and the shield exist only in this proposal so far. They can join the game a few at a time.`,
-  'The exterior cameras: the game still has one hull camera (EXT-HULL); the nine mounts here are next.',
-  'The bridge ladder and the trunk ladder are climbs, so crossing them could show a short climbing animation.',
+  'The rover bay, rover and skiff cameras (EXT-BAY, ROVER-CAM, EXT-SKIFF) wait for rover and skiff outings.',
 ].map((x) => `<li>${x}</li>`).join('');
 $('foot').textContent = `Drawn from data/ship3d.json and checked against data/ship.json by tools/ship3d.mjs · ${rooms.length} spaces · ${shafts.length} shafts · ${ducts.length} duct networks · ${S.modules.length} hull modules · ${cams.length} exterior cameras.`;
 

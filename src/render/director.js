@@ -3,7 +3,7 @@
 // in, randomness is injected, so the behavior is testable.
 import { W, PPM } from './gfx.js';
 
-export const EXT = 'CAM-08';
+export const EXT = 'CAM-08'; // the dorsal hull camera, the default exterior shot
 export const EVA = 'EVA-POV';
 
 const between = (rng, [a, b]) => a + (b - a) * rng();
@@ -32,6 +32,17 @@ export class Director {
   }
 
   feedDef(id) { return this.feeds.find((f) => f.id === id); }
+  isExterior(id) { const f = this.feedDef(id); return !!(f && f.exterior); }
+
+  /** Which hull camera suits this moment: by event, else by ship mode; a hot ship shows its radiators. */
+  exteriorFor(key, c = {}) {
+    const shots = this.cfg.exteriorShots || {};
+    let list = shots[key] || (shots.modes && shots.modes[c.shipMode]) || [EXT];
+    if (!shots[key] && shots.hot && (c.heat ?? 0) > (shots.hotAbove ?? 0.7)) list = shots.hot;
+    list = list.filter((id) => this.feedDef(id));
+    if (!list.length) return EXT;
+    return list.length === 1 ? list[0] : list[Math.floor(this.rng() * list.length) % list.length];
+  }
   feedForRoom(room) { return room === 'surface' ? EVA : this.byRoom[room] || null; }
 
   cut(now, feed, { fade = false, reason = 'follow' } = {}) {
@@ -75,7 +86,7 @@ export class Director {
 
   /**
    * Advance the director.
-   * c: { travelerRoom, eva, events: [{type, phase}], shipMode, travelerStill, interestingRooms: [room] }
+   * c: { travelerRoom, eva, events: [{type, phase}], shipMode, heat, travelerStill, interestingRooms: [room] }
    */
   update(now, c) {
     const target = c.eva ? EVA : this.feedForRoom(c.travelerRoom) || this.feed;
@@ -103,9 +114,10 @@ export class Director {
       if (!dur) continue;
       const major = ['hyperspace_charge', 'hyperspace_exit', 'touchdown', 'liftoff', 'scoop_start', 'torpor_start', 'descent_phase'].includes(e.type);
       if (major || now - this.shotStart >= this.minShot) {
-        this.hold = { feed: EXT, until: now + dur, kind: 'exterior' };
+        const feed = this.exteriorFor(e.type, c);
+        this.hold = { feed, until: now + dur, kind: 'exterior' };
         this.pending = null;
-        this.cut(now, EXT, { reason: e.type });
+        this.cut(now, feed, { reason: e.type });
       }
     }
 
@@ -129,8 +141,9 @@ export class Director {
     if (now >= this.nextExteriorAt) {
       this.nextExteriorAt = now + 60 * between(this.rng, this.cfg.exteriorEveryMinutes);
       if (['cruise', 'orbit', 'scooping', 'landed', 'idle', 'void'].includes(c.shipMode)) {
-        this.hold = { feed: EXT, until: now + between(this.rng, this.cfg.exteriorHoldSeconds), kind: 'exterior' };
-        this.cut(now, EXT, { reason: 'exterior' });
+        const feed = this.exteriorFor(null, c);
+        this.hold = { feed, until: now + between(this.rng, this.cfg.exteriorHoldSeconds), kind: 'exterior' };
+        this.cut(now, feed, { reason: 'exterior' });
         return this.feed;
       }
     }

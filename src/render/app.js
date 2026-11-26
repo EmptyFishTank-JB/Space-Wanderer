@@ -2,7 +2,7 @@
 // frame loop. Reads the live sim (never writes it), asks the director which
 // feed to show, and blits at the largest whole-number scale that fits.
 import { W, H, PPM, rect } from './gfx.js';
-import { Director, interestingRooms, EXT, EVA } from './director.js';
+import { Director, interestingRooms, EVA } from './director.js';
 import { spaceView } from './spaceview.js';
 import { TravelerTracker } from './actor.js';
 import { renderRoomFeed } from './feed.js';
@@ -15,7 +15,7 @@ export function renderFeed(ctx, feedId, m, director) {
   picks.begin();
   const def = director.feedDef(feedId);
   if (feedId === EVA) return renderEvaFeed(ctx, m);
-  if (feedId === EXT || def.exterior) return renderExteriorFeed(ctx, m);
+  if (def.exterior) return renderExteriorFeed(ctx, m, def);
   const roomW = m.data.rooms[def.room].width;
   const here = m.pos.room === def.room;
   const camX = m.camX ?? director.cameraX(feedId, roomW, m.pos.x * PPM, m.dt, here);
@@ -76,7 +76,7 @@ export class TerrariumRenderer {
     const events = this.events;
     this.events = [];
     const feed = this.director.update(now, {
-      travelerRoom: pos.room, eva: evaActive(state), events, shipMode: state.ship.flight.mode,
+      travelerRoom: pos.room, eva: evaActive(state), events, shipMode: state.ship.flight.mode, heat: state.ship.thermal.heat,
       travelerStill: !tr.move && tr.activity && tr.activity.phase === 'perform', interestingRooms: interestingRooms(state),
     });
     if (feed !== this.feed) { this.feed = feed; if (this.onFeedChange) this.onFeedChange(feed); }

@@ -50,8 +50,9 @@ test('a jump cuts to the hull camera, then returns to the traveler', () => {
   const d = mk();
   run(d, 0, 10, ctx());
   d.update(10.25, ctx({ events: [{ type: 'hyperspace_charge' }] }));
-  assert.equal(d.feed, EXT);
-  assert.equal(run(d, 10.5, 60, ctx()), EXT);
+  assert.ok(d.isExterior(d.feed));
+  const jumpCam = d.feed;
+  assert.equal(run(d, 10.5, 60, ctx()), jumpCam);
   assert.equal(run(d, 60, 90, ctx()), 'CAM-01');
 });
 
@@ -62,7 +63,7 @@ test('minor events wait out the minimum shot length', () => {
   assert.equal(d.feed, 'CAM-01', 'cut before the minimum shot length');
   run(d, 5.5, 200, ctx());
   d.update(200.25, ctx({ events: [{ type: 'supercruise_engage' }] }));
-  assert.equal(d.feed, EXT);
+  assert.ok(d.isExterior(d.feed));
 });
 
 test('stepping outside switches to the helmet cam and holds it until they come back in', () => {
@@ -133,4 +134,15 @@ test('interestingRooms reads diegetic activity from the sim', () => {
   s.ship.ops.fabricating = true;
   const r = interestingRooms(s);
   assert.ok(r.includes('corridor_fore') && r.includes('workshop'));
+});
+
+test('each moment gets the hull camera that suits it', () => {
+  const d = mk();
+  const label = (id) => d.feedDef(id).label;
+  assert.equal(label(d.exteriorFor('scoop_start')), 'EXT-SCOOP');
+  assert.equal(label(d.exteriorFor('touchdown')), 'EXT-VENTRAL');
+  for (let i = 0; i < 20; i++) assert.ok(['EXT-BOW', 'EXT-DORSAL'].includes(label(d.exteriorFor('hyperspace_charge'))));
+  assert.equal(label(d.exteriorFor(null, { shipMode: 'cruise', heat: 0.9 })), 'EXT-STERN', 'a hot ship shows its radiators');
+  for (let i = 0; i < 20; i++) assert.ok(['EXT-SCOOP', 'EXT-STERN'].includes(label(d.exteriorFor(null, { shipMode: 'scooping', heat: 0.2 }))));
+  for (const f of cameras.feeds.filter((x) => x.exterior)) assert.equal(typeof f.exterior, 'string', `${f.id} names its mount`);
 });
