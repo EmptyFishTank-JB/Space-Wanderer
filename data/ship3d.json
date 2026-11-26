@@ -2897,8 +2897,8 @@
    "name": "Fuel tank (port)",
    "shape": "prism",
    "x": [
-    -60,
-    -41
+    -48.5,
+    -41.5
    ],
    "y": [
     -18.4,
@@ -2909,7 +2909,7 @@
     5.4
    ],
    "role": "fuel",
-   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centered on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
+   "info": "A conformal liquid-hydrogen tank in the thruster housing, centered on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles. With its twin, 64 t usable, enough for eight longest-range jumps between scoops.",
    "outline": [
     [
      -8.4,
@@ -2950,8 +2950,8 @@
    "name": "Fuel tank (starboard)",
    "shape": "prism",
    "x": [
-    -60,
-    -41
+    -48.5,
+    -41.5
    ],
    "y": [
     7.6,
@@ -2962,7 +2962,7 @@
     5.4
    ],
    "role": "fuel",
-   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centered on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
+   "info": "A conformal liquid-hydrogen tank in the thruster housing, centered on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles. With its twin, 64 t usable, enough for eight longest-range jumps between scoops.",
    "outline": [
     [
      8.4,

@@ -6,7 +6,7 @@ import { baseSecondsFor } from './clock.js';
 import { emptyDigest } from './events.js';
 import { initSpace } from '../space/init.js';
 
-export const STATE_VERSION = 6;
+export const STATE_VERSION = 7;
 
 export function createInitialState(data, { seed = 'terrarium' } = {}) {
   const rng = seedRng(seed);
@@ -47,7 +47,8 @@ export function createInitialState(data, { seed = 'terrarium' } = {}) {
     ship: {
       power: { mode: 'normal', battery: 190, batteryCap: 250, supply: 0, demand: 0, reactorOut: 0, reactorMax: 40, solar: 0.6, lampLevel: 1, lightLevel: 1 },
       thermal: { heat: 0.34, external: 0, overheat: false },
-      fuel: { tons: 23.6, capacity: 32 },
+      fuel: { tons: 47.2, capacity: 64 },
+      rover: { charge: 1, out: false, odometerKm: 0 },
       water: { potable: 255, gray: 35, capacity: 400, reserve: 60, reserveCap: 60, lost: 0 },
       atmo: { o2: 20.9, co2: 780, airWater: 2.6, o2Reserve: 40 },
       food: { pantry: 150000, algae: 2500, emergency: 75000, emergencyOpened: false, fresh: [], compost: 4, mealReady: null },

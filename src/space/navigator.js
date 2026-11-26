@@ -3,6 +3,7 @@ import { range, chance } from '../sim/rng.js';
 import { clamp, HOUR } from '../sim/util.js';
 import { factor } from '../sim/ship/wear.js';
 import { neighbors, density, riftLength, nearestStar, systemName, dist3, starVariant } from './galaxy.js';
+import { roverOutingsFor } from './rover.js';
 
 const STAR_RARITY = { O: 1, B: 0.9, A: 0.6, F: 0.35, G: 0.25, K: 0.15, M: 0.05, L: 0.4, T: 0.55, D: 0.6, N: 0.95, BH: 1, Y: 0.8, C: 0.95, RG: 0.7, WR: 1, PSR: 1 };
 
@@ -101,9 +102,9 @@ export function decideAgenda(state, data, sys) {
     if (interest < bar) continue;
     const land = b.landable && hullOk && (b.signals.bio > 0 || b.signals.geo > 0 || !!b.signals.anomaly || b.rarity > 0.4 || chance(state.rng, 0.35 * traits.curiosity));
     items.push({
-      kind: 'visit', body: b.id, land, eva: land ? (b.signals.bio > 0 || b.signals.anomaly ? 2 : 1) : 0,
+      kind: 'visit', body: b.id, land, eva: land ? (b.signals.bio > 0 || b.signals.anomaly ? 2 : 1) : 0, rover: roverOutingsFor(data, b, land),
       lingerH: b.beauty > 0.7 ? range(state.rng, 1, 5) : 0,
-      done: { scanned: false, landed: false, evas: 0, lingerUntil: null, leftSurface: false },
+      done: { scanned: false, landed: false, evas: 0, rovers: 0, lingerUntil: null, leftSurface: false },
     });
   }
   // Sightseeing: even with no survey reason, a striking world gets a look-only orbit (no landing),

@@ -36,7 +36,7 @@ export function initSpace(state, data) {
     lifeConfirmed: {},
     awed: {},
     cargo: { ore: 0, ice: 0, bio: 0 },
-    stats: { systems: 1, jumps: 0, ly: 0, landings: 0, evas: 0, scans: 0, torpors: 0, torporYears: 0, discoveries: {} },
+    stats: { systems: 1, jumps: 0, ly: 0, landings: 0, evas: 0, rovers: 0, roverKm: 0, scans: 0, torpors: 0, torporYears: 0, discoveries: {} },
   };
   const R = sys.star.radius;
   state.ship.flight = {

@@ -8,10 +8,11 @@ import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
 import { addKeepsake, confirmLife, feelWonder } from './discovery.js';
 
-const FEATURE_LABELS = {
+export const FEATURE_LABELS = {
   outcrop: 'layered outcrop', crater_rim: 'crater rim', regolith_plain: 'regolith plain', ice_ridge: 'pressure ridge in the ice',
   dune: 'wind-cut dunes', geyser: 'geyser vent', fumarole: 'fumarole field', bio_mat: 'pigmented mat in a sheltered hollow',
   crystalline_spires: 'crystalline spires', patterned_vents: 'vents in a regular pattern', unexplained_signal: 'the source of the signal',
+  boulder_field: 'boulder field', scarp: 'fault scarp', ejecta_ray: 'bright ejecta ray',
 };
 
 export function planEva(state, data, sys, b) {

@@ -24,7 +24,7 @@ const BODY_COLOR = {
   gas_giant: ['copper', 'rust and cream', 'ochre', 'pale tan'], ice_giant: ['gray-blue', 'pale cyan', 'slate'], earth_like: ['blue and green', 'blue, with white weather'],
   water_world: ['deep blue', 'dark teal'], ammonia: ['olive', 'dull gold'], icy: ['ivory', 'blue-white'], rocky: ['gray-brown', 'dun'], metal_rich: ['dark rust', 'iron gray'], high_metal: ['brown-gray', 'bronze'],
 };
-const FEATURE = { geyser: 'geysers', fumarole: 'fumaroles', ice_ridge: 'ice ridge', crystalline_spires: 'crystal spires', bio_mat: 'mats', patterned_vents: 'vents', dune: 'dunes', crater_rim: 'crater rim', outcrop: 'outcrop', regolith_plain: 'flats' };
+const FEATURE = { scarp: 'fault scarp', ejecta_ray: 'ejecta ray', boulder_field: 'boulder field', geyser: 'geysers', fumarole: 'fumaroles', ice_ridge: 'ice ridge', crystalline_spires: 'crystal spires', bio_mat: 'mats', patterned_vents: 'vents', dune: 'dunes', crater_rim: 'crater rim', outcrop: 'outcrop', regolith_plain: 'flats' };
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const kg = (x) => (x < 10 ? x.toFixed(1) : String(Math.round(x)));
@@ -140,6 +140,13 @@ export function writeLog({ state, data, facts, entry }) {
     if (e.samples && e.samples.ice > 0) samples.push(`${kg(e.samples.ice)} kg of ice`);
     lines.find.push(`Walked ${Math.round(e.walkedM)} m out${feats.length ? ` to the ${feats[feats.length - 1]}` : ''} and back.${samples.length ? ` Brought in ${listJoin(samples)}.` : ''}`);
   }
+  for (const e of (v.rovers || []).slice(0, 1)) {
+    const feats = (e.features || []).filter((f) => FEATURE[f]).map((f) => FEATURE[f]);
+    const samples = [];
+    if (e.samples && e.samples.ore > 0) samples.push(`${kg(e.samples.ore)} kg of ore`);
+    if (e.samples && e.samples.ice > 0) samples.push(`${kg(e.samples.ice)} kg of ice`);
+    lines.find.push(`Took the rover ${e.km} km out${feats.length ? ` to the ${feats[feats.length - 1]}` : ''} and back.${samples.length ? ` The bins came home with ${listJoin(samples)}.` : ''}`);
+  }
 
   // ── quiet wonder (at most one) ──
   const at = v.atBody;
@@ -201,7 +208,7 @@ export function writeLog({ state, data, facts, entry }) {
   // ── a callback, sometimes ──
   let callback = null;
   if (r() < 0.38) {
-    const tags = [...(v.discoveries || []).map((d) => d.bodyType || d.kind), ...(v.landings || []).map((l) => l.bodyType), ...(v.evas || []).length ? ['eva'] : []];
+    const tags = [...(v.discoveries || []).map((d) => d.bodyType || d.kind), ...(v.landings || []).map((l) => l.bodyType), ...(v.evas || []).length ? ['eva'] : [], ...(v.rovers || []).length ? ['rover'] : []];
     const rec = pickMemory(state, r(), { tags, minAgeDays: 5, minWeight: 0.4 });
     if (rec) {
       callback = rec;

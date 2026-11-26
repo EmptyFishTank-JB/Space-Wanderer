@@ -10,6 +10,7 @@ import { currentSystem, setCourse, startScoop, endScoop, startDescent, startAsce
 import { surveySystem, scanBody } from './discovery.js';
 import { decideAgenda, plotRoute, agendaHead } from './navigator.js';
 import { planEva, tickEva } from './eva.js';
+import { planRover, tickRover, roverCanDrive } from './rover.js';
 import { beginTorpor, endTorpor } from './torpor.js';
 
 const at = (room, station) => ({ room, station });
@@ -255,6 +256,51 @@ export const FLIGHT_ACTIONS = {
     },
   },
 
+  // a long drive out in the rover to sites a walk can't reach, after the first walk round the ship
+  rover_outing: {
+    category: 'eva', exertion: 1.2, posture: 'suited', minCommit: 3600, uninterruptible: true,
+    gen(s, d) {
+      const f = s.ship.flight;
+      const it = visitHead(s);
+      if (f.mode !== 'landed' || !it || it.body !== f.at || !it.rover || (it.done.rovers || 0) >= it.rover || it.done.evas < 1) return [];
+      const n = s.traveler.needs;
+      if (n.fatigue > 0.55 || n.hunger > 0.55 || n.thirst > 0.5 || !inWindow(shipHour(s), 7, 15)) return [];
+      if (!s.ship.rover || s.ship.rover.charge < 0.7) return [];
+      if (s.ship.components.airlock_seals.fault && s.ship.components.airlock_seals.fault.severity === 'major') return [];
+      if (majorAlarmFault(s, d)) return [];
+      const b = currentSystem(s, d).byId[f.at];
+      if (!roverCanDrive(d, b)) return [];
+      return one(0.52 + 0.12 * d.traveler.traits.curiosity + (b.signals.bio || b.signals.anomaly ? 0.1 : 0), at('airlock', 'suit_rack'), { body: f.at });
+    },
+    start(s, d, a) {
+      const sys = currentSystem(s, d);
+      a.params.plan = planRover(s, d, sys, sys.byId[a.params.body]);
+      emit(s, 'rover_phase', { phase: 'suit_up', body: sys.byId[a.params.body].name });
+    },
+    duration: () => -1,
+    fastTick(s, d, a, dt) {
+      const plan = a.params.plan;
+      if (plan.i < plan.phases.length) tickRover(s, d, a, currentSystem(s, d), dt);
+    },
+    done: (s, d, a) => a.params.plan.i >= a.params.plan.phases.length,
+    complete(s, d, a) {
+      const plan = a.params.plan;
+      s.ship.ops.airlockCycling = false;
+      s.ship.rover.out = false;
+      s.traveler.pos = { room: 'airlock', x: d.rooms.airlock.stations.suit_rack };
+      const km = Math.round(plan.driven / 100) / 10;
+      s.ship.rover.odometerKm = Math.round((s.ship.rover.odometerKm + km) * 10) / 10;
+      s.space.stats.rovers = (s.space.stats.rovers || 0) + 1;
+      s.space.stats.roverKm = Math.round(((s.space.stats.roverKm || 0) + km) * 10) / 10;
+      const it = visitHead(s);
+      if (it && it.body === plan.body) it.done.rovers = (it.done.rovers || 0) + 1;
+      s.traveler.needs.hygiene = clamp(s.traveler.needs.hygiene + 0.3);
+      s.ship.clutter.airlock = clamp(s.ship.clutter.airlock + 0.2);
+      const sys = currentSystem(s, d);
+      emit(s, 'rover_end', { body: sys.byId[plan.body].name, km, features: plan.features.filter((f) => f.visited).map((f) => f.kind), samples: plan.samples, room: 'airlock' });
+    },
+  },
+
   takeoff: {
     category: 'flight', exertion: 0.8, posture: 'sitting', minCommit: 600,
     gen(s, d) {
@@ -262,7 +308,8 @@ export const FLIGHT_ACTIONS = {
       if (f.mode !== 'landed' || !alert(s)) return [];
       const it = visitHead(s);
       const evaBlocked = s.ship.components.airlock_seals.fault && s.ship.components.airlock_seals.fault.severity === 'major';
-      const doneHere = !it || it.body !== f.at || it.done.evas >= it.eva || evaBlocked;
+      const roverLeft = it && it.body === f.at && it.rover && (it.done.rovers || 0) < it.rover && s.ship.rover && s.ship.rover.charge >= 0.7 && !evaBlocked;
+      const doneHere = !it || it.body !== f.at || ((it.done.evas >= it.eva || evaBlocked) && !roverLeft);
       if (!doneHere) return [];
       // after the work is done, a while just being there: longer on a beautiful world (0.4 to 1.6 h after touchdown)
       const b = currentSystem(s, d).byId[f.at];

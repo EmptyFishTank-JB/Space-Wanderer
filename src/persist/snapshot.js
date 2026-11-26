@@ -66,6 +66,14 @@ export function migrate(state, version, data = null) {
     if (o && o.top === 'grey_tee') o.top = 'gray_tee';
     if (o && o.socks === 'grey socks') o.socks = 'gray socks';
   }
+  if (version < 7) {
+    // the tanks double to 64 t, and the rover joins the ship
+    const f = state.ship && state.ship.fuel;
+    if (f && f.capacity === 32) f.capacity = 64;
+    if (state.ship && !state.ship.rover) state.ship.rover = { charge: 1, out: false, odometerKm: 0 };
+    const st = state.space && state.space.stats;
+    if (st) { st.rovers = st.rovers || 0; st.roverKm = st.roverKm || 0; }
+  }
   if (state.space) for (const id of state.space.variantExempt || []) exemptFromVariants(state.space.galaxySeed, id);
   state.version = STATE_VERSION;
   return state;

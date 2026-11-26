@@ -12,7 +12,7 @@ const DEDUPE_SECONDS = 2 * 86400;
 
 const ANOMALY = { crystalline_spires: 'crystal spires', patterned_vents: 'patterned vents', unexplained_signal: 'the signal source' };
 const TYPE_WORD = { earth_like: 'earth-like world', water_world: 'water world', ammonia: 'ammonia world', gas_giant: 'gas giant', ice_giant: 'ice giant', icy: 'ice moon', rocky: 'rock', metal_rich: 'metal-rich world', high_metal: 'high-metal world' };
-const FEATURE = { geyser: 'geysers', fumarole: 'fumaroles', ice_ridge: 'ice ridges', crystalline_spires: 'crystal spires', bio_mat: 'living mats', patterned_vents: 'patterned vents', dune: 'dunes', crater_rim: 'crater rim', outcrop: 'outcrops' };
+const FEATURE = { scarp: 'fault scarp', ejecta_ray: 'ejecta ray', boulder_field: 'boulder field', geyser: 'geysers', fumarole: 'fumaroles', ice_ridge: 'ice ridges', crystalline_spires: 'crystal spires', bio_mat: 'living mats', patterned_vents: 'patterned vents', dune: 'dunes', crater_rim: 'crater rim', outcrop: 'outcrops' };
 
 /** Weigh an event. Returns null if it is not worth remembering. */
 export function appraise(state, ev) {
@@ -43,6 +43,13 @@ export function appraise(state, ev) {
       if (!special && (ev.walkedM || 0) < 1200) return null;
       const w = special === 'bio_mat' ? 0.6 : special ? 0.4 : 0.28;
       return { w, v: 0.7, subject: special ? `the ${FEATURE[special]} on ${ev.body}` : `the long walk on ${ev.body}`, summary: `Walked ${Math.round(ev.walkedM)} m on ${ev.body}${special ? ` out to the ${FEATURE[special]}` : ''}.`, tags: ['eva', special || 'walk'] };
+    }
+    case 'rover_end': {
+      const f = ev.features || [];
+      const special = f.find((k) => ['bio_mat', 'crystalline_spires', 'patterned_vents', 'geyser', 'fumarole', 'ice_ridge', 'scarp', 'ejecta_ray'].includes(k));
+      if (!special && (ev.km || 0) < 4) return null;
+      const w = special === 'bio_mat' ? 0.6 : special ? 0.42 : 0.32;
+      return { w, v: 0.7, subject: special ? `the drive out to the ${FEATURE[special] || special.replace(/_/g, ' ')} on ${ev.body}` : `the long drive on ${ev.body}`, summary: `Drove ${ev.km} km in the rover on ${ev.body}${special ? ` out to the ${FEATURE[special] || special.replace(/_/g, ' ')}` : ''}.`, tags: ['rover', special || 'drive'] };
     }
     case 'awe': return { w: 0.34, v: 0.8, subject: ev.name ? `${ev.name} from the window` : 'the view from the window', summary: `Stopped to watch ${ev.name || 'the view'}.`, tags: ['awe', ev.subject] };
     case 'torpor_end': return { w: 0.55, v: 0, subject: `the ${Math.round(ev.years)}-year crossing`, summary: `Crossed ${ev.ly} ly of void in torpor; ${ev.years} years passed.`, tags: ['torpor'] };

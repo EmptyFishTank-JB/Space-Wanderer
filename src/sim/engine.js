@@ -14,6 +14,7 @@ import { updateFood } from './ship/food.js';
 import { updateWear } from './ship/wear.js';
 import { updatePhysiology } from './traveler/physiology.js';
 import { updateMug } from './traveler/mug.js';
+import { chargeRover } from '../space/rover.js';
 import { missionDay } from './clock.js';
 import { updateFlight, updateFlightEnvironment } from '../space/flight.js';
 import { advanceAgenda } from '../space/navigator.js';
@@ -48,6 +49,7 @@ function slowTick(state, data, dt) {
   if (!(performing && a.id === 'enter_torpor')) updatePhysiology(state, data, dt, tr.exertion, isAsleep(state), def && def.rates);
   if (def && def.tick) def.tick(state, data, a, dt);
   updateMug(state, dt);
+  if (state.ship.rover && state.space) chargeRover(state, data, dt);
 
   const day = missionDay(state);
   if (tr.history.mealsDay !== day) {

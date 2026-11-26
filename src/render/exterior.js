@@ -230,6 +230,38 @@ const MOUNTS = {
   port(ctx, k) { side(ctx, k, 1); },
   stbd(ctx, k) { side(ctx, k, -1); },
 
+  // in the rover bay's ceiling corner, looking down across the platform
+  bay(ctx, k) {
+    const f = k.sh.flight, rover = k.sh.rover || { out: false };
+    const lowered = f.mode === 'landed' && rover.out;
+    const fy = 92 + k.shake; // where the far wall meets the floor
+    // back wall, side walls in perspective, the floor
+    rect(ctx, [58, 60, 66], 0, 0, W, fy);
+    for (let x = 16; x < W; x += 40) rect(ctx, [50, 52, 58], x, 8, 2, fy - 8);
+    poly(ctx, [46, 48, 54], [[0, 0], [40, 18], [40, fy], [0, H]]);
+    poly(ctx, [46, 48, 54], [[W, 0], [W - 40, 18], [W - 40, fy], [W, H]]);
+    rect(ctx, [200, 160, 60], 40, fy - 3, W - 80, 2); // hazard stripe along the far wall
+    // the floor, with the platform in it
+    const plat = [[96, fy + 6], [W - 96, fy + 6], [W - 56, H - 12], [56, H - 12]];
+    const floor = [[40, fy], [W - 40, fy], [W, H], [0, H]];
+    if (lowered) {
+      // the platform is down on the ground: the floor has an opening, and the surface shows through it
+      ctx.fillStyle = css([70, 72, 78]);
+      ctx.beginPath();
+      for (const ring of [floor, plat]) ring.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.fill('evenodd');
+      for (const [x0, y0] of plat) rect(ctx, [200, 160, 60], x0 - 1, y0 - 1, 3, 3);
+      for (const xs of [0.3, 0.7]) { const x = plat[0][0] + (plat[1][0] - plat[0][0]) * xs; rect(ctx, [120, 124, 132], x - 1, fy + 6, 2, H - fy - 18); } // the screw jacks
+    } else {
+      poly(ctx, [70, 72, 78], floor);
+      poly(ctx, [86, 88, 96], plat);
+      for (let i = 1; i < 6; i++) { const u = i / 6; line(ctx, [70, 72, 78], 96 + (56 - 96) * u, fy + 6 + (H - 18 - fy) * u, W - 96 + (96 - 56) * u, fy + 6 + (H - 18 - fy) * u, 0.6); }
+      if (!rover.out) drawRover(ctx, W / 2, H - 36, 1);
+    }
+    // bay lights
+    for (const x of [90, W / 2, W - 90]) { rect(ctx, [220, 220, 200], x - 8, 2, 16, 2); additive(ctx, () => glow(ctx, [255, 240, 210], x, 10, 30, 0.12)); }
+  },
+
   // under the bow, looking aft along the belly
   ventral(ctx, k) {
     const f = k.sh.flight;
@@ -255,6 +287,15 @@ const MOUNTS = {
     line(ctx, [200, 170, 70], W / 2 - 30, yb - 6, W / 2 + 10, yb - 6, 0.7);
   },
 };
+
+/** The surface rover, side-on to the camera: a six-wheeled pressurized cab with sample bins. */
+function drawRover(ctx, x, y, s) {
+  rect(ctx, [178, 150, 60], x - 34 * s, y - 16 * s, 68 * s, 14 * s);
+  rect(ctx, [190, 162, 70], x + 8 * s, y - 24 * s, 24 * s, 9 * s);
+  rect(ctx, GLASS, x + 12 * s, y - 22 * s, 18 * s, 5 * s, 0.9);
+  rect(ctx, [120, 104, 50], x - 32 * s, y - 14 * s, 26 * s, 8 * s);
+  for (const dx of [-24, 0, 24]) { rect(ctx, [26, 26, 30], x + (dx - 7) * s, y - 4 * s, 14 * s, 8 * s); rect(ctx, [70, 70, 76], x + (dx - 2) * s, y - 1 * s, 4 * s, 3 * s); }
+}
 
 /** The flank cameras: the deck edge runs forward on the hull side of the frame, the wing's underside below it with its lit gallery windows. s = 1 for the port camera (hull to the right), -1 for starboard. */
 function side(ctx, k, s) {

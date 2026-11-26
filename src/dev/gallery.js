@@ -7,6 +7,7 @@ import { neighbors } from '../space/galaxy.js';
 import { getSystem } from '../space/system.js';
 import { startJump, startDescent } from '../space/flight.js';
 import { plotRoute } from '../space/navigator.js';
+import { roverCanDrive } from '../space/rover.js';
 import { renderFeed } from '../render/app.js';
 import { Director } from '../render/director.js';
 import { spaceView } from '../render/spaceview.js';
@@ -37,6 +38,19 @@ function findBody(s, d, test, range = 160) {
 function moveTo(s, sys, b, mode = 'orbit') {
   Object.assign(s.space, { systemId: sys.id, pos: sys.pos.slice(), surveyed: true, detected: sys.bodies.map((x) => x.id), scanned: { [b.id]: true }, agenda: [] });
   Object.assign(s.ship.flight, { mode, at: b.id, target: null, v: 0 });
+}
+
+/** Landed on a world the rover can drive, the first walk already done, then run until `until`. */
+function roverScene(d, until, feeds) {
+  const s = createInitialState(d, { seed: 'gallery-rover' });
+  runUntil(s, d, (x) => x.t > 3 * 3600);
+  const f = findBody(s, d, (b) => roverCanDrive(d, b) && b.gravity > 0.2 && b.gravity < 1.4);
+  if (f) {
+    moveTo(s, f.sys, f.b);
+    s.space.agenda = [{ kind: 'visit', body: f.b.id, land: true, eva: 1, rover: 1, lingerH: 0, done: { scanned: true, landed: false, evas: 1, rovers: 0, lingerUntil: null, leftSurface: false } }];
+    runUntil(s, d, until, 86400 * 2);
+  }
+  return { s, feeds };
 }
 
 const SCENARIOS = {
@@ -75,6 +89,8 @@ const SCENARIOS = {
     }
     return { s, feeds: ['EVA-POV', 'CAM-19', 'CAM-17', 'CAM-08', 'CAM-13', 'CAM-01'] };
   },
+  rover(d) { return roverScene(d, (x) => x.traveler.activity?.id === 'rover_outing' && x.traveler.activity.params.plan?.aboard && x.traveler.activity.params.plan.x > 1500, ['ROVER-CAM', 'CAM-20', 'CAM-19', 'CAM-17']); },
+  roversite(d) { return roverScene(d, (x) => x.traveler.activity?.id === 'rover_outing' && x.traveler.activity.params.plan?.site && x.traveler.activity.params.plan.site.t > 120, ['EVA-POV', 'ROVER-CAM', 'CAM-20']); },
   descent(d) {
     const s = createInitialState(d, { seed: 'gallery-descent' });
     runUntil(s, d, (x) => x.t > 3 * 3600);

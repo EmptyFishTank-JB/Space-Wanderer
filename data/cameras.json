@@ -21,6 +21,8 @@
     { "id": "CAM-17", "label": "EXT-PORT",    "exterior": "port",    "yaw": 0.12,    "pitch": -0.04, "mount": "Port deck edge" },
     { "id": "CAM-18", "label": "EXT-STBD",    "exterior": "stbd",    "yaw": -0.12,   "pitch": -0.04, "mount": "Starboard deck edge" },
     { "id": "CAM-19", "label": "EXT-VENTRAL", "exterior": "ventral", "yaw": 3.1416,  "pitch": -0.12, "mount": "Under the bow" },
+    { "id": "CAM-20", "label": "EXT-BAY",     "exterior": "bay",     "yaw": 0,       "pitch": -0.5,  "mount": "Rover bay" },
+    { "id": "ROVER-CAM", "label": "CAB",      "rover": true },
     { "id": "EVA-POV", "label": "HELMET",     "eva": true }
   ],
   "director": {
@@ -58,7 +60,7 @@
         "cruise": ["CAM-08", "CAM-14", "CAM-17", "CAM-18"],
         "orbit": ["CAM-17", "CAM-18", "CAM-19", "CAM-08"],
         "scooping": ["CAM-15", "CAM-16"],
-        "landed": ["CAM-17", "CAM-18", "CAM-19", "CAM-08"],
+        "landed": ["CAM-17", "CAM-18", "CAM-19", "CAM-08", "CAM-20"],
         "idle": ["CAM-08", "CAM-14", "CAM-16"],
         "void": ["CAM-08", "CAM-14"]
       },

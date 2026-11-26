@@ -8,7 +8,9 @@ import { renderNoSignal } from './feed.js';
 
 export function evaActive(state) {
   const a = state.traveler.activity;
-  return !!(a && a.id === 'eva' && a.phase === 'perform' && a.params.plan && state.traveler.pos.room === 'surface');
+  if (!(a && a.phase === 'perform' && a.params.plan && state.traveler.pos.room === 'surface')) return false;
+  // a walk from the ship, or out on foot at a site on a rover outing
+  return a.id === 'eva' || (a.id === 'rover_outing' && !!a.params.plan.site);
 }
 
 export function renderEvaFeed(ctx, m) {
@@ -20,14 +22,15 @@ export function renderEvaFeed(ctx, m) {
   const body = sys.byId[plan.body];
   const facing = plan.returning ? -1 : 1;
   // walking head-bob and gaze: turn toward the nearest feature ahead
-  const walkPhase = plan.x * 2.2;
+  const walkX = state.traveler.pos.x;
+  const walkPhase = walkX * 2.2;
   const bob = Math.sin(walkPhase * 2) * 1.6;
   let yaw = Math.sin(t * 0.11) * 0.22 + Math.sin(t * 0.37) * 0.06;
   let pitch = -0.02;
-  const near = plan.features.find((f) => !plan.returning && f.x > plan.x && f.x - plan.x < 25);
+  const near = plan.features.find((f) => !plan.returning && f.x > walkX - (plan.site ? 30 : 0) && Math.abs(f.x - walkX) < 25);
   if (near) { yaw *= 0.3; pitch = -0.09; }
   drawSurfaceScene(ctx, {
-    body, sys, t, altitudeKm: 0, yaw, pitch: pitch + bob / 400, walkX: plan.x, facing,
+    body, sys, t, altitudeKm: 0, yaw, pitch: pitch + bob / 400, walkX, facing,
     features: plan.features, shipX: 0,
   });
   // heat shimmer on hot worlds: rows slide a little

@@ -15,7 +15,7 @@ const ACTIVITY = {
   gaze_viewport: 'Looking out', read: 'Reading', listen_music: 'Listening to music', sketch: 'Sketching', play_solitaire: 'Playing cards',
   play_instrument: 'Playing an instrument', reflect: 'Thinking', linger: 'Pausing', stroll: 'Walking the ship', tinker: 'Tinkering',
   survey_system: 'Surveying the system', scan_body: 'Scanning', plot_route: 'Plotting a route', set_course: 'Setting course', jump: 'Jumping',
-  scoop_fuel: 'Scooping fuel', land: 'Landing', takeoff: 'Lifting off', eva: 'On EVA', refine_samples: 'Refining samples', melt_ice: 'Melting ice',
+  scoop_fuel: 'Scooping fuel', land: 'Landing', takeoff: 'Lifting off', eva: 'On EVA', rover_outing: 'Out in the rover', refine_samples: 'Refining samples', melt_ice: 'Melting ice',
   enter_torpor: 'In torpor',
 };
 const FLIGHT = { idle: 'Holding station', cruise: 'Supercruise', orbit: 'In orbit', landed: 'Landed', descent: 'Descending', ascent: 'Ascending', scooping: 'Scooping', charging: 'Charging jump drive', hyperspace: 'In hyperspace', void: 'Crossing the void' };
@@ -67,7 +67,7 @@ export function telemetryFor(state, data, feedDef, exertion = 0.5) {
   const feedLabel = feedDef ? `${feedDef.id}${feedDef.label ? ` ${feedDef.label}` : ''}` : '';
   const travelerRoom = tr.pos && tr.pos.room;
   return {
-    camera: { feed: feedLabel, room: feedDef && feedDef.room ? titleRoom(data, feedDef.room) : feedDef && feedDef.exterior ? `Hull exterior${feedDef.mount ? ` · ${feedDef.mount.toLowerCase()}` : ''}` : 'Helmet' },
+    camera: { feed: feedLabel, room: feedDef && feedDef.room ? titleRoom(data, feedDef.room) : feedDef && feedDef.rover ? 'Rover cab' : feedDef && feedDef.exterior ? `Hull exterior${feedDef.mount ? ` · ${feedDef.mount.toLowerCase()}` : ''}` : 'Helmet' },
     location: {
       system: sys.name, star: `${sys.star.label}${sys.star.companion ? ' + companion' : ''}`, starType: sys.star.type || sys.star.cls,
       status: where, starDistance: formatDistance(starDist), time: formatShipTime(state),

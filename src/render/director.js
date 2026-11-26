@@ -5,6 +5,7 @@ import { W, PPM } from './gfx.js';
 
 export const EXT = 'CAM-08'; // the dorsal hull camera, the default exterior shot
 export const EVA = 'EVA-POV';
+export const ROVER = 'ROVER-CAM';
 
 const between = (rng, [a, b]) => a + (b - a) * rng();
 
@@ -89,7 +90,7 @@ export class Director {
    * c: { travelerRoom, eva, events: [{type, phase}], shipMode, heat, travelerStill, interestingRooms: [room] }
    */
   update(now, c) {
-    const target = c.eva ? EVA : this.feedForRoom(c.travelerRoom) || this.feed;
+    const target = c.eva ? EVA : c.rover && this.feedDef(ROVER) ? ROVER : this.feedForRoom(c.travelerRoom) || this.feed;
     if (this.feed === null) { this.boot(now, target); return this.feed; }
 
     // idle return: smoothly back to the traveler
@@ -106,6 +107,9 @@ export class Director {
     // during EVA the helmet cam owns the screen
     if (c.eva) { this.hold = null; this.pending = null; this.cut(now, EVA, { reason: 'eva' }); return this.feed; }
     if (this.feed === EVA) { this.cut(now, target, { reason: 'eva-end' }); return this.feed; }
+    // out in the rover the cab camera rides along
+    if (c.rover && this.feedDef(ROVER)) { this.hold = null; this.pending = null; this.cut(now, ROVER, { reason: 'rover' }); return this.feed; }
+    if (this.feed === ROVER) { this.cut(now, target, { reason: 'rover-end' }); return this.feed; }
 
     // high-scale events cut to the hull camera
     for (const e of c.events || []) {
