@@ -303,7 +303,7 @@ export const FLIGHT_ACTIONS = {
     complete(s) {
       const kg = s.space.cargo.ice;
       s.space.cargo.ice = 0;
-      s.ship.water.grey += kg; // the recycler purifies it
+      s.ship.water.gray += kg; // the recycler purifies it
       emit(s, 'melt_ice', { litres: r2(kg), room: 'lifesupport' });
     },
   },

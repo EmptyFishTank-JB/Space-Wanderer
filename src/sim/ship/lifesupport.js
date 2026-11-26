@@ -1,6 +1,6 @@
 // Closed-loop water and atmosphere.
-//   water:  potable -> traveler/plants -> grey (+ air humidity -> condensate)
-//           grey -> recycler -> potable (small brine loss, offset by reactor
+//   water:  potable -> traveler/plants -> gray (+ air humidity -> condensate)
+//           gray -> recycler -> potable (small brine loss, offset by reactor
 //           coolant-loop make-up water while the reactor runs)
 //   air:    traveler consumes O2 / exhales CO2; crops and algae photosynthesise
 //           under the grow lamps; the OGS splits potable water into O2; the
@@ -24,9 +24,9 @@ export function updateLifeSupport(state, data, dt) {
 
   // --- Water recycler ---
   const recEff = factor(state, data, 'water_recycler', 'efficiency') * (1 - 0.4 * C.water_recycler.wear) * (limp ? 0.5 : 1);
-  ops.recyclerDuty = w.grey > 1 ? 1 : 0;
-  const processed = w.grey > 1 ? Math.min(w.grey, ph(8 * recEff, dt)) : 0;
-  w.grey -= processed;
+  ops.recyclerDuty = w.gray > 1 ? 1 : 0;
+  const processed = w.gray > 1 ? Math.min(w.gray, ph(8 * recEff, dt)) : 0;
+  w.gray -= processed;
   w.potable += processed * 0.985;
   w.lost += processed * 0.015;
   if (s.power.reactorOut > 0) w.potable += ph(0.07, dt);
@@ -37,13 +37,13 @@ export function updateLifeSupport(state, data, dt) {
   const drip = C.dehumidifier.fault && data.components.dehumidifier.faults[C.dehumidifier.fault.severity].effect.leak ? 0.25 : 0;
   const removeLh = Math.min(2, 4 * deEff * Math.max(0, hum - 0.42));
   a.airWater += ph((ops.transpiration || 0) + 0.04 * metab - removeLh, dt);
-  w.grey += ph(removeLh, dt) * (1 - drip);
+  w.gray += ph(removeLh, dt) * (1 - drip);
   w.lost += ph(removeLh, dt) * drip;
   if (a.airWater > AIR_WATER_SAT_L) {
-    // condenses on bulkheads and bay glass; most is mopped into grey water
+    // condenses on bulkheads and bay glass; most is mopped into gray water
     const excess = a.airWater - AIR_WATER_SAT_L;
     a.airWater = AIR_WATER_SAT_L;
-    w.grey += excess * 0.8;
+    w.gray += excess * 0.8;
     w.lost += excess * 0.2;
   }
   a.airWater = Math.max(0.5, a.airWater);
@@ -84,7 +84,7 @@ export function updateLifeSupport(state, data, dt) {
     w.reserve += top;
     w.potable -= top;
   }
-  const total = w.potable + w.grey;
+  const total = w.potable + w.gray;
   if (total > w.capacity) w.potable -= total - w.capacity; // overflow to brine/vent
   w.potable = Math.max(0, w.potable);
 

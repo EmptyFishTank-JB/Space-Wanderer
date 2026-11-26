@@ -58,6 +58,14 @@ export function migrate(state, version, data = null) {
     // star variants arrived: the system this voyage is sitting in stays exactly as it was
     state.space.variantExempt = state.space.variantExempt || [state.space.systemId];
   }
+  if (version < 6) {
+    // US spelling: gray water, and the gray T-shirt and socks in the wardrobe
+    const w = state.ship && state.ship.water;
+    if (w && w.grey !== undefined) { w.gray = (w.gray || 0) + w.grey; delete w.grey; }
+    const o = state.traveler && state.traveler.outfit;
+    if (o && o.top === 'grey_tee') o.top = 'gray_tee';
+    if (o && o.socks === 'grey socks') o.socks = 'gray socks';
+  }
   if (state.space) for (const id of state.space.variantExempt || []) exemptFromVariants(state.space.galaxySeed, id);
   state.version = STATE_VERSION;
   return state;

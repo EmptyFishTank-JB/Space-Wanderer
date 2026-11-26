@@ -158,7 +158,7 @@ function wrap(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a 
 
 function drawFeature(ctx, f, d, hy, seed, pal, t, camH) {
   const sy = hy + (camH * FOCAL) / (d * 4.5);
-  const k = FOCAL / d; // pixels per metre at that distance
+  const k = FOCAL / d; // pixels per meter at that distance
   const sx = W / 2 + (hash(strHash(f.kind), 7, seed) - 0.5) * 40 + (f.x % 7) - 3;
   switch (f.kind) {
     case 'outcrop': {

@@ -146,3 +146,13 @@ test('older (v1) backups still import, rebuilding what they can and saying so', 
   assert.ok(got.systems.length > 0 && got.systems.every((x) => x.partial), 'systems not rebuilt from arrivals');
   assert.equal(got.memories.length, s.memory.records.length, 'working-set memories not carried over');
 });
+
+test('a v5 save with British spellings comes back with gray water and gray clothes', async () => {
+  const { migrate } = await import('../src/persist/snapshot.js');
+  const st = { outbox: [], ship: { water: { potable: 200, grey: 35 } }, traveler: { outfit: { top: 'grey_tee', socks: 'grey socks' } } };
+  migrate(st, 5);
+  assert.equal(st.ship.water.gray, 35);
+  assert.equal(st.ship.water.grey, undefined);
+  assert.equal(st.traveler.outfit.top, 'gray_tee');
+  assert.equal(st.traveler.outfit.socks, 'gray socks');
+});

@@ -244,7 +244,7 @@ const CORE_ACTIONS = {
       s.traveler.needs.thirst = clamp(s.traveler.needs.thirst - 0.45 * (got / 0.4));
       s.traveler.needs.bladder = clamp(s.traveler.needs.bladder + 0.1 * (got / 0.4));
       if (ensureMug(s).fill < 0.15) fillMug(s, 'water', 0.6, 18); // tops up the mug while he's at the tap
-      s.ship.water.grey += got * 0.8;
+      s.ship.water.gray += got * 0.8;
       s.ship.atmo.airWater += got * 0.2;
       if (got < 0.4) s.traveler.needs.stress = clamp(s.traveler.needs.stress + 0.05);
     },
@@ -263,7 +263,7 @@ const CORE_ACTIONS = {
     complete(s) {
       const want = s.ship.water.potable < 80 ? 2 : 5;
       const got = useWater(s, want);
-      s.ship.water.grey += got * 0.9;
+      s.ship.water.gray += got * 0.9;
       s.ship.atmo.airWater += got * 0.1;
       const n = s.traveler.needs;
       n.hygiene = clamp(0.04 + 0.3 * (1 - got / want));
@@ -283,7 +283,7 @@ const CORE_ACTIONS = {
     duration: (s) => (rand(s.rng) < 0.22 ? range(s.rng, 300, 600) : range(s.rng, 80, 200)),
     complete(s) {
       const got = useWater(s, 0.5); // flush, then washing hands
-      s.ship.water.grey += got;
+      s.ship.water.gray += got;
       const n = s.traveler.needs;
       n.bladder = clamp(0.03);
       n.hygiene = clamp(n.hygiene + 0.01);
@@ -311,9 +311,9 @@ const CORE_ACTIONS = {
       tr.history.lastDressDay = missionDay(s);
       tr.history.laundry = (tr.history.laundry || 0) + 1;
       if (tr.history.laundry >= 6) {
-        // a load through the washer: water to grey, a little to the air
+        // a load through the washer: water to gray, a little to the air
         const got = useWater(s, 3);
-        s.ship.water.grey += got * 0.9;
+        s.ship.water.gray += got * 0.9;
         s.ship.atmo.airWater += got * 0.1;
         tr.history.laundry = 0;
       }
@@ -668,7 +668,7 @@ const CORE_ACTIONS = {
     complete(s) {
       s.ship.clutter.galley = Math.max(0, s.ship.clutter.galley - 0.15);
       const got = useWater(s, 3);
-      s.ship.water.grey += got;
+      s.ship.water.gray += got;
     },
   },
 

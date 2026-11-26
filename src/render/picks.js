@@ -23,7 +23,7 @@ export const picks = {
 const pct = (v) => `${Math.round(Math.max(0, Math.min(1, v)) * 100)}%`;
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// how big each kind of thing is drawn (u = metres along the room; box in px relative to the floor)
+// how big each kind of thing is drawn (u = meters along the room; box in px relative to the floor)
 const SIZE = {
   shelf: [22, 84, 12], locker: [20, 70, 70], torpor_pod: [22, 74, 74], toilet: [12, 22, 22], bunk: [50, 32, 32], sink: [18, 64, 64], desk: [26, 44, 44],
   couch: [44, 30, 30], easel: [16, 40, 40], speaker: [12, 36, 36], exercise: [26, 30, 30], viewport: null, pantry: [26, 80, 30], stove: [24, 40, 40],
@@ -85,7 +85,7 @@ function stationInfo(state, data, room, name) {
   return { name: title, sub: data.rooms[room].name, lines };
 }
 
-/** Register everything selectable in a room feed. `M(u)` maps metres along the room to framebuffer x. */
+/** Register everything selectable in a room feed. `M(u)` maps meters along the room to framebuffer x. */
 export function registerRoomPicks(rc, k) {
   const { state, data, room, M } = rc;
   const st = data.rooms[room].stations;

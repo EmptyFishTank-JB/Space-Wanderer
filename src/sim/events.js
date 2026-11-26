@@ -22,7 +22,7 @@ export const NOTABLE = new Set([
   'book_finished', 'reflection',
 ]);
 
-/** Verbose-only events (movement, micro behaviour) never go to the journal. */
+/** Verbose-only events (movement, micro behavior) never go to the journal. */
 export function emit(state, type, data = {}) {
   const j = state.journal;
   // Envelope fields always win over payload keys of the same name.

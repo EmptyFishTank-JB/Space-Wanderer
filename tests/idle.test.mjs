@@ -37,7 +37,7 @@ test('version 3 snapshots gain a bladder and clothes', () => {
   const text = serialize(s).replace(/"version":\d+/, '"version":3');
   const back = deserialize(text, data);
   assert.equal(typeof back.traveler.needs.bladder, 'number');
-  assert.equal(back.traveler.outfit.top, 'grey_tee');
+  assert.equal(back.traveler.outfit.top, 'gray_tee');
   for (let i = 0; i < HOUR; i++) step(back, data);
 });
 

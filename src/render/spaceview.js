@@ -76,7 +76,7 @@ export function spaceView(state, data) {
   const rs = len(p.x, p.y) || 1e-6;
   const starAng = Math.asin(Math.min(1, sys.star.radius / rs));
   view.objects.push({ kind: 'star', id: 'star', bearing: wrap(Math.atan2(-p.y, -p.x) - heading), elev: 0.04, angR: starAng, dist: rs, color: sys.star.color, star: sys.star });
-  // a binary companion, far out: a bright point (or small disc) of its own colour
+  // a binary companion, far out: a bright point (or small disc) of its own color
   const comp = sys.star.companion;
   if (comp) {
     const def = data.space.starClasses[comp.cls];

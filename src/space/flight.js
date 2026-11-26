@@ -34,13 +34,13 @@ export function shipPos(state, data) {
   return f.pos;
 }
 
-/** Distance from the star's centre in Ls. */
+/** Distance from the star's center in Ls. */
 export function starDistance(state, data) {
   const p = shipPos(state, data);
   return Math.max(1e-6, len(p.x, p.y));
 }
 
-/** Orbital-cruise standoff from a body's centre (Ls). */
+/** Orbital-cruise standoff from a body's center (Ls). */
 export function orbitArrive(sys, bodyId) {
   const R = bodyRadius(sys, bodyId);
   return R + Math.max(0.004, 0.3 * R);

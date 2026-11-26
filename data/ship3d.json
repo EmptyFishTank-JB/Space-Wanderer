@@ -1,10 +1,10 @@
 {
- "_comment": "PROPOSAL rev B: 3D general arrangement, fitted to the sim's room graph (ship.json). Frame: metres; x fore(+)/aft(-), y starboard(+)/port(-), z up(+); origin amidships on the main-deck floor. Rooms are boxes. A room's local coordinate u (left to right in its side-on camera) comes from axis + origin: '+x' u = x - origin, '-x' u = origin - x, '+y' u = y - origin, '-y' u = origin - y. 'view' is the wall the room camera faces. Rooms marked new are suggestions the sim does not have yet. Hatches give 3D door points (or a path for ladders and crawls). Shafts are ladder wells, lifts and vertical vents; ducts are the crawlable vent network. tools/ship3d.mjs checks all of it.",
+ "_comment": "PROPOSAL rev B: 3D general arrangement, fitted to the sim's room graph (ship.json). Frame: meters; x fore(+)/aft(-), y starboard(+)/port(-), z up(+); origin amidships on the main-deck floor. Rooms are boxes. A room's local coordinate u (left to right in its side-on camera) comes from axis + origin: '+x' u = x - origin, '-x' u = origin - x, '+y' u = y - origin, '-y' u = origin - y. 'view' is the wall the room camera faces. Rooms marked new are suggestions the sim does not have yet. Hatches give 3D door points (or a path for ladders and crawls). Shafts are ladder wells, lifts and vertical vents; ducts are the crawlable vent network. tools/ship3d.mjs checks all of it.",
  "status": "proposal",
  "revision": "C",
  "name": "Long-range survey ship",
  "nameNote": "name to be decided",
- "summary": "A 138 m, single-occupant survey ship in the Krait mould: a flat, wide top deck over a belly that hangs below it, two flat tines running forward from the deck to blunt tips, and two big thrusters housed in the rear corners of the hull. A deckhouse amidships-aft holds the living deck, and the bridge sits in a raised tower on top of it, looking forward over the whole length of the ship.",
+ "summary": "A 138 m, single-occupant survey ship in the Krait mold: a flat, wide top deck over a belly that hangs below it, two flat tines running forward from the deck to blunt tips, and two big thrusters housed in the rear corners of the hull. A deckhouse amidships-aft holds the living deck, and the bridge sits in a raised tower on top of it, looking forward over the whole length of the ship.",
  "decks": [
   {
    "id": "bridge",
@@ -255,7 +255,7 @@
    "origin": 5.5,
    "view": "aft",
    "role": "power",
-   "info": "Full-width compartment at the aft end of the pressurized decks. Its camera looks aft at the shadow-shield bulkhead: scoop manifold to starboard, the reactor face on the centreline, drive coupling to port.",
+   "info": "Full-width compartment at the aft end of the pressurized decks. Its camera looks aft at the shadow-shield bulkhead: scoop manifold to starboard, the reactor face on the centerline, drive coupling to port.",
    "virtualWindow": {
     "feed": "EXT-STERN",
     "note": "a wall screen showing that exterior camera, in place of a real window"
@@ -335,7 +335,7 @@
    "role": "hab",
    "new": true,
    "name": "Washroom",
-   "info": "Shower, toilet and laundry. Washing happens at the quarters basin today."
+   "info": "Shower and toilet. The laundry is across the spine."
   },
   {
    "id": "fwd_main",
@@ -372,8 +372,8 @@
    "view": "fore",
    "role": "science",
    "new": true,
-   "name": "Survey laboratory",
-   "info": "Glovebox, spectrometer, core racks and a microscope bench. Samples come up from the hold on the freight lift and get analysed here."
+   "name": "Geology & chemistry lab",
+   "info": "Glovebox, spectrometer, core racks and a microscope bench. Samples come up from the hold on the freight lift and get analyzed here."
   },
   {
    "id": "datacore",
@@ -392,7 +392,7 @@
    "role": "science",
    "new": true,
    "name": "Data & navigation core",
-   "info": "The ship computer's racks, the star catalogue and the survey archive, in a cool, quiet room."
+   "info": "The ship computer's racks, the star catalog and the survey archive, in a cool, quiet room."
   },
   {
    "id": "spares",
@@ -436,7 +436,7 @@
    "id": "lower_passage",
    "deck": "lower",
    "x": [
-    -24,
+    -31,
     13.8
    ],
    "y": [
@@ -449,7 +449,7 @@
    "role": "passage",
    "new": true,
    "name": "Lower passage",
-   "info": "Runs the length of the lower deck between the hold and the rover bay. Both ladder wells and the freight lift come down to it."
+   "info": "Runs the length of the lower deck between the hold and the rover bay, from the power and shield rooms aft to the skiff bay forward. Both ladder wells and the freight lift come down into it."
   },
   {
    "id": "hold",
@@ -460,7 +460,7 @@
    ],
    "y": [
     1.2,
-    13
+    15.4
    ],
    "axis": "+y",
    "origin": 1.2,
@@ -468,7 +468,7 @@
    "role": "service",
    "new": true,
    "name": "Cargo & sample hold",
-   "info": "Racks of sealed sample cases, ore drums and bulk stores. Samples are tracked as cargo today but have no room."
+   "info": "Racks of sealed sample cases, ore drums and bulk stores, out to the belly wall with its windows. Cargo for trade or delivery work would go here too."
   },
   {
    "id": "roverbay",
@@ -612,8 +612,8 @@
     22.2
    ],
    "y": [
-    6.2,
-    14
+    9.8,
+    17.6
    ],
    "axis": "+y",
    "origin": 6.2,
@@ -650,8 +650,8 @@
     22.2
    ],
    "y": [
-    -14,
-    -6.2
+    -17.6,
+    -9.8
    ],
    "axis": "-y",
    "origin": -6.2,
@@ -659,7 +659,7 @@
    "role": "science",
    "new": true,
    "name": "Observatory",
-   "info": "Telescope control and the spectrograph: the turret on the deck above feeds this room. Star and planet surveys are planned and run from here."
+   "info": "Telescope control and the spectrograph: the turret on the deck above feeds this room. Star and planet surveys are planned and run from here, and its window looks out and down to port."
   },
   {
    "id": "dronebay",
@@ -754,7 +754,7 @@
    "role": "hab",
    "new": true,
    "name": "Laundry",
-   "info": "Washer-dryer, a drying rack and the linen lockers, across the spine from the quarters. Grey water goes straight to life support for recycling."
+   "info": "Washer-dryer, a drying rack and the linen lockers, across the spine from the quarters. Gray water goes straight to life support for recycling."
   },
   {
    "id": "pantry",
@@ -811,7 +811,7 @@
    "role": "sensor",
    "new": true,
    "name": "Comms room",
-   "info": "Transmitters, the long-range antenna controls and the message archive, beside the data core it shares cabling with."
+   "info": "Transmitters, the long-range antenna controls and the message archive, beside the data core it shares cabling with. A station's mission board would come in here."
   },
   {
    "id": "scistores",
@@ -833,11 +833,11 @@
    "info": "Lab consumables, sample jars, core tubes, reagents and spare instruments for both labs, next to the cold store."
   },
   {
-   "id": "armoury",
+   "id": "armory",
    "deck": "main",
    "x": [
     -9.6,
-    -3.6
+    -5.8
    ],
    "y": [
     -15.8,
@@ -848,15 +848,15 @@
    "view": "port",
    "role": "security",
    "new": true,
-   "name": "Armoury",
+   "name": "Armory",
    "info": "Small arms, a suit-mounted rifle and a sidearm in a locked rack, with a bench for cleaning and repair. For a ship this far out, mostly for wildlife and the odd unfriendly visitor."
   },
   {
    "id": "firecontrol",
    "deck": "main",
    "x": [
-    -3.4,
-    4
+    -5.6,
+    -1
    ],
    "y": [
     -15.8,
@@ -868,14 +868,14 @@
    "role": "security",
    "new": true,
    "name": "Fire control",
-   "info": "Weapons and shield consoles, the targeting computer and the gimbal controllers for all six hardpoints. From the bridge one person can fly and fight; this is where the systems live."
+   "info": "The weapons and shield computers, targeting and the gimbal controllers for all six hardpoints, with a console for working on them. The traveler fights from the bridge; the systems live here."
   },
   {
    "id": "magazine",
    "deck": "main",
    "x": [
-    4.2,
-    12
+    -0.8,
+    3.6
    ],
    "y": [
     -15.8,
@@ -887,14 +887,54 @@
    "role": "security",
    "new": true,
    "name": "Magazine",
-   "info": "Armoured ammunition store with hoists to the ventral and dorsal hardpoints, and blow-out panels in the hull above it."
+   "info": "Armored ammunition store with hoists to the ventral and dorsal hardpoints, and blow-out panels in the deck above it."
   },
   {
-   "id": "shieldroom",
+   "id": "brig",
+   "deck": "main",
+   "x": [
+    3.8,
+    7.8
+   ],
+   "y": [
+    -15.8,
+    -7.4
+   ],
+   "axis": "-y",
+   "origin": -7.4,
+   "view": "port",
+   "role": "security",
+   "new": true,
+   "name": "Brig",
+   "info": "Two small detention cells with their own air and a monitored door, for bounty hunting or carrying a prisoner.",
+   "missions": true
+  },
+  {
+   "id": "securecargo",
+   "deck": "main",
+   "x": [
+    8,
+    12
+   ],
+   "y": [
+    -15.8,
+    -7.4
+   ],
+   "axis": "-y",
+   "origin": -7.4,
+   "view": "port",
+   "role": "service",
+   "new": true,
+   "name": "Secure cargo",
+   "info": "A shielded, scan-resistant vault for valuable or sensitive cargo: data cores, rare samples, and anything a contract says must not be seen.",
+   "missions": true
+  },
+  {
+   "id": "cabin_a",
    "deck": "main",
    "x": [
     -9.6,
-    0
+    -5.8
    ],
    "y": [
     9.3,
@@ -903,16 +943,77 @@
    "axis": "+y",
    "origin": 9.3,
    "view": "starboard",
-   "role": "shield",
+   "role": "hab",
    "new": true,
-   "name": "Shield generator room",
-   "info": "The shield generator and its capacitor banks, beside the lab and close to the power trunks."
+   "name": "Passenger cabin 1",
+   "info": "A passenger cabin: bunk, fresher, locker and a fold-down desk, opening onto the starboard gallery and its windows.",
+   "missions": true
+  },
+  {
+   "id": "cabin_b",
+   "deck": "main",
+   "x": [
+    -5.6,
+    -1.8
+   ],
+   "y": [
+    9.3,
+    15.8
+   ],
+   "axis": "+y",
+   "origin": 9.3,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Passenger cabin 2",
+   "info": "A passenger cabin, the same as its neighbors.",
+   "missions": true
+  },
+  {
+   "id": "cabin_c",
+   "deck": "main",
+   "x": [
+    -1.6,
+    2.2
+   ],
+   "y": [
+    9.3,
+    15.8
+   ],
+   "axis": "+y",
+   "origin": 9.3,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Passenger cabin 3",
+   "info": "A passenger cabin, the same as its neighbors.",
+   "missions": true
+  },
+  {
+   "id": "paxlounge",
+   "deck": "main",
+   "x": [
+    2.4,
+    7.6
+   ],
+   "y": [
+    9.3,
+    15.8
+   ],
+   "axis": "+y",
+   "origin": 9.3,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Passenger lounge",
+   "info": "Seats, a kitchenette and a screen for passengers, so they have somewhere of their own on the voyage and the living deck stays the traveler's.",
+   "missions": true
   },
   {
    "id": "cmstore",
    "deck": "main",
    "x": [
-    0.2,
+    7.8,
     12
    ],
    "y": [
@@ -925,7 +1026,65 @@
    "role": "security",
    "new": true,
    "name": "Countermeasures store",
-   "info": "Racks of heat sinks, chaff canisters and point-defence ammunition, feeding the utility mounts on the deck above and the belly below."
+   "info": "Racks of heat sinks, chaff canisters and point-defense rounds, feeding the utility mounts on the deck above and on the belly below."
+  },
+  {
+   "id": "xeno",
+   "deck": "main",
+   "x": [
+    14.2,
+    22.2
+   ],
+   "y": [
+    6.2,
+    9.6
+   ],
+   "axis": "+y",
+   "origin": 6.2,
+   "view": "starboard",
+   "role": "science",
+   "new": true,
+   "name": "Xeno containment",
+   "info": "Sealed enclosures for live specimens, each with its own air, temperature and light, opening off the biology lab. Big enough for xenobiology contracts that want something brought back alive.",
+   "missions": true
+  },
+  {
+   "id": "mapping",
+   "deck": "main",
+   "x": [
+    14.2,
+    22.2
+   ],
+   "y": [
+    -9.6,
+    -6.2
+   ],
+   "axis": "-y",
+   "origin": -6.2,
+   "view": "port",
+   "role": "science",
+   "new": true,
+   "name": "Mapping room",
+   "info": "Survey maps and the drone consoles: drone flights are planned here and their data stitched into charts."
+  },
+  {
+   "id": "shieldroom",
+   "deck": "lower",
+   "x": [
+    -31,
+    -26.2
+   ],
+   "y": [
+    -10,
+    -1.2
+   ],
+   "axis": "-y",
+   "origin": -1.2,
+   "view": "port",
+   "role": "shield",
+   "new": true,
+   "name": "Shield generator room",
+   "info": "The shield generator and its capacitor banks, beside the power room and right under engineering."
   }
  ],
  "hatches": [
@@ -1258,50 +1417,6 @@
   },
   {
    "between": [
-    "biolab",
-    "cross_main"
-   ],
-   "at": [
-    14.1,
-    8,
-    0
-   ]
-  },
-  {
-   "between": [
-    "coldstore",
-    "biolab"
-   ],
-   "at": [
-    22.3,
-    9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "observatory",
-    "cross_main"
-   ],
-   "at": [
-    14.1,
-    -8,
-    0
-   ]
-  },
-  {
-   "between": [
-    "dronebay",
-    "observatory"
-   ],
-   "at": [
-    22.3,
-    -9,
-    0
-   ]
-  },
-  {
-   "between": [
     "study",
     "lounge"
    ],
@@ -1309,17 +1424,6 @@
     -28.1,
     4,
     4.8
-   ]
-  },
-  {
-   "between": [
-    "powerroom",
-    "hold"
-   ],
-   "at": [
-    -24.2,
-    5,
-    -5
    ]
   },
   {
@@ -1379,22 +1483,11 @@
   },
   {
    "between": [
-    "scistores",
-    "coldstore"
-   ],
-   "at": [
-    28.5,
-    9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "armoury",
+    "armory",
     "gallery_p"
    ],
    "at": [
-    -6.6,
+    -7.7,
     -15.9,
     0
    ]
@@ -1405,7 +1498,7 @@
     "gallery_p"
    ],
    "at": [
-    0.3,
+    -3.3,
     -15.9,
     0
    ]
@@ -1413,21 +1506,76 @@
   {
    "between": [
     "magazine",
-    "cross_main"
+    "gallery_p"
    ],
    "at": [
-    12.1,
-    -12,
+    1.4,
+    -15.9,
     0
    ]
   },
   {
    "between": [
-    "shieldroom",
+    "brig",
+    "gallery_p"
+   ],
+   "at": [
+    5.8,
+    -15.9,
+    0
+   ]
+  },
+  {
+   "between": [
+    "securecargo",
+    "cross_main"
+   ],
+   "at": [
+    12.1,
+    -11.6,
+    0
+   ]
+  },
+  {
+   "between": [
+    "cabin_a",
     "gallery_s"
    ],
    "at": [
-    -6,
+    -7.7,
+    15.9,
+    0
+   ]
+  },
+  {
+   "between": [
+    "cabin_b",
+    "gallery_s"
+   ],
+   "at": [
+    -3.7,
+    15.9,
+    0
+   ]
+  },
+  {
+   "between": [
+    "cabin_c",
+    "gallery_s"
+   ],
+   "at": [
+    0.3,
+    15.9,
+    0
+   ]
+  },
+  {
+   "between": [
+    "paxlounge",
+    "gallery_s"
+   ],
+   "at": [
+    5,
     15.9,
     0
    ]
@@ -1441,6 +1589,94 @@
     12.1,
     12.5,
     0
+   ]
+  },
+  {
+   "between": [
+    "biolab",
+    "cross_main"
+   ],
+   "at": [
+    14.1,
+    13,
+    0
+   ]
+  },
+  {
+   "between": [
+    "xeno",
+    "biolab"
+   ],
+   "at": [
+    18.2,
+    9.7,
+    0
+   ]
+  },
+  {
+   "between": [
+    "coldstore",
+    "biolab"
+   ],
+   "at": [
+    22.3,
+    11,
+    0
+   ]
+  },
+  {
+   "between": [
+    "observatory",
+    "cross_main"
+   ],
+   "at": [
+    14.1,
+    -13,
+    0
+   ]
+  },
+  {
+   "between": [
+    "mapping",
+    "cross_main"
+   ],
+   "at": [
+    14.1,
+    -7.9,
+    0
+   ]
+  },
+  {
+   "between": [
+    "dronebay",
+    "mapping"
+   ],
+   "at": [
+    22.3,
+    -8,
+    0
+   ]
+  },
+  {
+   "between": [
+    "shieldroom",
+    "lower_passage"
+   ],
+   "at": [
+    -28.6,
+    -1.1,
+    -5
+   ]
+  },
+  {
+   "between": [
+    "powerroom",
+    "lower_passage"
+   ],
+   "at": [
+    -27.7,
+    1.1,
+    -5
    ]
   }
  ],
@@ -2097,6 +2333,24 @@
        2.75
       ],
       "y": -13
+     },
+     {
+      "x": 41,
+      "b": 4.6,
+      "z": [
+       0.4,
+       2.9
+      ],
+      "y": -13.15
+     },
+     {
+      "x": 38,
+      "b": 3,
+      "z": [
+       1.2,
+       3
+      ],
+      "y": -13.3
      }
     ]
    },
@@ -2141,6 +2395,24 @@
        2.75
       ],
       "y": 13
+     },
+     {
+      "x": 41,
+      "b": 4.6,
+      "z": [
+       0.4,
+       2.9
+      ],
+      "y": 13.15
+     },
+     {
+      "x": 38,
+      "b": 3,
+      "z": [
+       1.2,
+       3
+      ],
+      "y": 13.3
      }
     ]
    },
@@ -2489,41 +2761,41 @@
  "modules": [
   {
    "id": "sensor_p",
-   "name": "Sensor array (port prong)",
+   "name": "Survey sensor array (port tine)",
    "shape": "box",
    "x": [
-    58,
+    56,
     66
    ],
    "y": [
-    -13.2,
-    -10.8
+    -13.3,
+    -11.3
    ],
    "z": [
-    -1.2,
-    0.6
+    0.75,
+    1.4
    ],
    "role": "sensor",
-   "info": "Long-baseline survey sensors. The two prongs together give a 23 m baseline."
+   "info": "Long-baseline survey sensors inside the tine, under the sensor windows on its top. With its twin on the other tine they give a 25 m baseline."
   },
   {
    "id": "sensor_s",
-   "name": "Sensor array (starboard prong)",
+   "name": "Survey sensor array (starboard tine)",
    "shape": "box",
    "x": [
-    58,
+    56,
     66
    ],
    "y": [
-    10.8,
-    13.2
+    11.3,
+    13.3
    ],
    "z": [
-    -1.2,
-    0.6
+    0.75,
+    1.4
    ],
    "role": "sensor",
-   "info": "Long-baseline survey sensors."
+   "info": "Long-baseline survey sensors inside the tine, under the sensor windows on its top. With its twin on the other tine they give a 25 m baseline."
   },
   {
    "id": "scoop_plant",
@@ -2561,7 +2833,7 @@
     -1.4
    ],
    "role": "life",
-   "info": "Potable water, grey water and bulk nutrient stock. Their bulk also shields the storm shelter beside them."
+   "info": "Potable water, gray water and bulk nutrient stock. Their bulk also shields the storm shelter beside them."
   },
   {
    "id": "ore_bunkers",
@@ -2599,7 +2871,7 @@
     5.4
    ],
    "role": "fuel",
-   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centred on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
+   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centered on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
    "outline": [
     [
      -8.4,
@@ -2652,7 +2924,7 @@
     5.4
    ],
    "role": "fuel",
-   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centred on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
+   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centered on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
    "outline": [
     [
      8.4,
@@ -2719,7 +2991,7 @@
    "z": 0.4,
    "r": 3.6,
    "role": "power",
-   "info": "Main power plant on the centreline, inside its own shield box."
+   "info": "Main power plant on the centerline, inside its own shield box."
   },
   {
    "id": "fsd",
@@ -3354,7 +3626,7 @@
    "name": "Telescope turret",
    "shape": "cyl-z",
    "x": 18.2,
-   "y": -10,
+   "y": -13.5,
    "z": [
     4.2,
     6
@@ -3399,7 +3671,7 @@
     7.4
    ],
    "role": "service",
-   "info": "A small sealed boat in its own housing on the deck, enough to keep one person alive for weeks. Boarded by a short ladder from the starboard gallery; it launches sideways through the housing's outboard door."
+   "info": "A sealed boat in its own housing on the deck, seating four: the traveler and up to three passengers, for weeks if need be. Boarded by a short ladder from the starboard gallery; it launches sideways through the housing's outboard door."
   },
   {
    "id": "lbdoor_s",
@@ -3437,7 +3709,7 @@
     7.4
    ],
    "role": "service",
-   "info": "A small sealed boat in its own housing on the deck, enough to keep one person alive for weeks. Boarded by a short ladder from the port gallery; it launches sideways through the housing's outboard door."
+   "info": "A sealed boat in its own housing on the deck, seating four. Boarded by a short ladder from the port gallery; it launches sideways through the housing's outboard door."
   },
   {
    "id": "lbdoor_p",
@@ -3638,7 +3910,7 @@
    ],
    "out": 1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_fwd_s",
@@ -3658,7 +3930,7 @@
    ],
    "out": 1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_mid_s",
@@ -3678,7 +3950,7 @@
    ],
    "out": 1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_aft_s",
@@ -3698,7 +3970,7 @@
    ],
    "out": 1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_tower_s",
@@ -3718,7 +3990,7 @@
    ],
    "out": 1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_tine_p",
@@ -3738,7 +4010,7 @@
    ],
    "out": -1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_fwd_p",
@@ -3758,7 +4030,7 @@
    ],
    "out": -1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_mid_p",
@@ -3778,7 +4050,7 @@
    ],
    "out": -1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_aft_p",
@@ -3798,7 +4070,7 @@
    ],
    "out": -1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "rcs_tower_p",
@@ -3818,7 +4090,7 @@
    ],
    "out": -1,
    "role": "drive",
-   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine maneuvering: docking, landing and holding attitude while scooping. The pod is faired onto the hull skin."
   },
   {
    "id": "hp_large_p",
@@ -3948,7 +4220,7 @@
   },
   {
    "id": "ut_pd_p",
-   "name": "Utility mount: point defence (port)",
+   "name": "Utility mount: point defense (port)",
    "shape": "cyl-z",
    "mount": "belly",
    "x": -2,
@@ -3963,7 +4235,7 @@
   },
   {
    "id": "ut_pd_s",
-   "name": "Utility mount: point defence (starboard)",
+   "name": "Utility mount: point defense (starboard)",
    "shape": "cyl-z",
    "mount": "belly",
    "x": -2,
@@ -4005,21 +4277,6 @@
    "r": 0.55,
    "role": "utility",
    "info": "Strengthens the shield bubble, fed from the shield generator room."
-  },
-  {
-   "id": "shield_gen",
-   "name": "Shield generator",
-   "shape": "cyl-z",
-   "x": -4.8,
-   "y": 12.55,
-   "z": [
-    0,
-    3
-   ],
-   "r": 1.6,
-   "role": "shield",
-   "inRoom": "shieldroom",
-   "info": "Projects the ship's shield bubble. It soaks up weapon fire and, more often on a survey ship, micrometeoroids and the heat of a close stellar pass. It collapses if overloaded and takes a while to reboot."
   },
   {
    "id": "ant_whip_s",
@@ -4304,6 +4561,40 @@
    ],
    "role": "sensor",
    "info": "High-gain dish for long-range messages, steered by the comms room. It parks facing up and aft."
+  },
+  {
+   "id": "nav_sensors",
+   "name": "Navigation sensors",
+   "shape": "box",
+   "x": [
+    48.6,
+    51.9
+   ],
+   "y": [
+    -5.4,
+    5.4
+   ],
+   "z": [
+    0.7,
+    2.1
+   ],
+   "role": "sensor",
+   "info": "Star trackers, the forward lidar and the collision radar, looking out through the bow window between the tines."
+  },
+  {
+   "id": "shield_gen",
+   "name": "Shield generator",
+   "shape": "cyl-z",
+   "x": -28.6,
+   "y": -5.6,
+   "z": [
+    -5,
+    -2
+   ],
+   "r": 1.5,
+   "role": "shield",
+   "inRoom": "shieldroom",
+   "info": "Projects the ship's shield bubble. It soaks up weapon fire and, more often on a survey ship, micrometeoroids and the heat of a close stellar pass. It collapses if overloaded and takes a while to reboot."
   }
  ],
  "cameras": {
@@ -4328,9 +4619,9 @@
     "id": "EXT-BOW",
     "name": "Bow camera",
     "at": [
-     70.4,
-     12.6,
-     1
+     70.1,
+     11.3,
+     1.15
     ],
     "look": [
      -1,
@@ -4343,16 +4634,16 @@
     "id": "EXT-SCOOP",
     "name": "Scoop camera",
     "at": [
-     46.5,
-     0,
-     -4.9
+     41.15,
+     2.4,
+     -3.7
     ],
     "look": [
      1,
-     0,
-     0.05
+     -0.08,
+     0.06
     ],
-    "info": "Under the bow just ahead of the ventral intake, looking forward: the star filling the frame while the ship skims it belly-first."
+    "info": "On the lip of the scoop fairing, looking forward past the intake."
    },
    {
     "id": "EXT-STERN",
@@ -4360,7 +4651,7 @@
     "at": [
      -37.5,
      0,
-     9
+     8.18
     ],
     "look": [
      -1,
@@ -4374,8 +4665,8 @@
     "name": "Port flank camera",
     "at": [
      -33,
-     -30.6,
-     4.9
+     -30.69,
+     4.4
     ],
     "look": [
      1,
@@ -4389,8 +4680,8 @@
     "name": "Starboard flank camera",
     "at": [
      -33,
-     30.6,
-     4.9
+     30.69,
+     4.4
     ],
     "look": [
      1,
@@ -4405,7 +4696,7 @@
     "at": [
      26,
      0,
-     -6
+     -5.52
     ],
     "look": [
      -1,
@@ -4474,54 +4765,57 @@
  "windows": [
   {
    "id": "win_bow",
-   "name": "Bow window",
+   "name": "Bow sensor window",
    "cap": 52.05,
    "y": [
-    -6.2,
-    6.2
+    -5.6,
+    5.6
    ],
    "z": [
     0.75,
     2.05
    ],
    "faces": "fore",
-   "info": "Glazing across the face between the tines, looking straight ahead along the line of flight."
+   "info": "An armored optical port across the face between the tines, in front of the navigation sensors.",
+   "backs": "mod:nav_sensors"
   },
   {
-   "id": "win_flank_p",
-   "name": "Port deck windows",
+   "id": "win_sky_p",
+   "name": "Port gallery skylight",
    "part": "main",
    "edge": 7,
-   "t": [
-    0.05,
-    0.12
+   "y": [
+    -18.6,
+    -16.4
    ],
    "x": [
     -6,
-    26
+    13
    ],
-   "faces": "up and to port",
-   "info": "A long strip set flush into the top deck near its port edge."
+   "faces": "up",
+   "backs": "gallery_p",
+   "info": "A strip of glass in the deck directly over the port gallery."
   },
   {
-   "id": "win_flank_s",
-   "name": "Starboard deck windows",
+   "id": "win_sky_s",
+   "name": "Starboard gallery skylight",
    "part": "main",
    "edge": 7,
-   "t": [
-    0.88,
-    0.95
+   "y": [
+    16.4,
+    18.6
    ],
    "x": [
     -6,
-    26
+    13
    ],
-   "faces": "up and to starboard",
-   "info": "A long strip set flush into the top deck near its starboard edge."
+   "faces": "up",
+   "backs": "gallery_s",
+   "info": "A strip of glass in the deck directly over the starboard gallery."
   },
   {
    "id": "win_tine_p",
-   "name": "Port tine window",
+   "name": "Sensor windows (port tine)",
    "part": "prong_p",
    "edge": 7,
    "t": [
@@ -4529,15 +4823,16 @@
     0.75
    ],
    "x": [
-    53,
+    56,
     62
    ],
    "faces": "up",
-   "info": "Flush in the top of the port tine, looking up and forward."
+   "info": "Optical ports in the top of the tine over the survey sensor array.",
+   "backs": "mod:sensor_p"
   },
   {
    "id": "win_tine_s",
-   "name": "Starboard tine window",
+   "name": "Sensor windows (starboard tine)",
    "part": "prong_s",
    "edge": 7,
    "t": [
@@ -4545,43 +4840,46 @@
     0.75
    ],
    "x": [
-    53,
+    56,
     62
    ],
    "faces": "up",
-   "info": "Flush in the top of the starboard tine."
+   "info": "Optical ports in the top of the tine over the survey sensor array.",
+   "backs": "mod:sensor_s"
   },
   {
    "id": "win_gal_s",
    "name": "Starboard gallery windows",
    "part": "main",
    "edge": 1,
-   "t": [
-    0.22,
-    0.62
-   ],
    "x": [
     -9,
     13
    ],
    "faces": "out and down to starboard",
-   "info": "Glazing in the sloping underside of the starboard wing, along the gallery."
+   "info": "Glazing in the sloping underside of the starboard wing, along the gallery.",
+   "z": [
+    0.25,
+    2.2
+   ],
+   "backs": "gallery_s"
   },
   {
    "id": "win_gal_p",
    "name": "Port gallery windows",
    "part": "main",
    "edge": 5,
-   "t": [
-    0.38,
-    0.78
-   ],
    "x": [
     -9,
     13
    ],
    "faces": "out and down to port",
-   "info": "Glazing in the sloping underside of the port wing, along the gallery."
+   "info": "Glazing in the sloping underside of the port wing, along the gallery.",
+   "z": [
+    0.25,
+    2.2
+   ],
+   "backs": "gallery_p"
   },
   {
    "id": "win_belly_bay",
@@ -4597,71 +4895,42 @@
     -8
    ],
    "faces": "out to port, below the wing",
-   "info": "Ports in the port wall of the belly, looking out from the rover bay."
+   "info": "Ports in the port wall of the belly, looking out from the rover bay.",
+   "backs": "roverbay"
   },
   {
    "id": "win_belly_hold",
    "name": "Hold windows",
    "part": "main",
    "edge": 2,
-   "t": [
-    0.15,
-    0.65
-   ],
    "x": [
     -22,
     -6
    ],
    "faces": "out to starboard, below the wing",
-   "info": "Ports in the starboard wall of the belly, beside the hold."
-  },
-  {
-   "id": "win_belly_skiff_s",
-   "name": "Skiff bay windows (starboard)",
-   "part": "main",
-   "edge": 2,
-   "t": [
-    0.15,
-    0.6
+   "info": "Ports in the starboard wall of the belly, beside the hold.",
+   "z": [
+    -4.6,
+    -2.2
    ],
-   "x": [
-    15,
-    25
-   ],
-   "faces": "out to starboard",
-   "info": "Ports in the belly wall of the skiff bay."
-  },
-  {
-   "id": "win_belly_skiff_p",
-   "name": "Skiff bay windows (port)",
-   "part": "main",
-   "edge": 4,
-   "t": [
-    0.4,
-    0.85
-   ],
-   "x": [
-    15,
-    25
-   ],
-   "faces": "out to port",
-   "info": "Ports in the belly wall of the skiff bay."
+   "backs": "hold"
   },
   {
    "id": "win_hydro",
    "name": "Hydroponics window",
    "part": "main",
    "edge": 1,
-   "t": [
-    0.18,
-    0.6
-   ],
    "x": [
     -14,
     -10.3
    ],
    "faces": "out and down to starboard",
-   "info": "Daylight for the grow trays: a strip in the sloping starboard flank at the outboard end of the bay."
+   "info": "Daylight for the grow trays: a strip in the sloping starboard flank at the outboard end of the bay.",
+   "z": [
+    0.25,
+    2.2
+   ],
+   "backs": "hydro"
   },
   {
    "id": "win_airlock",
@@ -4677,40 +4946,43 @@
     -20.6
    ],
    "faces": "out to port",
-   "info": "The porthole in the airlock's outer door, set in the port flank."
+   "info": "The porthole in the airlock's outer door, set in the port flank.",
+   "backs": "airlock"
   },
   {
    "id": "win_biolab",
    "name": "Biology lab window",
    "part": "main",
    "edge": 1,
-   "t": [
-    0.25,
-    0.6
-   ],
    "x": [
     15,
     21.5
    ],
    "faces": "out and down to starboard",
-   "info": "Daylight for the culture shelves."
+   "info": "Daylight for the culture shelves.",
+   "z": [
+    0.25,
+    2.2
+   ],
+   "backs": "biolab"
   },
   {
    "id": "win_observatory",
    "name": "Observatory window",
    "part": "main",
    "edge": 5,
-   "t": [
-    0.4,
-    0.75
-   ],
    "x": [
     15,
     21.5
    ],
    "faces": "out and down to port",
-   "info": "A wide port beside the telescope controls."
+   "info": "A wide port beside the telescope controls.",
+   "z": [
+    0.25,
+    2.2
+   ],
+   "backs": "observatory"
   }
  ],
- "windowShutters": "Every window has an armoured shutter, including the deckhouse and bridge glazing. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."
+ "windowShutters": "Every window has an armored shutter, including the deckhouse and bridge glazing. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."
 }

@@ -206,7 +206,7 @@ test('a Phase 1 (v1) snapshot upgrades into a galaxy and keeps living', () => {
   assert.throws(() => deserialize(text), /needs the data/);
   const up = deserialize(text, data);
   assert.equal(up.version, STATE_VERSION);
-  assert.ok(up.memory && Array.isArray(up.memory.records), 'memory not initialised');
+  assert.ok(up.memory && Array.isArray(up.memory.records), 'memory not initialized');
   assert.ok(up.space.systemName, 'system name not filled in');
   assert.ok(up.space && up.space.systemId);
   assert.equal(up.traveler.history.logsWritten, s.traveler.history.logsWritten);

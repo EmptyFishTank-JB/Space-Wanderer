@@ -134,7 +134,7 @@ function applyBeat(k, a, room, t) {
   if (k.beat === 'hold') k.item = HELD[room] || [200, 180, 120];
 }
 
-/** Sprite colours for today's clothes (ids from data/traveler.json's wardrobe). */
+/** Sprite colors for today's clothes (ids from data/traveler.json's wardrobe). */
 export function outfitColors(data, outfit) {
   const w = data.traveler && data.traveler.wardrobe;
   if (!w || !outfit) return null;

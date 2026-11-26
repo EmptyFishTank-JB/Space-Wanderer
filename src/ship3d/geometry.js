@@ -13,7 +13,7 @@ export function station(stations, x) {
     if (x <= a.x && x >= c.x) {
       const t = a.x === c.x ? 0 : (a.x - x) / (a.x - c.x);
       const st = { b: lerp(a.b, c.b, t), zk: lerp(a.z[0], c.z[0], t), zt: lerp(a.z[1], c.z[1], t) };
-      if (a.y != null && c.y != null) st.yc = lerp(a.y, c.y, t); // a part whose centreline sweeps sideways
+      if (a.y != null && c.y != null) st.yc = lerp(a.y, c.y, t); // a part whose centerline sweeps sideways
       return st;
     }
   }
@@ -21,7 +21,7 @@ export function station(stations, x) {
 }
 
 /**
- * Cross-section outline (y, z) at a station, counter-clockwise, centred on
+ * Cross-section outline (y, z) at a station, counter-clockwise, centered on
  * the part's own axis. 'hex' is a flattened hexagon (sharp flanks, flat deck
  * and keel); 'box' is a chamfered box for superstructure.
  */
@@ -40,7 +40,7 @@ export function profile(kind, st) {
   return [[0.62 * b, zt], [b, zt - 0.45 * h], [0.92 * b, zk + 0.18 * h], [0.55 * b, zk], [-0.55 * b, zk], [-0.92 * b, zk + 0.18 * h], [-b, zt - 0.45 * h], [-0.62 * b, zt]];
 }
 
-/** Lateral centre of a part at a station (parts may sweep inward, like the bow prongs). */
+/** Lateral center of a part at a station (parts may sweep inward, like the bow prongs). */
 export const partY = (part, st) => (st && st.yc != null ? st.yc : part.y || 0);
 
 /** Hull parts, each { id, profile, y, stations }. Accepts the rev A layout (hull.main / hull.head). */
@@ -202,10 +202,66 @@ export function checkArrangement(ship, sim) {
     if (!r) problems.push(`door ${d.between.join('/')} names unknown room ${id}`);
     else if (boxDistance(r, d.at) > 0.7) problems.push(`door ${d.between.join('/')} is ${boxDistance(r, d.at).toFixed(2)} m from ${id}`);
   }
+  // every exterior camera is fixed to the ship
+  for (const c of (ship.cameras && ship.cameras.exterior) || []) if (!mounted(ship, c.at)) problems.push(`camera ${c.id} is not mounted on the ship`);
+  // every window lights something: a room or a sensor right behind it
+  for (const w of ship.windows || []) {
+    if (!w.backs) { problems.push(`window ${w.id} does not say what it lights`); continue; }
+    const gap = windowGap(ship, w);
+    if (!(gap <= 1.8)) problems.push(`window ${w.id} is ${gap === Infinity ? 'aimed at an unknown space' : `${gap.toFixed(1)} m from ${w.backs}`}`);
+  }
   const volumes = {};
   for (const r of rooms) if (!r.unpressurized) volumes[r.id] = (r.x[1] - r.x[0]) * (r.y[1] - r.y[0]) * (r.zRange[1] - r.zRange[0]);
   const resizes = rooms.filter((r) => r.resize && simRooms[r.id]).map((r) => ({ room: r.id, from: simRooms[r.id].width, to: roomLength(r), why: r.resize }));
   return { ok: problems.length === 0, problems, hatches, volumes, resizes, simRooms };
+}
+
+const MOUNT_REACH = 0.35;
+const boxGap = (e, p) => Math.hypot(...[e.x, e.y, e.zRange || e.z].map((r, i) => Math.max(r[0] - p[i], 0, p[i] - r[1])));
+
+/** Is a point on the ship: in or within reach of the hull skin, on a module, or inside a room (a bay camera)? */
+export function mounted(ship, p, reach = MOUNT_REACH) {
+  const offs = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  if (offs.some((o) => insideHull(ship, p[0] + o[0] * reach, p[1] + o[1] * reach, p[2] + o[2] * reach))) return true;
+  if ((ship.modules || []).some((m) => boxGap(moduleExtent(m), p) < reach)) return true;
+  return withDecks(ship).some((r) => boxGap(r, p) === 0);
+}
+
+/** How far a window is from what it lights: the nearest pane corner to its room (or module). */
+export function windowGap(ship, w) {
+  const target = w.backs && w.backs.startsWith('mod:') ? (ship.modules || []).find((m) => `mod:${m.id}` === w.backs) : withDecks(ship).find((r) => r.id === w.backs);
+  if (!target) return Infinity;
+  const e = target.zRange ? target : moduleExtent(target);
+  return Math.min(...windowQuads(ship, w, 1).flat().map((p) => boxGap(e, p)));
+}
+
+/**
+ * The shield bubble: an ellipsoid on the ship's bounding box, scaled until it
+ * holds every hull vertex, module corner and camera, plus a margin.
+ * Returns { c: [x, y, z], r: [a, b, c] }.
+ */
+export function shieldEllipsoid(ship, margin = 2.5) {
+  const pts = [];
+  for (const p of hullParts(ship)) for (const s of p.stations) { const st = station(p.stations, s.x); profile(p.profile, st).forEach(([y, z]) => pts.push([s.x, y + partY(p, st), z])); }
+  for (const m of ship.modules || []) {
+    const e = moduleExtent(m);
+    for (const x of e.x) for (const y of e.y) for (const z of e.z) pts.push([x, y, z]);
+  }
+  for (const c of (ship.cameras && ship.cameras.exterior) || []) pts.push(c.at);
+  const lo = [0, 1, 2].map((i) => Math.min(...pts.map((p) => p[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((p) => p[i])));
+  const c = lo.map((v, i) => (v + hi[i]) / 2);
+  const half = hi.map((v, i) => (v - lo[i]) / 2);
+  // try a few proportions and keep the smallest ellipsoid that still holds every point
+  let best = null;
+  const f = [0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
+  for (const fx of f) for (const fy of f) for (const fz of f) {
+    const r = [half[0] * fx, half[1] * fy, half[2] * fz];
+    const k = Math.max(...pts.map((p) => Math.hypot(...p.map((v, i) => (v - c[i]) / r[i]))));
+    const rr = r.map((v) => v * k);
+    const vol = rr[0] * rr[1] * rr[2];
+    if (!best || vol < best.vol) best = { vol, r: rr };
+  }
+  return { c, r: best.r.map((v) => v + margin) };
 }
 
 /** The ship.json edits this arrangement needs (doors that move by more than half a door width). */
@@ -221,7 +277,7 @@ export function proposedChanges(report, tolerance = 0.6) {
 /**
  * A window lying flush on a hull part: the strip of one profile edge
  * (`edge`, from vertex i to i+1, between fractions t[0]..t[1]) swept from
- * x[0] to x[1], nudged a few centimetres outward. Returns quads [[x,y,z] ×4].
+ * x[0] to x[1], nudged a few centimeters outward. Returns quads [[x,y,z] ×4].
  * A window with `cap` instead sits on a flat transverse face at that x.
  */
 export function windowQuads(ship, w, step = 1) {
@@ -244,7 +300,12 @@ export function windowQuads(ship, w, step = 1) {
     const l = Math.hypot(dy, dz) || 1;
     const ny = -dz / l * 0.04, nz = dy / l * 0.04; // profiles run clockwise: (-dz, dy) points out
     const at = (t) => [x, yc + A[0] + dy * t + ny, A[1] + dz * t + nz];
-    return [at(w.t[0]), at(w.t[1])];
+    // a band given in ship coordinates (w.y across a flat deck, w.z up a wall) becomes edge fractions here
+    const clamp = (t) => Math.min(1, Math.max(0, t));
+    let t = w.t;
+    if (w.y && Math.abs(dy) > 1e-6) t = w.y.map((y) => clamp((y - yc - A[0]) / dy));
+    else if (w.z && Math.abs(dz) > 1e-6) t = w.z.map((z) => clamp((z - A[1]) / dz));
+    return [at(Math.min(...t)), at(Math.max(...t))];
   });
   const quads = [];
   for (let i = 0; i < strip.length - 1; i++) if (strip[i] && strip[i + 1]) quads.push([strip[i][0], strip[i][1], strip[i + 1][1], strip[i + 1][0]]);

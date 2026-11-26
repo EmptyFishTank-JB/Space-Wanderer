@@ -1,7 +1,7 @@
 // Planetary EVA, seen later through the traveler's helmet camera.
 // One continuous activity with phases:
 //   suit_up → cycle_out → surface → cycle_in → suit_off
-// On the surface the traveler is in the pseudo-room 'surface' at x metres
+// On the surface the traveler is in the pseudo-room 'surface' at x meters
 // from the ship, walking out past features and back.
 import { range, int, chance, pick } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';

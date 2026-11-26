@@ -1,9 +1,9 @@
 // Low-level pixel drawing for the 320×180 framebuffer. Everything snaps to
-// whole pixels; colours are [r, g, b] arrays (0..255).
+// whole pixels; colors are [r, g, b] arrays (0..255).
 
 export const W = 320;
 export const H = 180;
-export const PPM = 32; // pixels per metre inside the ship
+export const PPM = 32; // pixels per meter inside the ship
 export const FLOOR = 150; // floor line (screen y)
 export const CEIL = 40; // ceiling line
 

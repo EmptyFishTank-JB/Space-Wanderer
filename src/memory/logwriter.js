@@ -20,9 +20,9 @@ const FAULT_PAST = {
   micrometeorite_pitting: 'took some pitting', plating_breach: 'breached', seal_creep: 'started creeping', seal_failure: 'failed',
 };
 const PAST = { swap: 'swapped', replace: 'replaced', reseat: 'reseated', clear: 'cleared', descale: 'descaled', clean: 'cleaned', retorque: 'retorqued', recalibrate: 'recalibrated', rebalance: 'rebalanced', reseal: 'resealed', patch: 'patched' };
-const BODY_COLOUR = {
-  gas_giant: ['copper', 'rust and cream', 'ochre', 'pale tan'], ice_giant: ['grey-blue', 'pale cyan', 'slate'], earth_like: ['blue and green', 'blue, with white weather'],
-  water_world: ['deep blue', 'dark teal'], ammonia: ['olive', 'dull gold'], icy: ['ivory', 'blue-white'], rocky: ['grey-brown', 'dun'], metal_rich: ['dark rust', 'iron grey'], high_metal: ['brown-grey', 'bronze'],
+const BODY_COLOR = {
+  gas_giant: ['copper', 'rust and cream', 'ochre', 'pale tan'], ice_giant: ['gray-blue', 'pale cyan', 'slate'], earth_like: ['blue and green', 'blue, with white weather'],
+  water_world: ['deep blue', 'dark teal'], ammonia: ['olive', 'dull gold'], icy: ['ivory', 'blue-white'], rocky: ['gray-brown', 'dun'], metal_rich: ['dark rust', 'iron gray'], high_metal: ['brown-gray', 'bronze'],
 };
 const FEATURE = { geyser: 'geysers', fumarole: 'fumaroles', ice_ridge: 'ice ridge', crystalline_spires: 'crystal spires', bio_mat: 'mats', patterned_vents: 'vents', dune: 'dunes', crater_rim: 'crater rim', outcrop: 'outcrop', regolith_plain: 'flats' };
 
@@ -125,7 +125,7 @@ export function writeLog({ state, data, facts, entry }) {
     else if (d.kind === 'bio_signal') lines.find.push(before ? `Picked up bio signals on ${d.body} before we moved on.` : `Bio signals on ${d.body}. Want a closer look before we leave.`);
     else if (d.kind === 'body' && d.bodyType === 'earth_like') lines.find.push(before ? `Earlier we passed ${d.body}, an earth-like world: open water, a nitrogen-oxygen atmosphere.` : `${d.body} reads as earth-like: open water, a nitrogen-oxygen atmosphere.`);
     else if (d.kind === 'body' && d.bodyType === 'water_world') lines.find.push(before ? `Earlier, ${d.body} turned out to be a water world. No land on the scans.` : `${d.body} is a water world. No land anywhere on the scans.`);
-    else if (d.kind === 'body' && d.rings) lines.find.push(before ? `Earlier, ${d.body} had rings: narrow, dust-grey, with a gap near the inner edge.` : `${d.body} has rings. Narrow, dust-grey, with a gap near the inner edge.`);
+    else if (d.kind === 'body' && d.rings) lines.find.push(before ? `Earlier, ${d.body} had rings: narrow, dust-gray, with a gap near the inner edge.` : `${d.body} has rings. Narrow, dust-gray, with a gap near the inner edge.`);
     else if (d.kind === 'star' && d.label) {
       const named = out0(lines.travel).includes(d.system) && !before;
       if (d.first) lines.find.push(before ? `Earlier, at ${d.system}: my first ${d.label} up close.` : named ? `Never been near a ${d.label} before.` : pick([`First ${d.label} I've seen up close, at ${d.system}.`, `${d.system} is a ${d.label}. Never been near one before.`]));
@@ -145,8 +145,8 @@ export function writeLog({ state, data, facts, entry }) {
   const at = v.atBody;
   if ((v.awe || []).length || (at && at.beauty > 0.6 && r() < 0.5)) {
     if (at) {
-      const col = pick(BODY_COLOUR[at.type] || ['grey']);
-      const opts = [`Watched ${at.name} turn under us for ${20 + Math.floor(r() * 40)} minutes. The colour is ${col} from this altitude.`,
+      const col = pick(BODY_COLOR[at.type] || ['gray']);
+      const opts = [`Watched ${at.name} turn under us for ${20 + Math.floor(r() * 40)} minutes. The color is ${col} from this altitude.`,
         `Drifted above the terminator line for a while. ${at.name} goes from ${col} to nothing at the edge.`];
       if (at.rings) opts.push(`The rings throw a thin shadow across ${at.name}. Sketched it twice and got it wrong both times.`);
       if (at.atmosphere === 'thick') opts.push(`Weather moving on ${at.name}; long ${col} bands, slow from up here.`);

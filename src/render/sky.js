@@ -1,4 +1,4 @@
-// The sky as seen from the current system: the galaxy's real neighbouring
+// The sky as seen from the current system: the galaxy's real neighboring
 // stars (so constellations hold their shape and slowly shift as the ship
 // travels), the nebulae near enough to see, and the direction of the
 // galactic core for the band. Computed once per system and cached.
@@ -63,14 +63,14 @@ export function skyFor(seed, sys, space) {
   return sky;
 }
 
-const FIGURES = ['the Lantern', 'the Heron', 'the Anvil', 'the Kettle', 'the Two Sisters', 'the Plough Horse', 'the Harp', 'the Long Road', 'the Key',
+const FIGURES = ['the Lantern', 'the Heron', 'the Anvil', 'the Kettle', 'the Two Sisters', 'the Plow Horse', 'the Harp', 'the Long Road', 'the Key',
   'the Lamplighter', 'the Fisher', 'the Little Gate', 'the Comb', 'the Sleeper', 'the Kite', 'the Bell', 'the Spindle', 'the Crow', 'the Wheel', 'the Sail'];
 const sep = (a, b) => Math.acos(Math.max(-1, Math.min(1, Math.sin(a.el) * Math.sin(b.el) + Math.cos(a.el) * Math.cos(b.el) * Math.cos(a.az - b.az))));
 
 /**
  * Constellations: a few bright stars are anchors (chosen by their own id, so
  * the same figure turns up from system to system and drifts slowly as the
- * ship travels); each anchor strings together its nearest bright neighbours
+ * ship travels); each anchor strings together its nearest bright neighbors
  * on the sky into a short figure.
  */
 function findAsterisms(stars) {

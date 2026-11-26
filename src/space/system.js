@@ -202,7 +202,7 @@ function addCompanion(star, cls, b, st) {
   star.companion = { cls: ccls, sepAU, angle: rand(st) * Math.PI * 2 };
 }
 
-/** Body centre in the system plane (Ls) at mission time `mt` (s). */
+/** Body center in the system plane (Ls) at mission time `mt` (s). */
 export function bodyPos(sys, bodyId, mt) {
   if (bodyId === 'star') return { x: 0, y: 0 };
   const b = sys.byId[bodyId];

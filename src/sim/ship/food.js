@@ -33,7 +33,7 @@ export function addHarvest(state, data, cropId, kg) {
 /**
  * Pull ingredients for one meal. Fresh produce nearest to spoiling first, then
  * pantry staples. As the pantry runs down the traveler leans on algae paste —
- * nourishing, but nobody's favourite.
+ * nourishing, but nobody's favorite.
  */
 export function assembleMeal(state, data, target, { hot = true } = {}) {
   const f = state.ship.food;

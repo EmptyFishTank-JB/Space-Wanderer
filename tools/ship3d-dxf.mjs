@@ -3,7 +3,7 @@
 // AutoCAD (or any CAD tool) can open, edit and save back.
 //   node tools/ship3d-dxf.mjs out.dxf
 //
-// Units are metres. Axes: X forward, Y to PORT, Z up (a right-handed frame,
+// Units are meters. Axes: X forward, Y to PORT, Z up (a right-handed frame,
 // so the model is not mirrored in CAD; ship3d.json's y is starboard, so Y = -y).
 // Origin: amidships on the main-deck floor.
 //

@@ -52,7 +52,7 @@ export function mountInspector(t) {
       `          hygiene ${bar(n.hygiene)} stress ${bar(n.stress)} solitude ${bar(n.solitude)}`,
       `mood      wonder ${pct(tr.mood.wonder)}  weariness ${pct(tr.mood.weariness)}  fitness ${pct(tr.body.fitness)}  condition ${pct(tr.body.condition)}`,
       `power     ${sh.power.mode}  ${sh.power.reactorOut.toFixed(1)}/${sh.power.reactorMax.toFixed(0)} kW  demand ${sh.power.demand.toFixed(1)}  battery ${pct(sh.power.battery / sh.power.batteryCap)}%  heat ${sh.thermal.heat.toFixed(2)}  fuel ${sh.fuel.tons.toFixed(2)} t`,
-      `air/water O2 ${sh.atmo.o2.toFixed(2)}%  CO2 ${Math.round(sh.atmo.co2)} ppm  RH ${pct(sh.atmo.airWater / 5.8)}%   potable ${Math.round(sh.water.potable)} L  grey ${Math.round(sh.water.grey)} L  reserve ${Math.round(sh.water.reserve)} L`,
+      `air/water O2 ${sh.atmo.o2.toFixed(2)}%  CO2 ${Math.round(sh.atmo.co2)} ppm  RH ${pct(sh.atmo.airWater / 5.8)}%   potable ${Math.round(sh.water.potable)} L  gray ${Math.round(sh.water.gray)} L  reserve ${Math.round(sh.water.reserve)} L`,
       `food      pantry ${pantryDays(s).toFixed(0)} d  algae ${Math.round(sh.food.algae)} kcal  fresh ${sh.food.fresh.length} lots  emergency ${sh.food.emergencyOpened ? 'OPEN' : 'sealed'}`,
       `racks     ${sh.trays.map((x) => (x.crop ? `${x.crop}:${trayStage(x)}` : 'empty')).join('  ')}`,
       `stores    ${Object.entries(sh.inventory).map(([k, v]) => `${k} ${Math.round(v * 10) / 10}`).join('  ')}`,

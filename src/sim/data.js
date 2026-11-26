@@ -1,4 +1,4 @@
-// Normalises the raw JSON definitions into lookup tables used by the sim.
+// Normalizes the raw JSON definitions into lookup tables used by the sim.
 // The sim never fetches anything itself: callers load JSON (fetch in the
 // browser, fs in Node) and pass the raw objects here.
 import { buildNav } from './traveler/nav.js';

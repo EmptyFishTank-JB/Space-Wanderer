@@ -46,9 +46,9 @@ export class AudioEngine {
     this.master = gain(ctx, 0);
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -18; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.3;
-    this.analyser = ctx.createAnalyser();
-    this.analyser.fftSize = 2048;
-    this.master.connect(comp).connect(this.analyser).connect(ctx.destination);
+    this.analyzer = ctx.createAnalyser();
+    this.analyzer.fftSize = 2048;
+    this.master.connect(comp).connect(this.analyzer).connect(ctx.destination);
     this.dry = gain(ctx, 1);
     this.dry.connect(this.master);
     this.verb = ctx.createConvolver();
@@ -294,9 +294,9 @@ export class AudioEngine {
 
   /** RMS level at the output (dev/QA). */
   level() {
-    if (!this.analyser) return 0;
-    const buf = new Float32Array(this.analyser.fftSize);
-    this.analyser.getFloatTimeDomainData(buf);
+    if (!this.analyzer) return 0;
+    const buf = new Float32Array(this.analyzer.fftSize);
+    this.analyzer.getFloatTimeDomainData(buf);
     let s = 0;
     for (const v of buf) s += v * v;
     return Math.sqrt(s / buf.length);

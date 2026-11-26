@@ -48,7 +48,7 @@ No build step, no dependencies. Deploys to GitHub Pages as static files.
 
 ```
 data/                 JSON definitions (all tuning lives here)
-  ship.json           room graph: rooms, stations (x in metres), hatches
+  ship.json           room graph: rooms, stations (x in meters), hatches
   components.json     wearable hardware, fault ladders, repair/maintenance costs
   crops.json          crops, cycles, yields, spoilage, photoperiod
   routines.json       chained habits (morning, meal, evening, rounds)
@@ -69,7 +69,7 @@ src/sim/              headless simulation — zero DOM, deterministic
   traveler/           physiology & mood drift, room-graph navigation
   ai/                 action library, utility brain with hysteresis, log facts
 src/space/            spaceflight & exploration — zero DOM, deterministic
-  galaxy.js           hash-seeded star cells, density field with rifts, neighbour search
+  galaxy.js           hash-seeded star cells, density field with rifts, neighbor search
   system.js           star + planets + moons + belts, Kepler orbits, signals, beauty/rarity
   flight.js           flight modes: supercruise, scooping, charging/hyperspace, descent/ascent
   navigator.js        route plotting (fuel-safe), in-system agendas, rift detection
@@ -229,7 +229,7 @@ no smoothing. There are no image assets.
   direction, with atmospheres, drifting clouds, rings and terminators.
 * **Diegetic cues (spec §4)**, all drawn in the world:
   * **Scooping:** glare floods the bridge, amber then red caution strobes, waveform spikes, glowing radiator fins and vents, shield shimmer.
-  * **Hydroponics:** crop stages by species, water gauges, grow-lamp colour and ballast flicker, misting, condensation on the bay glass.
+  * **Hydroponics:** crop stages by species, water gauges, grow-lamp color and ballast flicker, misting, condensation on the bay glass.
   * **Life support:** status LEDs per machine, the OGS bubbling, the dehumidifier fan stopping when it seizes.
   * **Wear and faults:** flickering corridor lights, sparks at the junction box, juddering pumps and reactor, scorch on the hull.
   * **Traveler:** slouch and yawns when tired, clutter on desk and counters, keepsakes on the quarters shelf, sketches pinned in the lounge.
@@ -298,7 +298,7 @@ oscillators, filters and envelopes. There are no audio files.
   * The voice is plain: crisp technical notes ("Hydroponic pump 2 started
     rattling at the bearing; swapped the pump 2 bearing seal before it got
     worse."), the racks and the galley, the day's finds, at most one line of
-    quiet wonder drawn from the actual world's type, colour and rings, and a
+    quiet wonder drawn from the actual world's type, color and rings, and a
     little personal life.
   * Entries run 2–8 sentences, shorter on quiet days.
   * Generation is seeded per entry, so live play and offline catch-up write

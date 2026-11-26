@@ -56,7 +56,7 @@ test('a voyage saved before variants keeps the star it is sitting at', () => {
   assert.equal(getSystem(back.space.galaxySeed, back.space.systemId, space).star.variant, undefined);
 });
 
-test('the sky holds real neighbours: the same star sits in nearly the same place one jump later', () => {
+test('the sky holds real neighbors: the same star sits in nearly the same place one jump later', () => {
   const near = neighbors(SEED, [0, 0, 0], 30, space).filter((c) => c.cls === 'G' || c.cls === 'K' || c.cls === 'M');
   const a = getSystem(SEED, near[0].id, space), b = getSystem(SEED, near[1].id, space);
   const sa = skyFor(SEED, a, space), sb = skyFor(SEED, b, space);

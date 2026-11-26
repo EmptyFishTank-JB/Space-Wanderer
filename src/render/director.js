@@ -1,6 +1,6 @@
 // Autonomous camera director + the viewer's (only) controls: switching feeds
 // and panning within a camera's physical bounds. No DOM here: time is passed
-// in, randomness is injected, so the behaviour is testable.
+// in, randomness is injected, so the behavior is testable.
 import { W, PPM } from './gfx.js';
 
 export const EXT = 'CAM-08';

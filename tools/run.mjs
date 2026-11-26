@@ -58,7 +58,7 @@ console.log(`\n── ${hours} h simulated in ${Math.round(ms)} ms (${r((ticks /
 console.log('traveler   ', tr.pos.room, '·', tr.activity ? tr.activity.id : 'idle', '· needs', Object.fromEntries(Object.entries(tr.needs).map(([k, v]) => [k, r(v)])));
 console.log('mood/body  ', { ...Object.fromEntries(Object.entries(tr.mood).map(([k, v]) => [k, r(v)])), fitness: r(tr.body.fitness), condition: r(tr.body.condition) });
 console.log('power      ', sh.power.mode, `${r(sh.power.reactorOut, 1)} kW out, battery ${Math.round((100 * sh.power.battery) / sh.power.batteryCap)}%, heat ${r(sh.thermal.heat)}, fuel ${r(sh.fuel.tons)} t`);
-console.log('air/water  ', `O2 ${r(sh.atmo.o2)}%, CO2 ${Math.round(sh.atmo.co2)} ppm, potable ${Math.round(sh.water.potable)} L, grey ${Math.round(sh.water.grey)} L, reserve ${Math.round(sh.water.reserve)} L`);
+console.log('air/water  ', `O2 ${r(sh.atmo.o2)}%, CO2 ${Math.round(sh.atmo.co2)} ppm, potable ${Math.round(sh.water.potable)} L, gray ${Math.round(sh.water.gray)} L, reserve ${Math.round(sh.water.reserve)} L`);
 console.log('food       ', `pantry ${r(pantryDays(s), 1)} d, algae ${Math.round(sh.food.algae)} kcal, fresh lots ${sh.food.fresh.length}, emergency ${sh.food.emergencyOpened ? 'opened' : 'sealed'}`);
 console.log('racks      ', sh.trays.map((t) => (t.crop ? `${t.crop}:${trayStage(t)}` : 'empty')).join(' '));
 console.log('stores     ', sh.inventory.parts, 'parts,', sh.inventory.filters, 'filters,', sh.inventory.cartridges, 'cartridges,', sh.inventory.seals, 'seals,', r(sh.inventory.feedstock, 1), 'kg feedstock');

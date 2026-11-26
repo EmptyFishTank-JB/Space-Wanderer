@@ -26,7 +26,7 @@ function valueNoise(seed, tag, p, scale) {
   );
 }
 
-/** Stellar density field, 0..1. The neighbourhood of the origin is kept populated. */
+/** Stellar density field, 0..1. The neighborhood of the origin is kept populated. */
 export function density(seed, p, g) {
   const L = g.densityLatticeLy;
   let d = 0.65 * valueNoise(seed, 'dA', p, L) + 0.35 * valueNoise(seed, 'dB', p, L / 3);

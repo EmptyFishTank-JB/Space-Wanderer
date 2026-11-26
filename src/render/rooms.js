@@ -23,7 +23,7 @@ const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'G
 
 const LED = { ok: [80, 230, 120], warn: [255, 180, 40], bad: [255, 60, 50], off: [40, 44, 40] };
 
-/** Window cut-outs per room, in room metres / screen rows. */
+/** Window cut-outs per room, in room meters / screen rows. */
 export function roomWindows(room) {
   switch (room) {
     case 'bridge': return [{ x0: 2.0, x1: 8.4, y0: CEIL + 10, y1: FLOOR - 46 }];
@@ -478,7 +478,7 @@ const ROOMS = {
     });
     const anyFault = Object.values(s.ship.components).some((c) => c.fault && c.known);
     blinkLed(ctx, rc, M(3.8) + 9, FLOOR - 54, anyFault ? LED.bad : LED.ok, 1.6);
-    // reactor core: brightness with output, colour with heat; the coolant pump judders when faulted
+    // reactor core: brightness with output, color with heat; the coolant pump judders when faulted
     const out = clamp01(p.reactorOut / 40);
     const rf = s.ship.components.reactor_core.fault;
     const shake = rf ? Math.round(Math.sin(rc.t * 37)) : 0;

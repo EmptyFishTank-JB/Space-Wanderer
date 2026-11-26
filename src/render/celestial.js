@@ -27,8 +27,8 @@ for (let i = 0; i < 1400; i++) {
 /**
  * Background sky. With `sky` (render/sky.js) it is the real sky from this
  * system: the galactic band along the galactic plane, brightest toward the
- * core; nearby nebulae; the faint distant field; and the neighbouring stars
- * by their true direction, brightness and colour, so the same patterns hold
+ * core; nearby nebulae; the faint distant field; and the neighboring stars
+ * by their true direction, brightness and color, so the same patterns hold
  * from system to system and drift as the ship travels. Without it (the
  * ground view, the gallery) it falls back to the old per-system sky.
  */
@@ -63,7 +63,7 @@ export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band 
     if (x < -2 || x > W + 2 || y < -2 || y > H + 2) continue;
     const a = (0.25 + 0.75 * s.m) * dim * fieldK;
     if (speed > 0.02) {
-      // supercruise streaks: radial from the centre of travel
+      // supercruise streaks: radial from the center of travel
       const dx = x - W / 2, dy = y - H / 2;
       const k = speed * 0.18;
       line(ctx, s.c, x, y, x + dx * k, y + dy * k, a * 0.8);
@@ -73,7 +73,7 @@ export function drawStarfield(ctx, seed, yaw, pitch, { speed = 0, dim = 1, band 
     }
   }
   if (!sky) return;
-  // the neighbours: real directions, real colours, brighter when nearer and more luminous
+  // the neighbors: real directions, real colors, brighter when nearer and more luminous
   for (const st of sky.stars) {
     const p = toScreen(st.az, st.el);
     if (!p) continue;
@@ -219,7 +219,7 @@ export function drawStar(ctx, x, y, angR, star, t, glareK = 1) {
     }
   }
   ctx.putImageData(img, x0, y0);
-  const flareC = mix(c, [255, 120, 60], 0.5); // prominences take the star's own colour
+  const flareC = mix(c, [255, 120, 60], 0.5); // prominences take the star's own color
   if (star.variant === 'WR') wolfRayetShells(ctx, x, y, R, t);
   if (R > 30) {
     ctx.globalCompositeOperation = 'lighter';
