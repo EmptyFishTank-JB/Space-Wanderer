@@ -63,7 +63,7 @@ export function skyFor(seed, sys, space) {
   return sky;
 }
 
-const FIGURES = ['the Lantern', 'the Heron', 'the Anvil', 'the Kettle', 'the Two Sisters', 'the Plow Horse', 'the Harp', 'the Long Road', 'the Key',
+const FIGURES = ['the Lantern', 'the Heron', 'the Anvil', 'the Kettle', 'the Two Sisters', 'the Plough Horse', 'the Harp', 'the Long Road', 'the Key',
   'the Lamplighter', 'the Fisher', 'the Little Gate', 'the Comb', 'the Sleeper', 'the Kite', 'the Bell', 'the Spindle', 'the Crow', 'the Wheel', 'the Sail'];
 const sep = (a, b) => Math.acos(Math.max(-1, Math.min(1, Math.sin(a.el) * Math.sin(b.el) + Math.cos(a.el) * Math.cos(b.el) * Math.cos(a.az - b.az))));
 

@@ -103,7 +103,7 @@ export function withDecks(ship) {
 /** Axis-aligned extent {x, y, z} of a module. */
 export function moduleExtent(m) {
   if (m.shape === 'cyl-x') return { x: m.x, y: [m.y - m.r, m.y + m.r], z: [m.z - m.r, m.z + m.r] };
-  if (m.shape === 'cyl-z' || m.shape === 'turret') return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: m.z };
+  if (m.shape === 'cyl-z' || m.shape === 'turret' || m.shape === 'ring') return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: m.z };
   if (m.shape === 'dish') return { x: [m.x - m.r, m.x + m.r], y: [m.y - m.r, m.y + m.r], z: [m.z, m.z + m.r] };
   return { x: m.x, y: m.y, z: m.z };
 }
@@ -210,6 +210,29 @@ export function checkArrangement(ship, sim) {
     const gap = windowGap(ship, w);
     if (!(gap <= 1.8)) problems.push(`window ${w.id} is ${gap === Infinity ? 'aimed at an unknown space' : `${gap.toFixed(1)} m from ${w.backs}`}`);
   }
+  // window bays and light wells stay clear of other rooms, machinery, shafts and ducts
+  const bayProblems = new Set();
+  for (const bay of windowBays(ship)) {
+    for (let i = 0; i < bay.slices.length - 1; i++) {
+      const A = bay.slices[i], B = bay.slices[i + 1];
+      const pts = A.poly.concat(B.poly);
+      const box = { x: [A.x, B.x].sort((p, q) => p - q), y: [Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[0]))], z: [Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[1]))] };
+      // shrink a little: the bay meets its own room's wall and the hull exactly
+      const inner = { x: [box.x[0] + 0.05, box.x[1] - 0.05], y: [box.y[0] + 0.05, box.y[1] - 0.05], z: [box.z[0] + 0.05, box.z[1] - 0.05] };
+      // only where the overlap is inside the hull: the bay's box also covers open space outside the slope
+      const hits = (o) => {
+        const e = span(o);
+        if (!overlap(inner, o)) return false;
+        const m = ['x', 'y', 'z'].map((k) => (Math.max(e[k][0], inner[k][0]) + Math.min(e[k][1], inner[k][1])) / 2);
+        return insideHull(ship, ...m);
+      };
+      for (const r of rooms) if (r.id !== bay.room && hits(r)) bayProblems.add(`the ${bay.window} bay runs into ${r.id}`);
+      for (const m of ship.modules || []) if (!m.inRoom && hits(moduleExtent(m))) bayProblems.add(`the ${bay.window} bay runs into ${m.id}`);
+      for (const sh of ship.shafts || []) if (hits(sh)) bayProblems.add(`the ${bay.window} bay runs into ${sh.id}`);
+      for (const d of ship.ducts || []) for (const seg of d.segments) if (hits(segmentBox(seg, d.size))) bayProblems.add(`the ${bay.window} bay runs into ${d.id}`);
+    }
+  }
+  problems.push(...bayProblems);
   const volumes = {};
   for (const r of rooms) if (!r.unpressurized) volumes[r.id] = (r.x[1] - r.x[0]) * (r.y[1] - r.y[0]) * (r.zRange[1] - r.zRange[0]);
   const resizes = rooms.filter((r) => r.resize && simRooms[r.id]).map((r) => ({ room: r.id, from: simRooms[r.id].width, to: roomLength(r), why: r.resize }));
@@ -249,19 +272,88 @@ export function shieldEllipsoid(ship, margin = 2.5) {
   }
   for (const c of (ship.cameras && ship.cameras.exterior) || []) pts.push(c.at);
   const lo = [0, 1, 2].map((i) => Math.min(...pts.map((p) => p[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((p) => p[i])));
-  const c = lo.map((v, i) => (v + hi[i]) / 2);
+  const c0 = lo.map((v, i) => (v + hi[i]) / 2);
   const half = hi.map((v, i) => (v - lo[i]) / 2);
-  // try a few proportions and keep the smallest ellipsoid that still holds every point
-  let best = null;
-  const f = [0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
-  for (const fx of f) for (const fy of f) for (const fz of f) {
-    const r = [half[0] * fx, half[1] * fy, half[2] * fz];
-    const k = Math.max(...pts.map((p) => Math.hypot(...p.map((v, i) => (v - c[i]) / r[i]))));
-    const rr = r.map((v) => v * k);
-    const vol = rr[0] * rr[1] * rr[2];
-    if (!best || vol < best.vol) best = { vol, r: rr };
+  // search proportions and a little centre shift for the smallest ellipsoid that still holds every point
+  const fit = (c, r) => { const k = Math.max(...pts.map((p) => Math.hypot(...p.map((v, i) => (v - c[i]) / r[i])))); const rr = r.map((v) => v * k); return { c, r: rr, vol: rr[0] * rr[1] * rr[2] }; };
+  let best = fit(c0, half);
+  for (let step = 0.25; step > 0.01; step /= 2) {
+    let improved = true;
+    while (improved) {
+      improved = false;
+      for (let i = 0; i < 6; i++) for (const sgn of [1, -1]) {
+        const c = [...best.c], r = [...best.r];
+        if (i < 3) r[i] *= 1 + sgn * step; else c[i - 3] += sgn * step * half[i - 3] * 0.2;
+        const t = fit(c, r);
+        if (t.vol < best.vol - 1e-6) { best = t; improved = true; }
+      }
+    }
   }
+  const c = best.c;
   return { c, r: best.r.map((v) => v + margin) };
+}
+
+/** Clip a polygon [[u, v], ...] to the half-plane f(p) >= 0, where f is linear. */
+function clipHalf(poly, f) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const P = poly[i], Q = poly[(i + 1) % poly.length], fp = f(P), fq = f(Q);
+    if (fp >= 0) out.push(P);
+    if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push([P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t]); }
+  }
+  return out;
+}
+
+const PONY_WALL = 0.95; // meters: the low wall (with a rail on top) between a room and its window bay
+
+/**
+ * Window bays. A window on a sloping part of the hull is set at its angle,
+ * and the room it lights opens out to it: the ceiling runs outboard until it
+ * meets the hull above the glass, and a pony wall with a rail stands on the
+ * room's old wall line so nobody steps out onto the glass. A skylight in the
+ * flat deck gets a light well up through the ceiling void instead.
+ * Each bay: { window, room, kind: 'bay' | 'well', side, x: [x0, x1], deck,
+ *   slices: [{ x, poly: [[y, z], ...] }], rail: { y, z: [floor, top] } | null }.
+ */
+export function windowBays(ship) {
+  const rooms = Object.fromEntries(withDecks(ship).map((r) => [r.id, r]));
+  const parts = Object.fromEntries(hullParts(ship).map((p) => [p.id, p]));
+  const out = [];
+  for (const w of ship.windows || []) {
+    const r = rooms[w.backs];
+    if (!r || w.cap || !parts[w.part]) continue;
+    const part = parts[w.part];
+    const quads = windowQuads(ship, w, 1);
+    if (!quads.length) continue;
+    const ys = quads.flat().map((q) => q[1]), zs = quads.flat().map((q) => q[2]);
+    const xs = [];
+    for (let x = w.x[0]; x < w.x[1] - 1e-6; x += 1) xs.push(x);
+    xs.push(w.x[1]);
+    const [zf, zc] = r.zRange;
+    if (Math.min(...zs) > zc) {
+      // a skylight: a straight light well from the ceiling up to the glass
+      const y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const slices = xs.map((x) => { const st = station(part.stations, x); return { x, poly: [[y0, zc], [y1, zc], [y1, st.zt], [y0, st.zt]] }; });
+      out.push({ window: w.id, room: r.id, deck: r.deck, kind: 'well', side: Math.sign(y0 + y1), x: [w.x[0], w.x[1]], slices, rail: null });
+      continue;
+    }
+    const side = Math.sign(ys.reduce((a, v) => a + v, 0));
+    const wall = side > 0 ? r.y[1] : r.y[0];
+    const slices = [];
+    for (const x of xs) {
+      const st = station(part.stations, x);
+      if (!st) continue;
+      const yc = partY(part, st);
+      let poly = profile(part.profile, st).map(([y, z]) => [y + yc, z]);
+      poly = clipHalf(poly, ([y]) => side * (y - wall));
+      poly = clipHalf(poly, ([, z]) => z - zf);
+      poly = clipHalf(poly, ([, z]) => zc - z);
+      if (poly.length >= 3) slices.push({ x, poly: poly.map(([y, z]) => [Math.round(y * 1000) / 1000, Math.round(z * 1000) / 1000]) });
+    }
+    if (slices.length < 2) continue;
+    out.push({ window: w.id, room: r.id, deck: r.deck, kind: 'bay', side, x: [w.x[0], w.x[1]], slices, rail: w.rail === false ? null : { y: wall, z: [zf, zf + PONY_WALL] } });
+  }
+  return out;
 }
 
 /** The ship.json edits this arrangement needs (doors that move by more than half a door width). */

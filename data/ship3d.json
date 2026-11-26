@@ -1085,6 +1085,25 @@
    "new": true,
    "name": "Shield generator room",
    "info": "The shield generator and its capacitor banks, beside the power room and right under engineering."
+  },
+  {
+   "id": "gravroom",
+   "deck": "lower",
+   "x": [
+    -3.6,
+    3.4
+   ],
+   "y": [
+    -10.0,
+    -1.2
+   ],
+   "axis": "-y",
+   "origin": -1.2,
+   "view": "port",
+   "role": "power",
+   "new": true,
+   "name": "Gravity generator room",
+   "info": "The gravity generator's field ring and its controls, amidships on the lower deck next to the ore bunkers."
   }
  ],
  "hatches": [
@@ -1678,6 +1697,17 @@
     1.1,
     -5
    ]
+  },
+  {
+   "between": [
+    "gravroom",
+    "lower_passage"
+   ],
+   "at": [
+    0.0,
+    -1.1,
+    -5.0
+   ]
   }
  ],
  "shafts": [
@@ -1862,18 +1892,18 @@
     -21.2
    ],
    "y": [
-    -23.6,
-    -21.6
+    -25.6,
+    -23.4
    ],
    "z": [
     -9.8,
-    3.4
+    0.4
    ],
    "exterior": true,
    "opensTo": [
     "airlock"
    ],
-   "info": "A cage on the outside of the hull by the airlock's outer door. It lowers a suited traveler to the ground and brings them back up."
+   "info": "A cage on the outside of the hull, under the airlock's outer door in the sloping wing. It lowers the traveler to the ground on a cable and brings them back up to the door."
   },
   {
    "id": "lb_s",
@@ -2840,7 +2870,7 @@
    "name": "Ore & ice bunkers",
    "shape": "box",
    "x": [
-    -3.6,
+    3.6,
     11.8
    ],
    "y": [
@@ -4595,6 +4625,21 @@
    "role": "shield",
    "inRoom": "shieldroom",
    "info": "Projects the ship's shield bubble. It soaks up weapon fire and, more often on a survey ship, micrometeoroids and the heat of a close stellar pass. It collapses if overloaded and takes a while to reboot."
+  },
+  {
+   "id": "gravity_gen",
+   "name": "Gravity generator",
+   "shape": "ring",
+   "x": -0.1,
+   "y": -5.6,
+   "z": [
+    -5.0,
+    -1.4
+   ],
+   "r": 2.6,
+   "role": "power",
+   "inRoom": "gravroom",
+   "info": "A field ring that sets up the ship's artificial gravity, with plating under every deck to keep it even: one g by default, set lighter on long legs and off for maintenance. It sits near the ship's center of mass, so the field is steady when the drives fire."
   }
  ],
  "cameras": {
@@ -4946,8 +4991,9 @@
     -20.6
    ],
    "faces": "out to port",
-   "info": "The porthole in the airlock's outer door, set in the port flank.",
-   "backs": "airlock"
+   "info": "The porthole in the airlock's outer door, a hatch in the sloping port wing. The airlock opens out to it with no rail, since this is the way out.",
+   "backs": "airlock",
+   "rail": false
   },
   {
    "id": "win_biolab",

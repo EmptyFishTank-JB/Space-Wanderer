@@ -126,6 +126,9 @@ svg .room.new { fill-opacity: 0.3; stroke-dasharray: 4 2.5; stroke-opacity: 0.75
 svg .room.corr { fill-opacity: 0.14; stroke-dasharray: 5 3; }
 svg .room.far { fill-opacity: 0.22; stroke-opacity: 0.3; }
 svg .room.mission { stroke-dasharray: 1.5 2; stroke-width: 1.4; }
+svg .room.bay { fill-opacity: 0.32; stroke-dasharray: 2 2; }
+svg .pony { stroke: var(--ink); stroke-width: 2.6; vector-effect: non-scaling-stroke; pointer-events: none; }
+svg .well { fill: var(--glass); fill-opacity: 0.12; stroke: var(--glass); stroke-width: 1; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; pointer-events: none; }
 svg .ghost { fill: none; stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 0.8; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; pointer-events: none; }
 svg .ghost.hull { fill: none; stroke-dasharray: none; stroke-opacity: 0.3; }
 svg .modf { stroke: var(--muted); stroke-width: 0.8; vector-effect: non-scaling-stroke; fill-opacity: 0.3; cursor: pointer; }
@@ -277,6 +280,7 @@ footer { font: 12px var(--mono); color: var(--muted); }
           <div><svg viewBox="0 0 34 18" aria-hidden="true"><polygon points="8,9 28,2 28,16" fill="var(--accent)" fill-opacity="0.35"/><circle cx="8" cy="9" r="3" fill="var(--accent)"/></svg>Room camera (dot) and the wall it looks at</div>
           <div><svg viewBox="0 0 34 18" aria-hidden="true"><rect x="3" y="3" width="28" height="12" fill="var(--hab)" fill-opacity="0.3" stroke="var(--ink)" stroke-opacity="0.75" stroke-dasharray="4 2.5"/></svg>New room (not in the sim yet)</div>
           <div><svg viewBox="0 0 34 18" aria-hidden="true"><rect x="3" y="3" width="28" height="12" fill="var(--hab)" fill-opacity="0.3" stroke="var(--ink)" stroke-opacity="0.75" stroke-dasharray="1.5 2" stroke-width="1.4"/></svg>Room for missions (if ports and missions come to the sim)</div>
+          <div><svg viewBox="0 0 34 18" aria-hidden="true"><polygon points="4,3 18,3 30,15 4,15" fill="var(--hab)" fill-opacity="0.3" stroke="var(--ink)" stroke-opacity="0.6" stroke-dasharray="2 2"/><line x1="4" y1="3" x2="4" y2="15" stroke="var(--ink)" stroke-width="2.6"/></svg>Window bay out to the angled glass, with its pony wall</div>
           <div><svg viewBox="0 0 34 18" aria-hidden="true"><circle cx="17" cy="9" r="5" fill="var(--traveler)"/></svg>The traveler</div>
         </div>
       </div>
@@ -329,7 +333,7 @@ const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', pas
 const SHORT = {
   bridge: 'Bridge', lounge: 'Lounge', quarters: 'Quarters', galley: 'Galley', corridor_fore: 'Living spine', corridor_aft: 'Service spine', hydro: 'Hydroponics', lifesupport: 'Life support',
   storage: 'Storage', airlock: 'Airlock', workshop: 'Workshop', engineering: 'Engineering', gym: 'Gym', fwd_living: 'Lookout', medbay: 'Medbay', washroom: 'Washroom', fwd_main: 'Fwd passage',
-  lab: 'Geo lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores', armory: 'Armory', brig: 'Brig', securecargo: 'Secure cargo', cabin_a: 'Cabin 1', cabin_b: 'Cabin 2', cabin_c: 'Cabin 3', paxlounge: 'Pax lounge', xeno: 'Xeno', mapping: 'Mapping', firecontrol: 'Fire control', magazine: 'Magazine', shieldroom: 'Shield gen', cmstore: 'Countermeasures',
+  lab: 'Geo lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores', armory: 'Armory', brig: 'Brig', securecargo: 'Secure cargo', cabin_a: 'Cabin 1', cabin_b: 'Cabin 2', cabin_c: 'Cabin 3', paxlounge: 'Pax lounge', xeno: 'Xeno', mapping: 'Mapping', gravroom: 'Gravity gen', firecontrol: 'Fire control', magazine: 'Magazine', shieldroom: 'Shield gen', cmstore: 'Countermeasures',
 };
 const DECK_NAME = Object.fromEntries(S.decks.map((d) => [d.id, d.name]));
 const deckOf = Object.fromEntries(S.decks.map((d) => [d.id, d]));
@@ -340,6 +344,7 @@ const geoHatch = Object.fromEntries(S.hatches.map((h) => [h.id, h]));
 const parts = hullParts(S);
 const shafts = S.shafts || [];
 const ducts = S.ducts || [];
+const BAYS = windowBays(S);
 const cams = S.cameras.exterior;
 const nameOf = (id) => (simRoom[id] && simRoom[id].name) || (roomById[id] && roomById[id].name) || id;
 const TRAV = { room: 'lounge', at: [-26.0, 3.6, 4.8], h: 1.75 };
@@ -425,6 +430,9 @@ function infoFor(id) {
     if (links.length) rows.push(['Opens to', [...new Set(links)].join(' · ')]);
     if (simRoom[key]) rows.push(['Camera', `looks ${VIEW_WORD[r.view]}`]);
     if (r.virtualWindow) rows.push(['Window', `virtual: a wall screen showing ${r.virtualWindow.feed}`]);
+    const bays = BAYS.filter((b) => b.room === key);
+    if (bays.some((b) => b.kind === 'bay')) rows.push(['Window bay', bays.some((b) => b.rail) ? 'The ceiling runs out to the hull over the angled window; a pony wall with a rail keeps you off the glass.' : 'The room opens straight out to the angled window, which is its way out.']);
+    if (bays.some((b) => b.kind === 'well')) rows.push(['Skylight', 'A light well up through the ceiling void to the glass in the deck.']);
     if (r.missions) rows.push(['For missions', 'Built if ports and missions come to the sim (pinned in docs/ideas.md)']);
     else if (r.new) rows.push(['Status', 'New: not in the sim yet']);
     if (r.unpressurized) rows.push(['Air', 'Unpressurized']);
@@ -617,6 +625,37 @@ if (!THREE) {
     const zs = d.segments.flat().map((p) => p[2]);
     groups.systems.add(tag(g, `duct:${d.id}`, { kind: 'duct', deck: d.deck, z: [Math.min(...zs) - d.size / 2, Math.max(...zs) + d.size / 2] }));
   }
+  // window bays: the room's ceiling runs out to the hull over each angled window; a pony wall with a rail keeps people off the glass
+  const railMat = mat('ink'), ponyMat = mat('service');
+  for (const bay of BAYS) {
+    const r = roomById[bay.room];
+    const pos = [];
+    const P = (x, [y, z]) => [x, z, y];
+    const S0 = bay.slices;
+    for (let i = 0; i < S0.length - 1; i++) {
+      const A = S0[i], B = S0[i + 1];
+      if (A.poly.length === B.poly.length) {
+        for (let k = 0; k < A.poly.length; k++) { const k2 = (k + 1) % A.poly.length; const a = P(A.x, A.poly[k]), b = P(A.x, A.poly[k2]), c = P(B.x, B.poly[k2]), d = P(B.x, B.poly[k]); pos.push(...a, ...b, ...c, ...a, ...c, ...d); }
+      } else {
+        // the section changes shape here: close this slice as a short prism
+        for (const [Q, x0, x1] of [[A, A.x, (A.x + B.x) / 2], [B, (A.x + B.x) / 2, B.x]]) for (let k = 0; k < Q.poly.length; k++) { const k2 = (k + 1) % Q.poly.length; const a = P(x0, Q.poly[k]), b = P(x0, Q.poly[k2]), c = P(x1, Q.poly[k2]), d = P(x1, Q.poly[k]); pos.push(...a, ...b, ...c, ...a, ...c, ...d); }
+      }
+    }
+    for (const Q of [S0[0], S0[S0.length - 1]]) { const c = Q.poly.reduce((a, p) => [a[0] + p[0] / Q.poly.length, a[1] + p[1] / Q.poly.length], [0, 0]); for (let k = 0; k < Q.poly.length; k++) pos.push(...P(Q.x, c), ...P(Q.x, Q.poly[k]), ...P(Q.x, Q.poly[(k + 1) % Q.poly.length])); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mat(r.role, { transparent: true, opacity: bay.kind === 'well' ? 0.35 : 0.5, depthWrite: false }));
+    groups.rooms.add(tag(m, r.id, { kind: 'room', deck: r.deck, z: r.zRange }));
+    if (bay.rail) {
+      const g = new THREE.Group();
+      const y = bay.rail.y, s = bay.side, [z0, z1] = bay.rail.z;
+      g.add(boxMesh(bay.x, s > 0 ? [y - 0.06, y + 0.06] : [y - 0.06, y + 0.06], [z0, z1], ponyMat));
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, bay.x[1] - bay.x[0], 8), railMat);
+      rail.rotation.z = Math.PI / 2; rail.position.copy(T(mid(bay.x), y, z1 + 0.15)); g.add(rail);
+      for (let x = bay.x[0]; x <= bay.x[1] + 1e-6; x += Math.max(1, (bay.x[1] - bay.x[0]) / Math.ceil((bay.x[1] - bay.x[0]) / 1.5))) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.15, 6), railMat); post.position.copy(T(x, y, z1 + 0.075)); g.add(post); }
+      g.userData = { deck: r.deck, z: r.zRange };
+      groups.rooms.add(g);
+    }
+  }
   // door frames: a slim rectangular frame in the wall each door sits in
   const frameMat = mat('ink');
   const doorList = SIM.hatches.filter((h) => geoHatch[h.id] && !geoHatch[h.id].path).map((h) => ({ at: geoHatch[h.id].at, a: roomById[h.a], b: roomById[h.b] }))
@@ -671,6 +710,14 @@ if (!THREE) {
         n.position.copy(T(c[0] + d[0] * (half + 0.12), c[1] + d[1] * (half + 0.12), c[2] + d[2] * (half + 0.12)));
         obj.add(n);
       }
+    }
+    else if (m.shape === 'ring') {
+      // the gravity generator: a field ring round a core column
+      obj = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(m.r * 0.78, m.r * 0.2, 14, 40), mat(m.role));
+      ring.rotation.x = Math.PI / 2; ring.position.copy(T(m.x, m.y, mid(m.z))); obj.add(ring);
+      const core = new THREE.Mesh(new THREE.CylinderGeometry(m.r * 0.22, m.r * 0.3, m.z[1] - m.z[0], 16), mat('shield'));
+      core.position.copy(T(m.x, m.y, mid(m.z))); obj.add(core);
     }
     else if (m.shape === 'turret') {
       // a gimballed hardpoint: a ring on the skin, a turret head and twin barrels pointing forward
@@ -728,7 +775,7 @@ if (!THREE) {
   // the shield bubble: an ellipsoid round the whole hull, shown on request
   const SH = shieldEllipsoid(S);
   const [sx, sy, sz] = SH.r;
-  const bubble = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), mat('shield', { transparent: true, opacity: 0.12, depthWrite: false, flatShading: false }));
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), mat('shield', { transparent: true, opacity: 0.12, depthWrite: false, flatShading: false, clippingPlanes: [] }));
   bubble.scale.set(sx, sz, sy); bubble.position.copy(T(...SH.c)); bubble.renderOrder = 8;
   scene.add(bubble);
   // exterior cameras: a small view cone at each mount
@@ -881,7 +928,7 @@ if (!THREE) {
     camera.up.set(0, 1, 0);
     camera.lookAt(tx, ty, tz);
     camera.aspect = aspect;
-    camera.far = d * 4;
+    camera.far = d * 4 + 400;
     camera.updateProjectionMatrix();
   }
   const toScreen = (v) => { const p = v.clone().project(camera); return [((p.x + 1) / 2) * W, ((1 - p.y) / 2) * H, p.z]; };
@@ -980,7 +1027,7 @@ if (!THREE) {
   // drag to turn, pinch / ctrl-wheel / buttons to zoom, click or tap to bracket. Hover only changes the cursor.
   const pointers = new Map();
   let moved = 0, pinch = null, panning = false;
-  const clampDist = (d) => Math.max(20, Math.min(420, d));
+  const clampDist = (d) => Math.max(20, Math.min(520, d));
   const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   cv.addEventListener('pointerdown', (e) => {
     cv.setPointerCapture(e.pointerId);
@@ -1049,6 +1096,11 @@ if (!THREE) {
     const k = b.dataset.layer;
     view.layers[k] = !view.layers[k];
     b.setAttribute('aria-pressed', String(view.layers[k]));
+    if (k === 'shield' && view.layers.shield) {
+      // frame the whole bubble: center on it and back off until its widest axis fits
+      view.target = [SH.c[0], SH.c[2], SH.c[1]];
+      view.dist = clampDist(Math.max(view.dist, SH.r[0] * 2.3));
+    }
     focus3d.hide(); applyVisibility(); rebuildSection(); render3d();
   }));
   onCut = () => { rebuildSection(); render3d(); };
@@ -1206,7 +1258,7 @@ function camGlyph(c, x, y, dx, dy, L) {
 
 let half = 'port';
 let profY = 0;
-const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive', scoop_plant: 'Scoop plant', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', water_tanks: 'Water tanks', ore_bunkers: 'Ore bunkers', engine_pi: 'Engines', engine_si: 'Engines', reactor_shield: 'Reactor', lifeboat_s: 'Lifeboat', lifeboat_p: 'Lifeboat', shield_gen: 'Shield gen' };
+const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive', scoop_plant: 'Scoop plant', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', water_tanks: 'Water tanks', ore_bunkers: 'Ore bunkers', engine_pi: 'Engines', engine_si: 'Engines', reactor_shield: 'Reactor', lifeboat_s: 'Lifeboat', lifeboat_p: 'Lifeboat', shield_gen: 'Shield gen', gravity_gen: 'Gravity' };
 /** Where a part's skin crosses the vertical line y at station x: the [bottom, top] of the hull there, or null. */
 function zSpanAt(p, x, y) {
   const st = station(p.stations, x);
@@ -1320,6 +1372,15 @@ function drawPlan(deckId) {
     if (fits(label, fs, w) && h > fs * 1.3) labels += text(r.x[0] + w / 2, r.y[0] + h / 2 + fs * 0.35, label, fs);
     else if (fits(label, fs, h) && w > fs * 1.3) labels += `<text class="lbl" font-size="${fs}" stroke-width="${n2(fs * 0.2)}" text-anchor="middle" transform="translate(${n2(r.x[0] + w / 2 + fs * 0.35)} ${n2(r.y[0] + h / 2)}) rotate(-90)">${label}</text>`;
   }
+  const zCut = d.z[0] + 1.5;
+  for (const bay of BAYS.filter((b) => roomById[b.room].deck === deckId)) {
+    const r = roomById[bay.room];
+    if (bay.kind === 'well') { const y = bay.slices[0].poly.map((p) => p[0]); g += rect('well', '', bay.x[0], Math.min(...y), bay.x[1] - bay.x[0], Math.max(...y) - Math.min(...y)); continue; }
+    // the bay's outline at the cut height: from the old wall line out to where the cut meets the hull
+    const reach = bay.slices.map((sl) => { const ys = []; for (let k = 0; k < sl.poly.length; k++) { const [y1, z1] = sl.poly[k], [y2, z2] = sl.poly[(k + 1) % sl.poly.length]; if ((z1 - zCut) * (z2 - zCut) <= 0 && z1 !== z2) ys.push(y1 + ((zCut - z1) / (z2 - z1)) * (y2 - y1)); } return [sl.x, bay.side > 0 ? Math.max(...ys) : Math.min(...ys)]; }).filter(([, y]) => Number.isFinite(y));
+    if (reach.length > 1) g += `<polygon class="${roomCls(r)} bay" data-id="${r.id}" style="${fillOf(r.role)}" points="${[[bay.x[0], bay.rail ? bay.rail.y : (bay.side > 0 ? r.y[1] : r.y[0])], ...reach, [bay.x[1], bay.side > 0 ? r.y[1] : r.y[0]]].map(([x, y]) => `${n2(x)},${n2(y)}`).join(' ')}"/>`;
+    if (bay.rail) g += line('pony', bay.x[0], bay.rail.y, bay.x[1], bay.rail.y);
+  }
   for (const du of ducts) if (du.deck === deckId) for (const seg of du.segments) { const b = segmentBox(seg, du.size); g += rect(`duct ${du.level}`, `duct:${du.id}`, b.x[0], b.y[0], b.x[1] - b.x[0], b.y[1] - b.y[0]); }
   for (const s of shafts) if (zOverlap(s.z, [d.z[0] - 0.01, d.z[1] + 0.01]) || (s.kind === 'bay-lift' && deckId === 'lower')) g += shaftSVG(s, s.x[0], s.x[1], s.y[0], s.y[1], false);
   const tick = (x, y, A, B) => (Math.min(A.x[1], B.x[1]) - Math.max(A.x[0], B.x[0]) > 0.3 ? line('door', x - 0.45, y, x + 0.45, y) : line('door', x, y - 0.45, x, y + 0.45));
@@ -1361,6 +1422,13 @@ function drawSection() {
     const w = r.y[1] - r.y[0];
     g += rect(roomCls(r), r.id, r.y[0], Z(r.zRange[1]), w, r.zRange[1] - r.zRange[0], fillOf(r.role));
     if (fits(SHORT[r.id], fs, w)) labels += text(r.y[0] + w / 2, Z(mid(r.zRange)) + fs * 0.35, SHORT[r.id], fs);
+  }
+  for (const bay of BAYS) {
+    if (x < bay.x[0] || x > bay.x[1]) continue;
+    const r = roomById[bay.room];
+    const sl = bay.slices.reduce((a, q) => (Math.abs(q.x - x) < Math.abs(a.x - x) ? q : a));
+    g += `<polygon class="${roomCls(r)} bay" data-id="${r.id}" style="${fillOf(r.role)}" points="${sl.poly.map(([y, z]) => `${n2(y)},${n2(Z(z))}`).join(' ')}"/>`;
+    if (bay.rail) g += line('pony', bay.rail.y, Z(bay.rail.z[0]), bay.rail.y, Z(bay.rail.z[1] + 0.15));
   }
   for (const du of ducts) for (const seg of du.segments) { const b = segmentBox(seg, du.size); if (x >= b.x[0] && x <= b.x[1]) g += rect(`duct ${du.level}`, `duct:${du.id}`, b.y[0], Z(b.z[1]), b.y[1] - b.y[0], b.z[1] - b.z[0]); }
   for (const s of shafts) if (x >= s.x[0] && x <= s.x[1]) g += shaftSVG(s, s.y[0], s.y[1], Z(s.z[1]), Z(s.z[0]), true);

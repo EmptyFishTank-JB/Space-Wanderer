@@ -17,7 +17,7 @@
 //   CAM_<id>              exterior camera: a point plus a 3 m line along its view direction
 //   TEXT                  labels
 import { readFileSync, writeFileSync } from 'node:fs';
-import { hullParts, station, profile, partY, withDecks, moduleExtent, segmentBox, windowQuads } from '../src/ship3d/geometry.js';
+import { hullParts, station, profile, partY, withDecks, moduleExtent, segmentBox, windowQuads, windowBays } from '../src/ship3d/geometry.js';
 
 const root = new URL('..', import.meta.url);
 const ship = JSON.parse(readFileSync(new URL('data/ship3d.json', root), 'utf8'));
@@ -80,6 +80,16 @@ for (const m of ship.modules) {
   if (m.shape === 'cyl-x') cylX(ly, m.x[0], m.x[1], m.y, m.z, m.r);
   else if (m.shape === 'cyl-z') cylZ(ly, m.x, m.y, m.z[0], m.z[1], m.r);
   else { const e = moduleExtent(m); box(ly, e.x, e.y, e.z); }
+}
+// window bays: each room opens out to its angled window; the pony wall is drawn as a low box
+for (const bay of windowBays(ship)) {
+  const ly = layer(`BAY_${bay.window}`, COLOR[(withDecks(ship).find((r) => r.id === bay.room) || {}).role] ?? 7);
+  for (let i = 0; i < bay.slices.length - 1; i++) {
+    const A = bay.slices[i], B = bay.slices[i + 1];
+    if (A.poly.length !== B.poly.length) continue;
+    for (let k = 0; k < A.poly.length; k++) { const k2 = (k + 1) % A.poly.length; face(ly, [A.x, ...A.poly[k]], [A.x, ...A.poly[k2]], [B.x, ...B.poly[k2]], [B.x, ...B.poly[k]]); }
+  }
+  if (bay.rail) box(layer(`PONY_${bay.window}`, COLOR.service), bay.x, [bay.rail.y - 0.06, bay.rail.y + 0.06], bay.rail.z);
 }
 for (const s of ship.shafts || []) box(layer(`SHAFT_${s.id}`, COLOR[s.kind] ?? COLOR.ladder), s.x, s.y, s.z);
 for (const d of ship.ducts || []) for (const seg of d.segments) { const b = segmentBox(seg, d.size); box(layer(`DUCT_${d.id}`, COLOR.duct), b.x, b.y, b.z); }

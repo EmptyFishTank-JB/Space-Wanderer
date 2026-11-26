@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkArrangement, proposedChanges, station, insideHull, roomU, profile, hullParts, segmentBox, windowQuads } from '../src/ship3d/geometry.js';
+import { checkArrangement, proposedChanges, station, insideHull, roomU, profile, hullParts, segmentBox, windowQuads, windowBays, shieldEllipsoid, moduleExtent } from '../src/ship3d/geometry.js';
 
 const load = (p) => JSON.parse(readFileSync(new URL(`../${p}`, import.meta.url)));
 const ship = load('data/ship3d.json');
@@ -110,4 +110,22 @@ test('exterior fittings sit on the skin: attached at the base, clear of the hull
       assert.ok(!insideHull(ship, ...m.to), `${m.id} tip ends inside the hull`);
     }
   }
+});
+
+test('angled windows open into bays with a pony wall; skylights get a light well; the shield holds the whole ship', () => {
+  const bays = windowBays(ship);
+  for (const w of ship.windows) {
+    if (w.cap || (w.backs || '').startsWith('mod:')) continue;
+    const bay = bays.find((b) => b.window === w.id);
+    assert.ok(bay, `${w.id} has no bay`);
+    if (bay.kind === 'bay') assert.equal(!!bay.rail, w.rail !== false, `${w.id} pony wall`);
+    for (const sl of bay.slices) {
+      const c = sl.poly.reduce((a, p) => [a[0] + p[0] / sl.poly.length, a[1] + p[1] / sl.poly.length], [0, 0]);
+      assert.ok(insideHull(ship, sl.x, c[0], c[1]), `${w.id} bay leaves the hull at x ${sl.x}`);
+    }
+  }
+  const { c, r } = shieldEllipsoid(ship);
+  const inside = (p) => Math.hypot(...p.map((v, i) => (v - c[i]) / r[i])) <= 1;
+  for (const m of ship.modules) { const e = moduleExtent(m); for (const x of e.x) for (const y of e.y) for (const z of e.z) assert.ok(inside([x, y, z]), `${m.id} sticks out of the shield`); }
+  for (const p of hullParts(ship)) for (const s of p.stations) for (const [y, z] of profile(p.profile, station(p.stations, s.x))) assert.ok(inside([s.x, y + (s.y ?? p.y ?? 0), z]), `${p.id} sticks out of the shield`);
 });
