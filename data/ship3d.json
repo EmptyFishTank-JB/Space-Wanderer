@@ -736,6 +736,101 @@
    "new": true,
    "name": "Storm shelter",
    "info": "A small room walled in by the water tanks, which make it the best-shielded space on board: bunk, rations and a console, for solar storms and close passes of hot stars."
+  },
+  {
+   "id": "laundry",
+   "deck": "living",
+   "x": [
+    -13.8,
+    -10.2
+   ],
+   "y": [
+    1.1,
+    5.7
+   ],
+   "axis": "+y",
+   "origin": 1.1,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Laundry",
+   "info": "Washer-dryer, a drying rack and the linen lockers, across the spine from the quarters. Grey water goes straight to life support for recycling."
+  },
+  {
+   "id": "pantry",
+   "deck": "living",
+   "x": [
+    -19.0,
+    -14.0
+   ],
+   "y": [
+    5.9,
+    8.6
+   ],
+   "axis": "+y",
+   "origin": 5.9,
+   "view": "starboard",
+   "role": "hab",
+   "new": true,
+   "name": "Pantry",
+   "info": "Dry stores, a chest freezer and the spice rack behind the galley: about a year of food that the grow trays don't make."
+  },
+  {
+   "id": "isolation",
+   "deck": "living",
+   "x": [
+    -28.0,
+    -22.2
+   ],
+   "y": [
+    -8.6,
+    -5.9
+   ],
+   "axis": "-y",
+   "origin": -5.9,
+   "view": "port",
+   "role": "life",
+   "new": true,
+   "name": "Sickbay isolation",
+   "info": "A sealed side room off the medbay with its own air supply and filters, for anything caught from a sample or a planet."
+  },
+  {
+   "id": "comms",
+   "deck": "main",
+   "x": [
+    0.2,
+    5.0
+   ],
+   "y": [
+    5.3,
+    9.1
+   ],
+   "axis": "+y",
+   "origin": 5.3,
+   "view": "starboard",
+   "role": "sensor",
+   "new": true,
+   "name": "Comms room",
+   "info": "Transmitters, the long-range antenna controls and the message archive, beside the data core it shares cabling with."
+  },
+  {
+   "id": "scistores",
+   "deck": "main",
+   "x": [
+    28.6,
+    33.6
+   ],
+   "y": [
+    6.2,
+    11.5
+   ],
+   "axis": "+x",
+   "origin": 28.6,
+   "view": "fore",
+   "role": "science",
+   "new": true,
+   "name": "Science stores",
+   "info": "Lab consumables, sample jars, core tubes, reagents and spare instruments for both labs, next to the cold store."
   }
  ],
  "hatches": [
@@ -1142,6 +1237,61 @@
     1.1,
     -5.0
    ]
+  },
+  {
+   "between": [
+    "laundry",
+    "corridor_fore"
+   ],
+   "at": [
+    -12.0,
+    0.95,
+    4.8
+   ]
+  },
+  {
+   "between": [
+    "pantry",
+    "galley"
+   ],
+   "at": [
+    -16.5,
+    5.8,
+    4.8
+   ]
+  },
+  {
+   "between": [
+    "isolation",
+    "medbay"
+   ],
+   "at": [
+    -25.0,
+    -5.8,
+    4.8
+   ]
+  },
+  {
+   "between": [
+    "comms",
+    "datacore"
+   ],
+   "at": [
+    2.6,
+    5.2,
+    0.0
+   ]
+  },
+  {
+   "between": [
+    "scistores",
+    "coldstore"
+   ],
+   "at": [
+    28.5,
+    9.0,
+    0.0
+   ]
   }
  ],
  "shafts": [
@@ -1338,6 +1488,67 @@
     "airlock"
    ],
    "info": "A cage on the outside of the hull by the airlock's outer door. It lowers a suited traveler to the ground and brings them back up."
+  },
+  {
+   "id": "lb_s",
+   "kind": "ladder",
+   "name": "Starboard lifeboat ladder",
+   "x": [
+    -9.6,
+    -8.8
+   ],
+   "y": [
+    16.4,
+    17.2
+   ],
+   "z": [
+    3.4,
+    5.0
+   ],
+   "opensTo": [
+    "gallery_s"
+   ],
+   "info": "A short ladder up through the gallery ceiling into the lifeboat's hatch."
+  },
+  {
+   "id": "lb_p",
+   "kind": "ladder",
+   "name": "Port lifeboat ladder",
+   "x": [
+    -9.6,
+    -8.8
+   ],
+   "y": [
+    -17.2,
+    -16.4
+   ],
+   "z": [
+    3.4,
+    5.0
+   ],
+   "opensTo": [
+    "gallery_p"
+   ],
+   "info": "A short ladder up through the gallery ceiling into the lifeboat's hatch."
+  },
+  {
+   "id": "vent_lower",
+   "kind": "vent",
+   "name": "Lower vent shaft",
+   "x": [
+    12.4,
+    13.3
+   ],
+   "y": [
+    1.55,
+    2.45
+   ],
+   "z": [
+    -6.05,
+    -0.15
+   ],
+   "opensTo": [],
+   "info": "Vertical vent with rungs: joins the under-floor crawl of the main deck to the lower deck's crawl."
   }
  ],
  "ducts": [
@@ -1535,6 +1746,88 @@
       -7.0,
       4.8,
       8.75
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "duct_lower",
+   "deck": "lower",
+   "level": "underfloor",
+   "name": "Lower-deck crawl",
+   "size": 0.9,
+   "info": "Air returns under the lower-deck plates, with grilles into the power room, hold, rover bay and storm shelter. The lower vent shaft climbs to the main deck's crawl.",
+   "segments": [
+    [
+     [
+      12.85,
+      2.0,
+      -5.6
+     ],
+     [
+      12.85,
+      0.0,
+      -5.6
+     ]
+    ],
+    [
+     [
+      12.85,
+      0.0,
+      -5.6
+     ],
+     [
+      -27.5,
+      0.0,
+      -5.6
+     ]
+    ],
+    [
+     [
+      -27.5,
+      0.0,
+      -5.6
+     ],
+     [
+      -27.5,
+      8.5,
+      -5.6
+     ]
+    ],
+    [
+     [
+      -22.5,
+      0.0,
+      -5.6
+     ],
+     [
+      -22.5,
+      -13.0,
+      -5.6
+     ]
+    ],
+    [
+     [
+      -8.0,
+      0.0,
+      -5.6
+     ],
+     [
+      -8.0,
+      11.0,
+      -5.6
+     ]
+    ],
+    [
+     [
+      -1.0,
+      0.0,
+      -5.6
+     ],
+     [
+      -1.0,
+      6.0,
+      -5.6
      ]
     ]
    ]
@@ -1920,6 +2213,126 @@
       ]
      }
     ]
+   },
+   {
+    "id": "lbhouse_s",
+    "name": "Starboard lifeboat housing",
+    "profile": "box",
+    "y": 14.5,
+    "stations": [
+     {
+      "x": -6.6,
+      "b": 1.4,
+      "z": [
+       4.6,
+       5.6
+      ]
+     },
+     {
+      "x": -8.0,
+      "b": 3.3,
+      "z": [
+       4.6,
+       7.9
+      ]
+     },
+     {
+      "x": -15.0,
+      "b": 3.3,
+      "z": [
+       4.6,
+       7.9
+      ]
+     },
+     {
+      "x": -16.4,
+      "b": 1.4,
+      "z": [
+       4.6,
+       5.6
+      ]
+     }
+    ]
+   },
+   {
+    "id": "lbhouse_p",
+    "name": "Port lifeboat housing",
+    "profile": "box",
+    "y": -14.5,
+    "stations": [
+     {
+      "x": -6.6,
+      "b": 1.4,
+      "z": [
+       4.6,
+       5.6
+      ]
+     },
+     {
+      "x": -8.0,
+      "b": 3.3,
+      "z": [
+       4.6,
+       7.9
+      ]
+     },
+     {
+      "x": -15.0,
+      "b": 3.3,
+      "z": [
+       4.6,
+       7.9
+      ]
+     },
+     {
+      "x": -16.4,
+      "b": 1.4,
+      "z": [
+       4.6,
+       5.6
+      ]
+     }
+    ]
+   },
+   {
+    "id": "scoop_fairing",
+    "name": "Scoop fairing",
+    "profile": "box",
+    "y": 0,
+    "stations": [
+     {
+      "x": 41.0,
+      "b": 3.4,
+      "z": [
+       -4.0,
+       -2.3
+      ]
+     },
+     {
+      "x": 38.0,
+      "b": 4.0,
+      "z": [
+       -4.5,
+       -3.2
+      ]
+     },
+     {
+      "x": 32.0,
+      "b": 4.0,
+      "z": [
+       -5.0,
+       -4.6
+      ]
+     },
+     {
+      "x": 27.0,
+      "b": 2.6,
+      "z": [
+       -5.4,
+       -5.1
+      ]
+     }
+    ]
    }
   ]
  },
@@ -2022,30 +2435,108 @@
   {
    "id": "fuel_port",
    "name": "Fuel tank (port)",
-   "shape": "cyl-x",
+   "shape": "prism",
    "x": [
-    -44.5,
-    -35.0
+    -60.0,
+    -41.0
    ],
-   "y": -15.8,
-   "z": 0.8,
-   "r": 2.6,
+   "y": [
+    -18.4,
+    -7.6
+   ],
+   "z": [
+    -1.3,
+    5.4
+   ],
    "role": "fuel",
-   "info": "Liquid hydrogen, moved aft into the thruster housing. With its twin, about 30 t usable."
+   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centred on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
+   "outline": [
+    [
+     -8.4,
+     -1.3
+    ],
+    [
+     -17.6,
+     -1.3
+    ],
+    [
+     -18.4,
+     -0.5
+    ],
+    [
+     -18.4,
+     4.6
+    ],
+    [
+     -17.6,
+     5.4
+    ],
+    [
+     -8.4,
+     5.4
+    ],
+    [
+     -7.6,
+     4.6
+    ],
+    [
+     -7.6,
+     -0.5
+    ]
+   ]
   },
   {
    "id": "fuel_stbd",
    "name": "Fuel tank (starboard)",
-   "shape": "cyl-x",
+   "shape": "prism",
    "x": [
-    -44.5,
-    -35.0
+    -60.0,
+    -41.0
    ],
-   "y": 15.8,
-   "z": 0.8,
-   "r": 2.6,
+   "y": [
+    7.6,
+    18.4
+   ],
+   "z": [
+    -1.3,
+    5.4
+   ],
    "role": "fuel",
-   "info": "Liquid hydrogen, moved aft into the thruster housing. With its twin, about 30 t usable."
+   "info": "A conformal liquid-hydrogen tank filling the thruster housing, centred on its nozzle bank. Hydrogen is kept at low pressure, so it doesn't need a cylinder: a chamfered box with internal baffles holds far more in the same space. With its twin, about 180 t usable.",
+   "outline": [
+    [
+     8.4,
+     -1.3
+    ],
+    [
+     17.6,
+     -1.3
+    ],
+    [
+     18.4,
+     -0.5
+    ],
+    [
+     18.4,
+     4.6
+    ],
+    [
+     17.6,
+     5.4
+    ],
+    [
+     8.4,
+     5.4
+    ],
+    [
+     7.6,
+     4.6
+    ],
+    [
+     7.6,
+     -0.5
+    ]
+   ]
   },
   {
    "id": "shadow_shield",
@@ -2075,10 +2566,10 @@
     -33.6
    ],
    "y": 0,
-   "z": 0.8,
+   "z": 0.4,
    "r": 3.6,
    "role": "power",
-   "info": "Main power plant, behind the shield on the centreline."
+   "info": "Main power plant on the centreline, inside its own shield box."
   },
   {
    "id": "fsd",
@@ -2310,19 +2801,19 @@
    "name": "Fuel scoop intake (ventral)",
    "shape": "box",
    "x": [
-    34,
-    44
+    40.9,
+    41.1
    ],
    "y": [
-    -4.0,
-    4.0
+    -2.8,
+    2.8
    ],
    "z": [
-    -5.4,
-    -4.2
+    -3.8,
+    -2.6
    ],
    "role": "fuel",
-   "info": "Under the forward belly. The ship skims a star belly-first, so the intake faces the plasma while the windows look away."
+   "info": "The intake mouth at the front of a fairing faired into the forward belly. The ship skims a star belly-first, so the intake faces the plasma while the windows look away."
   },
   {
    "id": "skiff",
@@ -2349,7 +2840,7 @@
    "name": "Port main thruster, nozzle 1 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -17.2,
@@ -2363,7 +2854,7 @@
    "name": "Port main thruster, nozzle 5 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -17.2,
@@ -2377,7 +2868,7 @@
    "name": "Port main thruster, nozzle 9 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -17.2,
@@ -2391,7 +2882,7 @@
    "name": "Port main thruster, nozzle 2 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -14.4,
@@ -2405,7 +2896,7 @@
    "name": "Port main thruster, nozzle 6 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -14.4,
@@ -2419,7 +2910,7 @@
    "name": "Port main thruster, nozzle 10 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -14.4,
@@ -2433,7 +2924,7 @@
    "name": "Port main thruster, nozzle 3 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -11.6,
@@ -2447,7 +2938,7 @@
    "name": "Port main thruster, nozzle 7 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -11.6,
@@ -2461,7 +2952,7 @@
    "name": "Port main thruster, nozzle 11 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -11.6,
@@ -2475,7 +2966,7 @@
    "name": "Port main thruster, nozzle 4 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -8.8,
@@ -2489,7 +2980,7 @@
    "name": "Port main thruster, nozzle 8 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -8.8,
@@ -2503,7 +2994,7 @@
    "name": "Port main thruster, nozzle 12 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -8.8,
@@ -2513,83 +3004,11 @@
    "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
   },
   {
-   "id": "rim_p_t",
-   "name": "Port main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -18.9,
-    -7.1
-   ],
-   "z": [
-    5.5,
-    5.85
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_p_b",
-   "name": "Port main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -18.9,
-    -7.1
-   ],
-   "z": [
-    -3.25,
-    -2.9
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_p_l",
-   "name": "Port main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -18.9,
-    -18.549999999999997
-   ],
-   "z": [
-    -3.25,
-    5.85
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_p_r",
-   "name": "Port main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -7.449999999999999,
-    -7.1
-   ],
-   "z": [
-    -3.25,
-    5.85
-   ],
-   "role": "service"
-  },
-  {
    "id": "nozzle_s00",
    "name": "Starboard main thruster, nozzle 1 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 8.8,
@@ -2603,7 +3022,7 @@
    "name": "Starboard main thruster, nozzle 5 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 8.8,
@@ -2617,7 +3036,7 @@
    "name": "Starboard main thruster, nozzle 9 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 8.8,
@@ -2631,7 +3050,7 @@
    "name": "Starboard main thruster, nozzle 2 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 11.6,
@@ -2645,7 +3064,7 @@
    "name": "Starboard main thruster, nozzle 6 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 11.6,
@@ -2659,7 +3078,7 @@
    "name": "Starboard main thruster, nozzle 10 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 11.6,
@@ -2673,7 +3092,7 @@
    "name": "Starboard main thruster, nozzle 3 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 14.4,
@@ -2687,7 +3106,7 @@
    "name": "Starboard main thruster, nozzle 7 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 14.4,
@@ -2701,7 +3120,7 @@
    "name": "Starboard main thruster, nozzle 11 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 14.4,
@@ -2715,7 +3134,7 @@
    "name": "Starboard main thruster, nozzle 4 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 17.2,
@@ -2729,7 +3148,7 @@
    "name": "Starboard main thruster, nozzle 8 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 17.2,
@@ -2743,7 +3162,7 @@
    "name": "Starboard main thruster, nozzle 12 of 12",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 17.2,
@@ -2753,83 +3172,11 @@
    "info": "One of twelve nozzles in a 4 × 3 bank, set back inside the housing's rim. Together they are the main thruster on this side."
   },
   {
-   "id": "rim_s_t",
-   "name": "Starboard main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    7.1,
-    18.9
-   ],
-   "z": [
-    5.5,
-    5.85
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_s_b",
-   "name": "Starboard main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    7.1,
-    18.9
-   ],
-   "z": [
-    -3.25,
-    -2.9
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_s_l",
-   "name": "Starboard main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    7.1,
-    7.449999999999999
-   ],
-   "z": [
-    -3.25,
-    5.85
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_s_r",
-   "name": "Starboard main thruster (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    18.549999999999997,
-    18.9
-   ],
-   "z": [
-    -3.25,
-    5.85
-   ],
-   "role": "service"
-  },
-  {
    "id": "engine_pi",
    "name": "Port inboard engine",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": -2.6,
@@ -2843,7 +3190,7 @@
    "name": "Starboard inboard engine",
    "shape": "cyl-x",
    "x": [
-    -65.9,
+    -66.8,
     -64.6
    ],
    "y": 2.6,
@@ -2851,78 +3198,6 @@
    "r": 2.0,
    "role": "drive",
    "info": "Trim and backup engine, recessed in the inboard housing between the two main banks."
-  },
-  {
-   "id": "rim_c_t",
-   "name": "Inboard engines (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -5.0,
-    5.0
-   ],
-   "z": [
-    2.3,
-    2.65
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_c_b",
-   "name": "Inboard engines (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -5.0,
-    5.0
-   ],
-   "z": [
-    -2.85,
-    -2.5
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_c_l",
-   "name": "Inboard engines (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    -5.0,
-    -4.65
-   ],
-   "z": [
-    -2.85,
-    2.65
-   ],
-   "role": "service"
-  },
-  {
-   "id": "rim_c_r",
-   "name": "Inboard engines (rim)",
-   "shape": "box",
-   "x": [
-    -66.4,
-    -64.4
-   ],
-   "y": [
-    4.65,
-    5.0
-   ],
-   "z": [
-    -2.85,
-    2.65
-   ],
-   "role": "service"
   },
   {
    "id": "telescope",
@@ -2939,23 +3214,441 @@
    "info": "A 1.2 m survey telescope under a sliding dome on the deck, feeding the observatory below."
   },
   {
-   "id": "lifeboat",
-   "name": "Lifeboat",
-   "shape": "box",
+   "id": "rim_p",
+   "name": "Port main thruster rim",
+   "shape": "frame",
    "x": [
-    -14.0,
-    -6.0
+    -65.2,
+    -64.4
    ],
    "y": [
-    11.0,
-    14.6
+    -18.85,
+    -7.15
    ],
    "z": [
-    4.8,
+    -3.25,
+    5.85
+   ],
+   "outline": [
+    [
+     -8.575,
+     5.85
+    ],
+    [
+     -7.15,
+     5.155
+    ],
+    [
+     -7.15,
+     -2.85
+    ],
+    [
+     -7.550000000000001,
+     -3.25
+    ],
+    [
+     -18.450000000000003,
+     -3.25
+    ],
+    [
+     -18.85,
+     -2.85
+    ],
+    [
+     -18.85,
+     5.155
+    ],
+    [
+     -17.425,
+     5.85
+    ]
+   ],
+   "width": 0.4,
+   "role": "service",
+   "info": "A single lip round the nozzle bank, following the housing's own chamfered section, with its corners chamfered to match. The nozzles stand out past it."
+  },
+  {
+   "id": "rim_s",
+   "name": "Starboard main thruster rim",
+   "shape": "frame",
+   "x": [
+    -65.2,
+    -64.4
+   ],
+   "y": [
+    7.15,
+    18.85
+   ],
+   "z": [
+    -3.25,
+    5.85
+   ],
+   "outline": [
+    [
+     17.425,
+     5.85
+    ],
+    [
+     18.85,
+     5.155
+    ],
+    [
+     18.85,
+     -2.85
+    ],
+    [
+     18.450000000000003,
+     -3.25
+    ],
+    [
+     7.550000000000001,
+     -3.25
+    ],
+    [
+     7.15,
+     -2.85
+    ],
+    [
+     7.15,
+     5.155
+    ],
+    [
+     8.575,
+     5.85
+    ]
+   ],
+   "width": 0.4,
+   "role": "service",
+   "info": "A single lip round the nozzle bank, following the housing's own chamfered section, with its corners chamfered to match. The nozzles stand out past it."
+  },
+  {
+   "id": "rim_c",
+   "name": "Inboard engines rim",
+   "shape": "frame",
+   "x": [
+    -65.2,
+    -64.4
+   ],
+   "y": [
+    -5.05,
+    5.05
+   ],
+   "z": [
+    -3.0500000000000003,
+    2.85
+   ],
+   "outline": [
+    [
+     3.825,
+     2.85
+    ],
+    [
+     5.05,
+     2.1550000000000002
+    ],
+    [
+     5.05,
+     -2.6500000000000004
+    ],
+    [
+     4.6499999999999995,
+     -3.0500000000000003
+    ],
+    [
+     -4.6499999999999995,
+     -3.0500000000000003
+    ],
+    [
+     -5.05,
+     -2.6500000000000004
+    ],
+    [
+     -5.05,
+     2.1550000000000002
+    ],
+    [
+     -3.825,
+     2.85
+    ]
+   ],
+   "width": 0.4,
+   "role": "service",
+   "info": "A single lip round the nozzle bank, following the housing's own chamfered section, with its corners chamfered to match. The nozzles stand out past it."
+  },
+  {
+   "id": "reactor_shield",
+   "name": "Reactor shield",
+   "shape": "shell",
+   "x": [
+    -42.8,
+    -33.0
+   ],
+   "y": [
+    -4.4,
+    4.4
+   ],
+   "z": [
+    -4.0,
+    4.6
+   ],
+   "role": "power",
+   "info": "Borated steel and lithium-hydride shielding on every side of the reactor, with the thicker shadow-shield bulkhead in front of it toward the crew spaces."
+  },
+  {
+   "id": "lifeboat_s",
+   "name": "Lifeboat (starboard)",
+   "shape": "box",
+   "x": [
+    -14.6,
+    -8.4
+   ],
+   "y": [
+    12.0,
+    17.0
+   ],
+   "z": [
+    5.0,
     7.4
    ],
    "role": "service",
-   "info": "A small sealed boat docked on the deck, enough to keep one person alive for weeks. Boarded through a hatch from the starboard gallery."
+   "info": "A small sealed boat in its own housing on the deck, enough to keep one person alive for weeks. Boarded by a short ladder from the starboard gallery; it launches sideways through the housing's outboard door."
+  },
+  {
+   "id": "lbdoor_s",
+   "name": "Lifeboat launch door (starboard)",
+   "shape": "box",
+   "x": [
+    -14.4,
+    -8.6
+   ],
+   "y": [
+    17.72,
+    17.86
+   ],
+   "z": [
+    4.9,
+    7.5
+   ],
+   "role": "service",
+   "info": "The housing's outboard door. It swings down and the boat slides out sideways on rails."
+  },
+  {
+   "id": "lifeboat_p",
+   "name": "Lifeboat (port)",
+   "shape": "box",
+   "x": [
+    -14.6,
+    -8.4
+   ],
+   "y": [
+    -17.0,
+    -12.0
+   ],
+   "z": [
+    5.0,
+    7.4
+   ],
+   "role": "service",
+   "info": "A small sealed boat in its own housing on the deck, enough to keep one person alive for weeks. Boarded by a short ladder from the port gallery; it launches sideways through the housing's outboard door."
+  },
+  {
+   "id": "lbdoor_p",
+   "name": "Lifeboat launch door (port)",
+   "shape": "box",
+   "x": [
+    -14.4,
+    -8.6
+   ],
+   "y": [
+    -17.86,
+    -17.72
+   ],
+   "z": [
+    4.9,
+    7.5
+   ],
+   "role": "service",
+   "info": "The housing's outboard door. It swings down and the boat slides out sideways on rails."
+  },
+  {
+   "id": "rcs_tine_s",
+   "name": "Micro thrusters (tine tip, starboard)",
+   "shape": "rcs",
+   "x": [
+    63.4,
+    64.6
+   ],
+   "y": [
+    14.4,
+    15.6
+   ],
+   "z": [
+    0.6500000000000001,
+    1.55
+   ],
+   "out": 1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_fwd_s",
+   "name": "Micro thrusters (forward chine, starboard)",
+   "shape": "rcs",
+   "x": [
+    29.4,
+    30.6
+   ],
+   "y": [
+    21.599999999999998,
+    22.8
+   ],
+   "z": [
+    2.8499999999999996,
+    3.75
+   ],
+   "out": 1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_mid_s",
+   "name": "Micro thrusters (midships chine, starboard)",
+   "shape": "rcs",
+   "x": [
+    -24.6,
+    -23.4
+   ],
+   "y": [
+    29.4,
+    30.6
+   ],
+   "z": [
+    3.55,
+    4.45
+   ],
+   "out": 1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_aft_s",
+   "name": "Micro thrusters (aft housing, starboard)",
+   "shape": "rcs",
+   "x": [
+    -56.6,
+    -55.4
+   ],
+   "y": [
+    18.0,
+    19.200000000000003
+   ],
+   "z": [
+    4.1499999999999995,
+    5.05
+   ],
+   "out": 1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_tine_p",
+   "name": "Micro thrusters (tine tip, port)",
+   "shape": "rcs",
+   "x": [
+    63.4,
+    64.6
+   ],
+   "y": [
+    -15.6,
+    -14.4
+   ],
+   "z": [
+    0.6500000000000001,
+    1.55
+   ],
+   "out": -1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_fwd_p",
+   "name": "Micro thrusters (forward chine, port)",
+   "shape": "rcs",
+   "x": [
+    29.4,
+    30.6
+   ],
+   "y": [
+    -22.8,
+    -21.599999999999998
+   ],
+   "z": [
+    2.8499999999999996,
+    3.75
+   ],
+   "out": -1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_mid_p",
+   "name": "Micro thrusters (midships chine, port)",
+   "shape": "rcs",
+   "x": [
+    -24.6,
+    -23.4
+   ],
+   "y": [
+    -30.6,
+    -29.4
+   ],
+   "z": [
+    3.55,
+    4.45
+   ],
+   "out": -1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_aft_p",
+   "name": "Micro thrusters (aft housing, port)",
+   "shape": "rcs",
+   "x": [
+    -56.6,
+    -55.4
+   ],
+   "y": [
+    -19.200000000000003,
+    -18.0
+   ],
+   "z": [
+    4.1499999999999995,
+    5.05
+   ],
+   "out": -1,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
+  },
+  {
+   "id": "rcs_tower",
+   "name": "Micro thrusters (tower)",
+   "shape": "rcs",
+   "x": [
+    -30.6,
+    -29.4
+   ],
+   "y": [
+    -0.6,
+    0.6
+   ],
+   "z": [
+    11.65,
+    12.549999999999999
+   ],
+   "out": 0,
+   "role": "drive",
+   "info": "A quad of small thrusters (up, down, fore and aft, plus one firing outboard) for fine manoeuvring: docking, landing and holding attitude while scooping."
   }
  ],
  "cameras": {
@@ -3127,7 +3820,7 @@
   {
    "id": "win_bow",
    "name": "Bow window",
-   "cap": 52.0,
+   "cap": 52.05,
    "y": [
     -6.2,
     6.2
@@ -3364,5 +4057,5 @@
    "info": "A wide port beside the telescope controls."
   }
  ],
- "windowShutters": "Every window has an armoured shutter. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."
+ "windowShutters": "Every window has an armoured shutter, including the deckhouse and bridge glazing. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."
 }

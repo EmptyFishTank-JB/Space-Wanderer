@@ -100,8 +100,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--select); ou
 .sheet .draw { overflow-x: auto; overscroll-behavior-x: contain; }
 .sheet svg { display: block; width: 100%; height: auto; }
 #profile svg, #camplan svg { min-width: 1100px; }
-#planM svg, #planL svg { min-width: 760px; }
-#planB svg, #planV svg { min-width: 460px; }
+#plan svg { min-width: 1240px; }
 #section svg { min-width: 760px; }
 .cap { font: 12px/1.45 var(--mono); color: var(--muted); }
 .swipe { display: none; }
@@ -112,6 +111,8 @@ svg .hull { fill: var(--hull-fill); fill-opacity: 0.08; stroke: var(--hull-line)
 svg .room { stroke: var(--ink); stroke-opacity: 0.55; stroke-width: 1; vector-effect: non-scaling-stroke; fill-opacity: 0.55; cursor: pointer; }
 svg .room.new { fill-opacity: 0.3; stroke-dasharray: 4 2.5; stroke-opacity: 0.75; }
 svg .room.corr { fill-opacity: 0.14; stroke-dasharray: 5 3; }
+svg .ghost { fill: none; stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 0.8; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+svg .ghost.hull { fill: none; stroke-dasharray: none; stroke-opacity: 0.3; }
 svg .modf { stroke: var(--muted); stroke-width: 0.8; vector-effect: non-scaling-stroke; fill-opacity: 0.3; cursor: pointer; }
 svg [data-id]:hover, svg .on { stroke: var(--select); stroke-opacity: 1; stroke-width: 2.2; }
 svg .axis { stroke: var(--grid); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -131,6 +132,7 @@ svg .camd { fill: var(--accent); pointer-events: none; }
 svg .xcam { fill: var(--cam); fill-opacity: 0.35; stroke: var(--cam); stroke-width: 1.2; vector-effect: non-scaling-stroke; cursor: pointer; }
 svg .xdot { fill: var(--cam); pointer-events: none; }
 svg .win { fill: var(--glass); fill-opacity: 0.6; stroke: var(--glass); stroke-width: 1.4; vector-effect: non-scaling-stroke; cursor: pointer; }
+svg .win.under { fill-opacity: 0.15; stroke-dasharray: 3 2; stroke-width: 1.1; }
 svg .cutline { stroke: var(--select); stroke-width: 1.4; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
 svg .trav, svg .trav * { fill: var(--traveler); stroke: var(--panel); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
 svg .lbl { font-family: var(--display); font-weight: 600; fill: var(--ink); pointer-events: none; paint-order: stroke; stroke: var(--panel); stroke-linejoin: round; stroke-opacity: 0.85; }
@@ -236,10 +238,15 @@ footer { font: 12px var(--mono); color: var(--muted); }
           </span></div>
         <div class="draw" id="profile"></div><div class="cap" id="profilecap"></div>
       </div>
-      <div class="sheet"><div class="head"><h3>Bridge deck · tower</h3></div><div class="draw" id="planB"></div><div class="cap">Floor 9.6 m. Bow to the right, starboard at the bottom.</div></div>
-      <div class="sheet"><div class="head"><h3>Living deck · deckhouse</h3></div><div class="draw" id="planV"></div><div class="cap">Floor 4.8 m. Roof duct dashed overhead.</div></div>
-      <div class="sheet wide"><div class="head"><h3>Main deck · service</h3></div><div class="draw" id="planM"></div><div class="cap">Floor 0 m. Overhead duct dashed, under-floor crawl dotted.</div></div>
-      <div class="sheet wide"><div class="head"><h3>Lower deck · hold and rover bay</h3></div><div class="draw" id="planL"></div><div class="cap">Floor −5.0 m. The rover bay platform drops through the belly.</div></div>
+      <div class="sheet wide"><div class="head"><h3 id="plantitle">Deck plans</h3>
+          <span class="seg" id="plandeck">
+            <button type="button" data-plan="bridge" aria-pressed="false">Bridge</button>
+            <button type="button" data-plan="living" aria-pressed="false">Living</button>
+            <button type="button" data-plan="main" aria-pressed="true">Main</button>
+            <button type="button" data-plan="lower" aria-pressed="false">Lower</button>
+          </span></div>
+        <div class="draw" id="plan"></div><div class="cap" id="plancap"></div>
+      </div>
       <div class="sheet wide"><div class="head"><h3>Transverse section · looking forward</h3></div><div class="draw" id="section"></div><div class="cap" id="sectioncap"></div></div>
       <div class="sheet wide"><div class="head"><h3>Reading the drawings</h3></div>
         <div class="key">
@@ -254,7 +261,7 @@ footer { font: 12px var(--mono); color: var(--muted); }
           <div><svg viewBox="0 0 34 18" aria-hidden="true"><circle cx="17" cy="9" r="5" fill="var(--traveler)"/></svg>The traveler</div>
         </div>
       </div>
-      <div class="sheet wide"><div class="head"><h3>Exterior cameras and windows · plan view</h3></div><div class="draw" id="camplan"></div><div class="cap">Each cone shows where a camera sits and which way it looks; blue strips are windows. Click any of them for details.</div></div>
+      <div class="sheet wide"><div class="head"><h3>Exterior cameras and windows · plan view</h3></div><div class="draw" id="camplan"></div><div class="cap">Each cone shows where a camera sits and which way it looks. Blue panes are windows as seen from above, including the deckhouse and bridge glazing; dashed ones face down, under the wings and in the belly walls. Click any of them for details.</div></div>
     </div>
   </section>
 
@@ -303,7 +310,7 @@ const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', pas
 const SHORT = {
   bridge: 'Bridge', lounge: 'Lounge', quarters: 'Quarters', galley: 'Galley', corridor_fore: 'Living spine', corridor_aft: 'Service spine', hydro: 'Hydroponics', lifesupport: 'Life support',
   storage: 'Storage', airlock: 'Airlock', workshop: 'Workshop', engineering: 'Engineering', gym: 'Gym', fwd_living: 'Lookout', medbay: 'Medbay', washroom: 'Washroom', fwd_main: 'Fwd passage',
-  lab: 'Lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter',
+  lab: 'Lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores',
 };
 const DECK_NAME = Object.fromEntries(S.decks.map((d) => [d.id, d.name]));
 const deckOf = Object.fromEntries(S.decks.map((d) => [d.id, d]));
@@ -588,6 +595,20 @@ if (!THREE) {
     const zs = d.segments.flat().map((p) => p[2]);
     groups.systems.add(tag(g, `duct:${d.id}`, { kind: 'duct', deck: d.deck, z: [Math.min(...zs) - d.size / 2, Math.max(...zs) + d.size / 2] }));
   }
+  // door frames: a slim rectangular frame in the wall each door sits in
+  const frameMat = mat('ink');
+  const doorList = SIM.hatches.filter((h) => geoHatch[h.id] && !geoHatch[h.id].path).map((h) => ({ at: geoHatch[h.id].at, a: roomById[h.a], b: roomById[h.b] }))
+    .concat((S.doors || []).map((d) => ({ at: d.at, a: roomById[d.between[0]], b: roomById[d.between[1]] })));
+  for (const { at, a, b } of doorList) {
+    if (!a || !b) continue;
+    const alongX = Math.min(a.x[1], b.x[1]) - Math.max(a.x[0], b.x[0]) > 0.3; // the wall runs along x
+    const W = 0.95, Hd = 2.05, t = 0.1, dep = 0.3;
+    const g = new THREE.Group();
+    const piece = (u0, u1, z0, z1) => (alongX ? boxMesh([at[0] + u0, at[0] + u1], [at[1] - dep / 2, at[1] + dep / 2], [z0, z1], frameMat) : boxMesh([at[0] - dep / 2, at[0] + dep / 2], [at[1] + u0, at[1] + u1], [z0, z1], frameMat));
+    g.add(piece(-W / 2 - t, -W / 2, at[2], at[2] + Hd), piece(W / 2, W / 2 + t, at[2], at[2] + Hd), piece(-W / 2 - t, W / 2 + t, at[2] + Hd, at[2] + Hd + t));
+    g.userData = { deck: a.deck, z: [at[2], at[2] + Hd] };
+    groups.rooms.add(g);
+  }
   // machinery
   for (const m of S.modules) {
     const e = moduleExtent(m);
@@ -595,6 +616,40 @@ if (!THREE) {
     if (m.shape === 'box') obj = boxMesh(m.x, m.y, m.z, mat(m.role));
     else if (m.shape === 'cyl-x') { obj = new THREE.Mesh(new THREE.CylinderGeometry(m.r, m.r, m.x[1] - m.x[0], 24), mat(m.role)); obj.rotation.z = Math.PI / 2; obj.position.copy(T(mid(m.x), m.y, m.z)); }
     else if (m.shape === 'cyl-z') { obj = new THREE.Mesh(new THREE.CylinderGeometry(m.r, m.r, m.z[1] - m.z[0], 12), mat(m.role)); obj.position.copy(T(m.x, m.y, mid(m.z))); }
+    else if (m.shape === 'frame' || m.shape === 'prism') {
+      // a section (y, z) swept along x: a rim round a nozzle bank (with its opening) or a conformal tank
+      const ring = (pts) => { const sh = new THREE.Shape(); pts.forEach(([y, z], i) => (i ? sh.lineTo(y, z) : sh.moveTo(y, z))); sh.closePath(); return sh; };
+      const shape = ring(m.outline);
+      if (m.shape === 'frame') {
+        // the opening: the outline pulled in toward its centre by the rim width
+        const cy = mid(m.y), cz = mid(m.z), hy = (m.y[1] - m.y[0]) / 2, hz = (m.z[1] - m.z[0]) / 2;
+        const hole = ring(m.outline.map(([y, z]) => [cy + (y - cy) * (1 - m.width / hy), cz + (z - cz) * (1 - m.width / hz)]).reverse());
+        shape.holes.push(hole);
+      }
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: m.x[1] - m.x[0], bevelEnabled: false });
+      geo.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, m.x[0], 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1));
+      obj = new THREE.Mesh(geo, mat(m.role));
+    }
+    else if (m.shape === 'shell') {
+      // a shield box: see-through, so what it encloses still shows
+      obj = boxMesh(m.x, m.y, m.z, mat(m.role, { transparent: true, opacity: 0.28, depthWrite: false }));
+      obj.add(new THREE.LineSegments(new THREE.EdgesGeometry(obj.geometry), lineMat('power', 0.9)));
+    }
+    else if (m.shape === 'rcs') {
+      // a micro-thruster quad: a small block with nozzles up, down, fore, aft and outboard
+      obj = new THREE.Group();
+      obj.add(boxMesh(m.x, m.y, m.z, mat('service')));
+      const c = [mid(m.x), mid(m.y), mid(m.z)], nm = mat('drive');
+      const dirs = [[0, 0, 1], [0, 0, -1], [1, 0, 0], [-1, 0, 0]];
+      if (m.out) dirs.push([0, m.out, 0]);
+      for (const d of dirs) {
+        const half = d[0] ? (m.x[1] - m.x[0]) / 2 : d[1] ? (m.y[1] - m.y[0]) / 2 : (m.z[1] - m.z[0]) / 2;
+        const n = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.22, 0.3, 10), nm);
+        n.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), T(...d).normalize());
+        n.position.copy(T(c[0] + d[0] * (half + 0.12), c[1] + d[1] * (half + 0.12), c[2] + d[2] * (half + 0.12)));
+        obj.add(n);
+      }
+    }
     else if (m.shape === 'skiff') {
       // a small VTOL flyer: fuselage, canopy, stub wings with lift fans
       obj = new THREE.Group();
@@ -638,8 +693,13 @@ if (!THREE) {
     const pos = [];
     for (const q of quads) {
       const c = q.reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4], [0, 0, 0]);
-      const L = q.map((p) => p.map((v, i) => v + (v - c[i]) * 0 ));
-      for (const tri of [[0, 1, 2], [0, 2, 3]]) for (const k of tri) pos.push(L[k][0], L[k][2] + lift, L[k][1]);
+      const u = q[1].map((v, i) => v - q[0][i]), w = q[3].map((v, i) => v - q[0][i]);
+      let nrm = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+      const nl = Math.hypot(...nrm) || 1;
+      nrm = nrm.map((v) => v / nl);
+      if (nrm[0] * (c[0] - 0) + nrm[2] * (c[2] - 1) + nrm[1] * c[1] < 0) nrm = nrm.map((v) => -v); // point away from the hull's middle
+      const L = q.map((p) => p.map((v, i) => v + nrm[i] * lift));
+      for (const tri of [[0, 1, 2], [0, 2, 3]]) for (const k of tri) pos.push(L[k][0], L[k][2], L[k][1]);
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
   };
@@ -657,6 +717,7 @@ if (!THREE) {
   const hullMat = mat('hullFill', { transparent: true, opacity: 0.1, depthWrite: false });
   const glassMat = mat('glass', { transparent: true, opacity: 0.3, depthWrite: false, flatShading: false });
   const hullLines = lineMat('hullLine', 0.3);
+  const glazing = [];
   for (const p of parts) {
     const xsP = [...p.stations.map((s) => s.x), ...(p.glass ? p.glass.x : [])];
     const xMax = Math.max(...xsP), xMin = Math.min(...xsP);
@@ -685,7 +746,7 @@ if (!THREE) {
     const shell = new THREE.Mesh(geo(body), hullMat);
     shell.renderOrder = 2;
     groups.hull.add(tag(shell, `hull:${p.id}`, { kind: 'hull' }));
-    if (glass.length) { const gl = new THREE.Mesh(geo(glass), glassMat); gl.renderOrder = 3; groups.hull.add(tag(gl, `hull:${p.id}`, { kind: 'hull', glass: true })); }
+    if (glass.length) { const gl = new THREE.Mesh(geo(glass), glassMat); gl.renderOrder = 3; glazing.push(gl); groups.hull.add(tag(gl, `hull:${p.id}`, { kind: 'hull', glass: true })); }
     const ln = new THREE.LineSegments(geo(lines), hullLines);
     ln.userData = { lines: true };
     groups.hull.add(ln);
@@ -748,6 +809,7 @@ if (!THREE) {
     for (const o of groups.hull.children) if (o.userData.lines) o.visible = !solid;
     panes.forEach((m) => { m.visible = view.shutters === 'open'; });
     plates.forEach((m) => { m.visible = view.shutters === 'closed'; });
+    glazing.forEach((m) => { m.material = view.shutters === 'closed' ? shutterMat : glassMat; });
   }
 
   let W = 0, H = 0;
@@ -978,7 +1040,7 @@ function sheetFocus(id) {
   el.addEventListener('click', () => f.hide());
   return f;
 }
-const focusOf = Object.fromEntries(['profile', 'planB', 'planV', 'planM', 'planL', 'section', 'camplan'].map((id) => [id, sheetFocus(id)]));
+const focusOf = Object.fromEntries(['profile', 'plan', 'section', 'camplan'].map((id) => [id, sheetFocus(id)]));
 
 function travelerFigure(x, zFoot, Z, w) {
   return `<g class="trav" data-id="traveler"><rect x="${n2(x - w / 2)}" y="${n2(Z(zFoot + TRAV.h * 0.82))}" width="${n2(w)}" height="${n2(TRAV.h * 0.82)}" rx="${n2(w / 2)}"/><circle cx="${n2(x)}" cy="${n2(Z(zFoot + TRAV.h * 0.93))}" r="${n2(w * 0.55)}"/></g>`;
@@ -1000,7 +1062,7 @@ function camGlyph(c, x, y, dx, dy, L) {
 }
 
 let half = 'port';
-const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive', scoop_plant: 'Scoop plant', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', water_tanks: 'Water tanks', ore_bunkers: 'Ore bunkers', engine_pi: 'Engines', engine_si: 'Engines' };
+const MOD_SHORT = { reactor: 'Reactor', fsd: 'FSD', drive_block: 'Drive', scoop_plant: 'Scoop plant', fuel_port: 'Fuel tank', fuel_stbd: 'Fuel tank', water_tanks: 'Water tanks', ore_bunkers: 'Ore bunkers', engine_pi: 'Engines', engine_si: 'Engines', reactor_shield: 'Reactor', lifeboat_s: 'Lifeboat', lifeboat_p: 'Lifeboat' };
 function drawProfile() {
   const Z = (z) => -z, fs = 1.1;
   const inHalf = (y) => (half === 'port' ? y[0] < 0 : y[1] > 0);
@@ -1065,16 +1127,20 @@ function cameraCone(r) {
   return `<polygon class="camg" points="${[cam, a, b].map(([x, y]) => `${n2(x)},${n2(y)}`).join(' ')}"/><circle class="camd" cx="${n2(cam[0])}" cy="${n2(cam[1])}" r="0.22"/>`;
 }
 
-const PLAN_VB = { bridge: [-35, -8.5, 21, 17], living: [-41.5, -8.5, 42.5, 17], main: [-35, -14.6, 50, 29.2], lower: [-30, -16.6, 45, 31.2] };
-const PLAN_EL = { bridge: 'planB', living: 'planV', main: 'planM', lower: 'planL' };
+// one sheet for all four decks, in one frame: switching decks keeps everything in its exact position, and the other decks show faintly beneath
+const PLAN_VB = [Math.floor(X_MIN) - 2, -34, Math.ceil(X_MAX - X_MIN) + 4, 68];
+const PLAN_CAP = { bridge: 'Floor 9.6 m, in the bridge tower.', living: 'Floor 4.8 m, in the deckhouse. Roof duct dashed overhead.', main: 'Floor 0 m. Overhead duct dashed, under-floor crawl dotted.', lower: 'Floor −5.0 m. Under-floor crawl dotted; the rover bay platform and skiff doors drop through the belly.' };
+let planDeck = 'main';
 function drawPlan(deckId) {
   const d = deckOf[deckId];
-  const vb = PLAN_VB[deckId];
+  const vb = PLAN_VB;
   const zMid = mid(d.z);
-  const fs = deckId === 'main' || deckId === 'lower' ? 0.78 : 0.66;
+  const fs = 0.9;
   const bottom = vb[1] + vb[3];
   let g = '', labels = '';
-  for (let x = Math.ceil(vb[0] / 5) * 5; x <= vb[0] + vb[2]; x += 5) g += line('axis', x, vb[1], x, bottom - 1.1) + text(x, bottom - 0.3, x, fs * 0.8, 'dim');
+  for (let x = Math.ceil(vb[0] / 10) * 10; x <= vb[0] + vb[2]; x += 10) g += line('axis', x, vb[1], x, bottom - 1.1) + text(x, bottom - 0.3, x, fs * 0.8, 'dim');
+  for (const p of parts) g += hullPlan(null, [p]).replace('class="hull"', 'class="ghost hull"').replace(/ data-id="[^"]*"/, '');
+  for (const r of rooms) if (r.deck !== deckId) g += rect('ghost', '', r.x[0], r.y[0], r.x[1] - r.x[0], r.y[1] - r.y[0]);
   g += hullPlan(zMid, parts.filter((p) => Math.min(...p.stations.map((s) => s.z[0])) < zMid && Math.max(...p.stations.map((s) => s.z[1])) > zMid));
   for (const m of S.modules) {
     const e = moduleExtent(m);
@@ -1103,9 +1169,13 @@ function drawPlan(deckId) {
   if (deckId === 'living' && TRAV.at[0] <= view.cut) g += `<circle class="trav" data-id="traveler" cx="${TRAV.at[0]}" cy="${TRAV.at[1]}" r="0.45"/>`;
   if (view.cut < NO_CUT && view.cut > vb[0] && view.cut < vb[0] + vb[2]) g += line('cutline', view.cut, vb[1], view.cut, bottom - 1.1);
   g += text(vb[0] + vb[2] - 0.3, vb[1] + fs * 1.3, 'FWD →', fs * 0.8, 'dim', 'end') + text(vb[0] + 0.3, vb[1] + fs * 1.3, 'PORT', fs * 0.8, 'dim', 'start') + text(vb[0] + 0.3, bottom - 1.5, 'STBD', fs * 0.8, 'dim', 'start');
-  mountSheet($(PLAN_EL[deckId]), vb, g + labels, focusOf[PLAN_EL[deckId]], `${d.name} plan`);
+  mountSheet($('plan'), vb, g + labels, focusOf.plan, `${d.name} plan`);
+  $('plantitle').textContent = `Deck plans · ${d.name.toLowerCase()}`;
+  $('plancap').textContent = `${PLAN_CAP[deckId]} The other decks are traced faintly underneath, in register. Bow to the right, starboard at the bottom.`;
 }
-function drawPlans() { for (const d of S.decks) drawPlan(d.id); }
+function drawPlans() { drawPlan(planDeck); }
+segmented('#plandeck', 'plan', (v) => { planDeck = v; focusOf.plan.hide(); drawPlan(v); });
+
 
 function drawSection() {
   const x = view.cut < NO_CUT ? view.cut : -22.5;
@@ -1140,7 +1210,26 @@ function drawCamPlan() {
     const e = moduleExtent(m);
     g += rect('modf', `mod:${m.id}`, e.x[0], e.y[0], e.x[1] - e.x[0], e.y[1] - e.y[0], fillOf(m.role));
   }
-  for (const w of S.windows || []) { const pts = windowQuads(S, w, 2).flat(); if (!pts.length) continue; const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]); g += rect('win', `win:${w.id}`, Math.min(...xs) - (w.cap ? 0.6 : 0), Math.min(...ys), Math.max(...xs) - Math.min(...xs) + (w.cap ? 1.2 : 0), Math.max(...ys) - Math.min(...ys)); }
+  for (const p of parts.filter((q) => q.glass)) {
+    // the wraparound glazing of the deckhouse and the bridge, seen from above
+    const pts = [];
+    for (let x = p.glass.x[1]; x >= p.glass.x[0] - 1e-6; x -= 0.25) { const st = station(p.stations, x); if (st) pts.push([x, st.b]); }
+    g += `<polygon class="win" data-id="hull:${p.id}" points="${[...pts.map(([x, b]) => `${n2(x)},${n2(b)}`), ...pts.slice().reverse().map(([x, b]) => `${n2(x)},${n2(-b)}`)].join(' ')}"/>`;
+  }
+  for (const w of S.windows || []) {
+    const quads = windowQuads(S, w, 1);
+    if (!quads.length) continue;
+    if (w.cap) { g += rect('win', `win:${w.id}`, w.cap - 0.6, w.y[0], 1.2, w.y[1] - w.y[0]); continue; }
+    // the pane's outline in plan: one side of the strip forward, the other back
+    const outline = [...quads.map((q) => q[0]), quads[quads.length - 1][3], ...quads.slice().reverse().map((q) => q[2]), quads[0][1]];
+    const q = quads[0], u = q[1].map((v, i) => v - q[0][i]), v = q[3].map((x, i) => x - q[0][i]);
+    const nz = u[0] * v[1] - u[1] * v[0];
+    const c = q.reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4], [0, 0, 0]);
+    const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], nz];
+    const out = insideHull(S, c[0] - n[0] * 0.3 / Math.hypot(...n), c[1] - n[1] * 0.3 / Math.hypot(...n), c[2] - n[2] * 0.3 / Math.hypot(...n)) ? 1 : -1;
+    const under = nz * out < -1e-6;
+    g += `<polygon class="win${under ? ' under' : ''}" data-id="win:${w.id}" points="${outline.map((p) => `${n2(p[0])},${n2(p[1])}`).join(' ')}"/>`;
+  }
   for (const c of cams) {
     g += camGlyph(c, c.at[0], c.at[1], c.look[0], c.look[1] || 0.0001, 5.5);
     const fwd = c.look[0] > 0;
