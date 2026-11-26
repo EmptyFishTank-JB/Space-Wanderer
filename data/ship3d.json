@@ -83,7 +83,7 @@
    ],
    "y": [
     1.1,
-    5.7
+    8.9
    ],
    "axis": "-x",
    "origin": -20,
@@ -100,7 +100,7 @@
    ],
    "y": [
     1.1,
-    5.7
+    8.9
    ],
    "axis": "-x",
    "origin": -14,
@@ -116,7 +116,7 @@
     -11.5
    ],
    "y": [
-    -5.7,
+    -8.9,
     -1.1
    ],
    "axis": "+x",
@@ -760,20 +760,20 @@
    "id": "pantry",
    "deck": "living",
    "x": [
-    -19,
-    -14
+    -13.8,
+    -11.4
    ],
    "y": [
     5.9,
     8.6
    ],
-   "axis": "+y",
-   "origin": 5.9,
+   "axis": "+x",
+   "origin": -13.8,
    "view": "starboard",
    "role": "hab",
    "new": true,
    "name": "Pantry",
-   "info": "Dry stores, a chest freezer and the spice rack behind the galley: about a year of food that the grow trays don't make."
+   "info": "Dry stores, a chest freezer and the spice rack, off the galley's forward wall: about a year of food that the grow trays don't make."
   },
   {
    "id": "isolation",
@@ -1469,17 +1469,6 @@
   },
   {
    "between": [
-    "pantry",
-    "galley"
-   ],
-   "at": [
-    -16.5,
-    5.8,
-    4.8
-   ]
-  },
-  {
-   "between": [
     "isolation",
     "medbay"
    ],
@@ -1707,6 +1696,17 @@
     0.0,
     -1.1,
     -5.0
+   ]
+  },
+  {
+   "between": [
+    "pantry",
+    "galley"
+   ],
+   "at": [
+    -13.9,
+    7.2,
+    4.8
    ]
   }
  ],
@@ -5157,6 +5157,57 @@
    "faces": "up",
    "backs": "mapping",
    "info": "A small skylight over the chart table."
+  },
+  {
+   "id": "win_lounge",
+   "name": "Lounge window",
+   "part": "deckhouse",
+   "edge": 1,
+   "x": [
+    -26.4,
+    -22.6
+   ],
+   "z": [
+    5.6,
+    7.8
+   ],
+   "faces": "out to starboard",
+   "backs": "lounge",
+   "info": "The lounge's long window in the deckhouse's starboard wall, the one the couch faces."
+  },
+  {
+   "id": "win_galley",
+   "name": "Galley porthole",
+   "part": "deckhouse",
+   "edge": 1,
+   "x": [
+    -17.35,
+    -16.85
+   ],
+   "z": [
+    6.0,
+    6.6
+   ],
+   "faces": "out to starboard",
+   "backs": "galley",
+   "info": "A porthole over the galley table."
+  },
+  {
+   "id": "win_quarters",
+   "name": "Quarters porthole",
+   "part": "deckhouse",
+   "edge": 3,
+   "x": [
+    -15.85,
+    -15.25
+   ],
+   "z": [
+    6.0,
+    6.6
+   ],
+   "faces": "out to port",
+   "backs": "quarters",
+   "info": "A porthole by the bunk, looking out to port."
   }
  ],
  "windowShutters": "Every window has an armored shutter, including the deckhouse and bridge glazing. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."

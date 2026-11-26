@@ -375,6 +375,9 @@ export function windowBays(ship) {
       if (poly.length >= 3) slices.push({ x, poly: poly.map(([y, z]) => [Math.round(y * 1000) / 1000, Math.round(z * 1000) / 1000]) });
     }
     if (slices.length < 2) continue;
+    // a window in an upright wall the room already reaches needs no bay: the glass is in the wall
+    const reach = Math.max(...slices.map((sl) => Math.max(...sl.poly.map(([y]) => side * (y - wall)))));
+    if (reach < 0.6) continue;
     out.push({ window: w.id, room: r.id, deck: r.deck, kind: 'bay', side, x: [w.x[0], w.x[1]], slices, rail: w.rail === false ? null : { y: wall, z: [zf, zf + PONY_WALL] } });
   }
   return out;

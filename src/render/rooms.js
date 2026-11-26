@@ -31,7 +31,7 @@ export function roomWindows(room) {
     case 'quarters': return [{ x0: 2.15, x1: 2.75, y0: CEIL + 26, y1: CEIL + 44, round: true }];
     case 'galley': return [{ x0: 2.85, x1: 3.35, y0: CEIL + 18, y1: CEIL + 34, round: true }];
     // hydroponics reaches the starboard flank: an angled window in a bay at the outboard end, behind a pony wall
-    case 'hydro': return [{ x0: 17.7, x1: 19.5, y0: CEIL + 4, y1: FLOOR - 34, bay: true }];
+    case 'hydro': return [{ x0: 17.7, x1: 19.5, y0: CEIL + 4, y1: FLOOR - 34, bay: true }, { x0: 17.3, x1: 19.3, y0: 8, y1: CEIL - 10 }]; // and the skylight over the outboard trays
     // interior rooms: a virtual window, a wall screen carrying an exterior camera
     case 'engineering': return [{ x0: 6.7, x1: 8.0, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-STERN' }];
     case 'lifesupport': return [{ x0: 2.0, x1: 3.5, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-DORSAL' }];
