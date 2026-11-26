@@ -4800,11 +4800,13 @@
    "bridge": 0,
    "lounge": 1.5708,
    "galley": 1.5708,
-   "quarters": -1.5708
+   "quarters": -1.5708,
+   "hydro": 1.5708,
+   "airlock": -1.5708
   },
   "windowNotes": {
-   "hydro": "deep in the hull: the window strip becomes a grow-light panel",
-   "airlock": "the outer door is a floor hatch to the rover bay"
+   "hydro": "its window is at the outboard end, angled in the starboard flank, behind a pony wall",
+   "airlock": "its window is in the outer door, a hatch in the sloping port wing"
   }
  },
  "windows": [

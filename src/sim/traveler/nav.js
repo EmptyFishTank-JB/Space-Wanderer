@@ -3,13 +3,14 @@
 // hatch has a fixed pneumatic cycle time. Costs are in seconds at base speed.
 
 export function buildNav(ship) {
-  const endpoints = []; // {room, x, hatch, other}
+  const endpoints = []; // {room, x, hatch, other, kind: door|ladder|crawl, dir: up|down|null}
   const hatches = {};
   for (const h of ship.hatches) {
     hatches[h.id] = h;
     const ia = endpoints.length;
-    endpoints.push({ room: h.a, x: h.ax, hatch: h.id, other: ia + 1 });
-    endpoints.push({ room: h.b, x: h.bx, hatch: h.id, other: ia });
+    const kind = h.kind || 'door';
+    endpoints.push({ room: h.a, x: h.ax, hatch: h.id, other: ia + 1, kind, dir: h.aDir || null });
+    endpoints.push({ room: h.b, x: h.bx, hatch: h.id, other: ia, kind, dir: h.bDir || null });
   }
   const byRoom = {};
   endpoints.forEach((e, i) => (byRoom[e.room] ||= []).push(i));

@@ -55,7 +55,18 @@ export function travelerPose(state, data, tracker, pos, t) {
     k.phase = (tracker.walked * PPM) / 9;
     if (seg && seg.kind === 'hatch') {
       k.pose = 'stand_back';
-      k.alpha = Math.max(0, 1 - (tr.move.segT / seg.seconds) * 2.2);
+      const u = tr.move.segT / seg.seconds;
+      const h = data.nav && data.nav.hatches[seg.hatch];
+      const dir = h && h.kind && (seg.from === h.a ? h.aDir : h.bDir);
+      if (h && h.kind === 'ladder' && dir === 'up') {
+        // climbing the wall ladder into the ceiling
+        k.y = FLOOR - Math.round(Math.min(1, u * 1.6) * 64);
+        k.alpha = Math.max(0, 1 - Math.max(0, u - 0.45) * 3);
+      } else if (h && (h.kind === 'ladder' || h.kind === 'crawl') && dir === 'down') {
+        // down through the floor hatch
+        k.y = FLOOR + Math.round(Math.min(1, u * 1.6) * 40);
+        k.alpha = Math.max(0, 1 - u * 2);
+      } else k.alpha = Math.max(0, 1 - u * 2.2);
     }
     if (t - tracker.roomSince < 1) k.alpha = Math.min(k.alpha, t - tracker.roomSince);
     return k;

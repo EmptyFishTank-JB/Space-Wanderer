@@ -19,7 +19,7 @@ const THEME = {
   corridor_fore: { wall: [62, 66, 72], trim: [44, 48, 52], floor: [56, 58, 62] },
   corridor_aft: { wall: [60, 64, 68], trim: [42, 46, 50], floor: [54, 56, 60] },
 };
-const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'FWD', corridor_aft: 'AFT', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG' };
+const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'LIVING', corridor_aft: 'SERVICE', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG' };
 
 const LED = { ok: [80, 230, 120], warn: [255, 180, 40], bad: [255, 60, 50], off: [40, 44, 40] };
 
@@ -30,7 +30,8 @@ export function roomWindows(room) {
     case 'lounge': return [{ x0: 2.6, x1: 6.4, y0: CEIL + 8, y1: FLOOR - 26 }];
     case 'quarters': return [{ x0: 2.15, x1: 2.75, y0: CEIL + 26, y1: CEIL + 44, round: true }];
     case 'galley': return [{ x0: 2.85, x1: 3.35, y0: CEIL + 18, y1: CEIL + 34, round: true }];
-    case 'hydro': return [{ x0: 3.0, x1: 9.2, y0: CEIL + 4, y1: CEIL + 20 }];
+    // hydroponics reaches the starboard flank: an angled window in a bay at the outboard end, behind a pony wall
+    case 'hydro': return [{ x0: 17.7, x1: 19.5, y0: CEIL + 4, y1: FLOOR - 34, bay: true }];
     // interior rooms: a virtual window, a wall screen carrying an exterior camera
     case 'engineering': return [{ x0: 6.7, x1: 8.0, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-STERN' }];
     case 'lifesupport': return [{ x0: 2.0, x1: 3.5, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-DORSAL' }];
@@ -101,13 +102,76 @@ function drawShell(ctx, rc) {
       for (let y = win.y0; y < win.y1; y += 2) rect(ctx, [0, 0, 0], x0, y, x1 - x0, 1, 0.22);
       rect(ctx, [120, 220, 170], x0 + 1, win.y1 - 2, 3, 1, 0.8);
     }
+    if (win.bay) {
+      // the window is set at the hull's angle; a pony wall with a rail keeps people off the glass
+      rect(ctx, mul(th.trim, 1.1), x0 - 6, FLOOR - 30, x1 - x0 + 12, 30);
+      hline(ctx, mul(th.trim, 0.7), x0 - 6, x1 + 6, FLOOR - 30);
+      rect(ctx, [150, 156, 160], x0 - 6, FLOOR - 36, x1 - x0 + 12, 2);
+      for (let x = x0 - 4; x <= x1 + 4; x += 14) rect(ctx, [120, 126, 130], x, FLOOR - 34, 1, 4);
+    }
     rc.windows.push({ x0, x1, y0: win.y0, y1: win.y1, screen: win.screen || null });
   }
-  // doors in the back wall
+  // doors in the back wall; a ladder up runs up the wall to a hatch in the ceiling
   for (const e of data.nav.endpoints) {
     if (e.room !== room) continue;
     const other = data.nav.endpoints[e.other].room;
-    drawDoor(ctx, rc, rc.M(e.x), e.hatch, other);
+    if (e.kind === 'ladder' && e.dir === 'up') drawLadderUp(ctx, rc, rc.M(e.x), e.hatch, other);
+    else if (e.kind === 'door') drawDoor(ctx, rc, rc.M(e.x), e.hatch, other);
+  }
+}
+
+/** How far open a hatch is while the traveler cycles it (0..1). */
+function hatchOpen(rc, hatch) {
+  const mv = rc.state.traveler.move;
+  if (!(mv && mv.segs[mv.i] && mv.segs[mv.i].kind === 'hatch' && mv.segs[mv.i].hatch === hatch)) return 0;
+  const seg = mv.segs[mv.i];
+  const u = clamp01((mv.segT + rc.alpha) / seg.seconds);
+  return u < 0.25 ? u / 0.25 : u > 0.8 ? (1 - u) / 0.2 : 1;
+}
+
+function hatchSign(ctx, x, y, other) {
+  const label = SHORT[other] || '';
+  rect(ctx, [30, 32, 36], x - textWidth(label) / 2 - 2, y, textWidth(label) + 4, 8);
+  text(ctx, label, x - textWidth(label) / 2, y + 2, [150, 190, 170]);
+}
+
+/** A ladder on the back wall, up through a hatch in the ceiling. */
+function drawLadderUp(ctx, rc, x, hatch, other) {
+  const open = hatchOpen(rc, hatch);
+  const x0 = Math.round(x - 9);
+  // the ceiling hatch: a dark well, its lid sliding aside as the traveler climbs
+  rect(ctx, [12, 12, 14], x0 - 4, CEIL - 6, 26, 6);
+  rect(ctx, [96, 100, 106], x0 - 4 + Math.round(open * 22), CEIL - 6, 26 - Math.round(open * 22), 3);
+  // rails and rungs
+  rect(ctx, [120, 124, 130], x0, CEIL, 2, FLOOR - CEIL);
+  rect(ctx, [120, 124, 130], x0 + 16, CEIL, 2, FLOOR - CEIL);
+  for (let y = FLOOR - 8; y > CEIL + 2; y -= 9) rect(ctx, [104, 108, 114], x0 + 2, y, 14, 1);
+  rect(ctx, [200, 160, 60], x0 - 2, FLOOR - 2, 22, 2); // hazard stripe at its foot
+  // the sign beside the ladder, on whichever side has room
+  const signX = x0 + 9 + (x0 < rc.ox + 40 ? 1 : -1) * (14 + textWidth(SHORT[other] || '') / 2);
+  hatchSign(ctx, signX, CEIL + 40, other);
+  px(ctx, open > 0 ? LED.warn : LED.ok, x0 + 21, CEIL + 54);
+}
+
+/** A hatch in the floor with grab rails, for a ladder (or crawl duct) going down. Drawn in front of the room's furniture. */
+function drawFloorHatch(ctx, rc, x, hatch, other, kind) {
+  const open = hatchOpen(rc, hatch);
+  const w = kind === 'crawl' ? 18 : 24, x0 = Math.round(x - w / 2);
+  rect(ctx, [12, 12, 14], x0, FLOOR, w, 6);
+  rect(ctx, [96, 100, 106], x0 + Math.round(open * (w - 4)), FLOOR, w - Math.round(open * (w - 4)), 2);
+  rect(ctx, [200, 160, 60], x0 - 2, FLOOR - 1, w + 4, 1);
+  if (kind === 'ladder') {
+    // grab rails either side of the opening
+    for (const rx of [x0 - 1, x0 + w - 1]) { rect(ctx, [130, 134, 140], rx, FLOOR - 30, 2, 30); }
+    rect(ctx, [130, 134, 140], x0 - 1, FLOOR - 31, w + 2, 2);
+  }
+  hatchSign(ctx, x0 + w / 2, FLOOR - (kind === 'ladder' ? 42 : 14), other);
+}
+
+function drawFloorHatches(ctx, rc) {
+  for (const e of rc.data.nav.endpoints) {
+    if (e.room !== rc.room || !((e.kind === 'ladder' && e.dir === 'down') || e.kind === 'crawl')) continue;
+    drawFloorHatch(ctx, rc, rc.M(e.x), e.hatch, rc.data.nav.endpoints[e.other].room, e.kind);
   }
 }
 
@@ -381,7 +445,8 @@ const ROOMS = {
     const { M, s, d } = rc;
     const p = s.ship.power;
     // seed bank
-    cabinet(ctx, M(1.0) - 8, FLOOR - 40, 16, 40, [140, 150, 146]);
+    const hs = d.rooms.hydro.stations;
+    cabinet(ctx, M(hs.seedbank) - 8, FLOOR - 40, 16, 40, [140, 150, 146]);
     // condensation on the bay glass (humidity)
     const hum = clamp01(s.ship.atmo.airWater / 5.8);
     for (const win of rc.windows) {
@@ -422,11 +487,11 @@ const ROOMS = {
     }
     // algae vat
     const a = s.ship.algae;
-    rect(ctx, [120, 140, 140], M(11.2) - 12, FLOOR - 56, 24, 56);
-    rect(ctx, mix([60, 90, 50], [30, 110, 50], a.density), M(11.2) - 10, FLOOR - 52, 20, 46);
+    rect(ctx, [120, 140, 140], M(hs.algae) - 12, FLOOR - 56, 24, 56);
+    rect(ctx, mix([60, 90, 50], [30, 110, 50], a.density), M(hs.algae) - 10, FLOOR - 52, 20, 46);
     const bub = s.ship.components.algae_bubbler.fault ? 0.2 : 1;
-    for (let i = 0; i < 10 * bub; i++) px(ctx, [170, 220, 170], M(11.2) - 9 + hash(i, 1, 12) * 18, FLOOR - 8 - ((rc.t * 10 + i * 7) % 44), 0.7);
-    blinkLed(ctx, rc, M(11.2), FLOOR - 58, ledFor(s, 'algae_bubbler'));
+    for (let i = 0; i < 10 * bub; i++) px(ctx, [170, 220, 170], M(hs.algae) - 9 + hash(i, 1, 12) * 18, FLOOR - 8 - ((rc.t * 10 + i * 7) % 44), 0.7);
+    blinkLed(ctx, rc, M(hs.algae), FLOOR - 58, ledFor(s, 'algae_bubbler'));
   },
 
   lifesupport(ctx, rc) {
@@ -623,6 +688,7 @@ export function drawRoom(ctx, rc) {
   drawShell(ctx, rc);
   const fn = ROOMS[rc.room];
   if (fn) fn(ctx, rc);
+  drawFloorHatches(ctx, rc);
 }
 
 export function roomPixelWidth(data, room) {

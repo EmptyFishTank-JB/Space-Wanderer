@@ -235,7 +235,7 @@ export function checkArrangement(ship, sim) {
   problems.push(...bayProblems);
   const volumes = {};
   for (const r of rooms) if (!r.unpressurized) volumes[r.id] = (r.x[1] - r.x[0]) * (r.y[1] - r.y[0]) * (r.zRange[1] - r.zRange[0]);
-  const resizes = rooms.filter((r) => r.resize && simRooms[r.id]).map((r) => ({ room: r.id, from: simRooms[r.id].width, to: roomLength(r), why: r.resize }));
+  const resizes = rooms.filter((r) => r.resize && simRooms[r.id] && Math.abs(simRooms[r.id].width - roomLength(r)) > 0.05).map((r) => ({ room: r.id, from: simRooms[r.id].width, to: roomLength(r), why: r.resize }));
   return { ok: problems.length === 0, problems, hatches, volumes, resizes, simRooms };
 }
 

@@ -305,17 +305,16 @@ footer { font: 12px var(--mono); color: var(--muted); }
     <p class="lede" id="fitlede"></p>
     <div class="tablewrap"><table id="changes"></table></div>
     <div class="notes">
-      <div><h3>What else changes later</h3><ul id="else"></ul></div>
-      <div><h3>Not touched yet</h3><ul id="untouched"></ul></div>
+      <div><h3>In the game now</h3><ul id="else"></ul></div>
+      <div><h3>Still to come</h3><ul id="untouched"></ul></div>
     </div>
   </section>
 
   <section aria-labelledby="hask">
-    <h2 id="hask">Before I build on it</h2>
+    <h2 id="hask">Open questions</h2>
     <div class="ask">
-      <p><strong>Proportions.</strong> 138 m long and 62 m across: Anaconda length, Krait shape: flat deck, hung belly, twin tines. Bigger still, or is this the size?</p>
-      <p><strong>New rooms.</strong> Which of the thirteen new spaces should the traveler actually use, with cameras of their own?</p>
-      <p><strong>Vehicles.</strong> A six-wheeled rover for ground traverses and heavy sampling, and a small VTOL survey skiff for mapping from the air and reaching places the rover can't. Right pair?</p>
+      <p><strong>Next rooms.</strong> Which of the new spaces should the traveler start using first, with cameras of their own? The gym, laundry, study, galleries and labs would each add something to do.</p>
+      <p><strong>Ports and missions.</strong> Still pinned. The passenger cabins, brig, secure cargo and xeno containment are set aside for it.</p>
       <p><strong>Name.</strong> Still open. "Long-range survey ship" is a placeholder.</p>
     </div>
   </section>
@@ -1487,22 +1486,24 @@ $('camtable').innerHTML = `<thead><tr><th>Feed</th><th>Mount</th><th>What it sho
 $('newlede').textContent = `Yes, plenty. At this size the hull has space for ${newRooms.length} more spaces next to the sim's twelve, and none of them moves a sim room. They become real places once we add them to the sim.`;
 $('newtable').innerHTML = `<thead><tr><th>Space</th><th>Deck</th><th>Size</th><th>What it is</th></tr></thead><tbody>${newRooms.map((r) => `<tr><td>${r.name}${r.missions ? ' <span class="quiet">· for missions</span>' : ''}</td><td>${DECK_NAME[r.deck].replace(' deck', '')}</td><td class="num">${(r.x[1] - r.x[0]).toFixed(1)} × ${(r.y[1] - r.y[0]).toFixed(1)} m</td><td>${r.info}</td></tr>`).join('')}</tbody>`;
 const otherSide = (c) => { const h = SIM.hatches.find((q) => q.id === c.hatch); return c.side === 'a' ? h.b : h.a; };
-$('fitlede').innerHTML = `Every hatch in the sim's room graph is placed in 3D. A checker confirms each door sits on both rooms' walls, nothing overlaps, ladders, lifts and ducts stay clear of the rooms they don't serve, and nothing pokes through the hull: <span class="${REPORT.problems.length ? 'bad' : 'ok'}">${REPORT.problems.length ? `${REPORT.problems.length} problem(s)` : 'consistent'}</span>. The side rooms now run outboard from the spines with their doors at the inboard end, so adopting this layout moves only ${REPORT.changes.length} door positions in <code>data/ship.json</code>${REPORT.resizes.length ? ` and resizes ${REPORT.resizes.length} room(s)` : ', and no room changes length'}.`;
+$('fitlede').innerHTML = `The game's twelve rooms now follow this layout. Every hatch in the sim's room graph sits where the 3D arrangement puts it, and a checker confirms each door is on both rooms' walls, nothing overlaps, ladders, lifts and ducts stay clear of the rooms they don't serve, every window lights a room and every camera is mounted: <span class="${REPORT.problems.length ? 'bad' : 'ok'}">${REPORT.problems.length ? `${REPORT.problems.length} problem(s)` : 'consistent'}</span>. ${REPORT.changes.length || REPORT.resizes.length ? `It still differs from <code>data/ship.json</code> in ${REPORT.changes.length + REPORT.resizes.length} place(s):` : 'Nothing is left to change in <code>data/ship.json</code>.'}`;
 const changeRows = REPORT.resizes.map((r) => `<tr><td>${nameOf(r.room)}</td><td>Length</td><td class="num">${r.from} m</td><td class="num">${r.to} m</td></tr>`)
   .concat(REPORT.changes.map((c) => `<tr><td>${nameOf(c.room)}</td><td>Door to ${SHORT[otherSide(c)]}</td><td class="num">${c.from} m</td><td class="num">${c.to} m</td></tr>`));
-$('changes').innerHTML = `<thead><tr><th>Compartment</th><th>What moves</th><th>Now</th><th>Proposed</th></tr></thead><tbody>${changeRows.join('')}</tbody>`;
+$('changes').innerHTML = changeRows.length ? `<thead><tr><th>Compartment</th><th>What moves</th><th>Now</th><th>Proposed</th></tr></thead><tbody>${changeRows.join('')}</tbody>` : '';
 const sideWord = (y) => (y > 0.1 ? 'to starboard' : y < -0.1 ? 'to port' : 'forward');
-const yawNotes = Object.entries(S.cameras.windows).filter(([room, y]) => Math.abs((CAMYAW[room] ?? 0) - y) > 0.05).map(([room, y]) => `${SHORT[room]} ${sideWord(y)}`);
+const yawOff = Object.entries(S.cameras.windows).filter(([room, y]) => Math.abs((CAMYAW[room] ?? 0) - y) > 0.05).map(([room]) => SHORT[room]);
 $('else').innerHTML = [
-  `Window views follow the hull (<code>cameras.json</code>): ${yawNotes.join(', ')}.`,
-  'Windows for the service rooms: hydroponics is lengthened to reach the starboard flank (its own window strip); the airlock moves out to the port hull at the end of a passage, so its outer door opens to space; engineering, life support, storage and the workshop get virtual windows, wall screens showing an exterior camera.',
-  'The two corridors become the living-deck and service-deck spines, stacked one above the other; the sim\'s names (forward / aft) would change to match.',
-  'EXT-HULL becomes nine exterior feeds, and the director gets rules for when each is worth cutting to.',
-  'The bridge ladder and the trunk ladder are climbs now, so crossing them could show a short climbing animation.',
+  'Doors where the 3D layout puts them: the bridge ladder comes up in the middle of the bridge, engineering\'s door is at its center, and the workshop\'s door to engineering is at its inboard end.',
+  'Hydroponics runs 19.9 m out to the starboard flank, with its trays spread along it and an angled window behind a pony wall at the outboard end.',
+  'The airlock is out at the port hull, at the end of its own passage: a 16-second walk from the service spine.',
+  `Window views follow the hull (<code>cameras.json</code>): the lounge, galley and hydroponics look to starboard, the quarters and airlock to port${yawOff.length ? ` (still to match: ${yawOff.join(', ')})` : ''}.`,
+  'The two corridors are now the Living Deck Spine and the Service Deck Spine, one above the other.',
+  'Engineering, life support, storage and the workshop have virtual windows: wall screens showing an exterior camera.',
 ].map((x) => `<li>${x}</li>`).join('');
 $('untouched').innerHTML = [
-  'Nothing in the sim, the renderer or saved voyages has changed. This page and <code>data/ship3d.json</code> are the whole proposal.',
-  'New rooms, ducts, lifts and cameras exist only here until we decide which to build.',
+  `The ${newRooms.length} new spaces, the ducts and lifts, the weapons and the shield exist only in this proposal so far. They can join the game a few at a time.`,
+  'The exterior cameras: the game still has one hull camera (EXT-HULL); the nine mounts here are next.',
+  'The bridge ladder and the trunk ladder are climbs, so crossing them could show a short climbing animation.',
 ].map((x) => `<li>${x}</li>`).join('');
 $('foot').textContent = `Drawn from data/ship3d.json and checked against data/ship.json by tools/ship3d.mjs · ${rooms.length} spaces · ${shafts.length} shafts · ${ducts.length} duct networks · ${S.modules.length} hull modules · ${cams.length} exterior cameras.`;
 
