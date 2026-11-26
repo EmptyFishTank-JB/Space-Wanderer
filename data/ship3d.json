@@ -5028,6 +5028,125 @@
     2.2
    ],
    "backs": "observatory"
+  },
+  {
+   "id": "win_sky_hydro",
+   "name": "Hydroponics skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    18.4,
+    20.4
+   ],
+   "x": [
+    -14.0,
+    -12.6
+   ],
+   "faces": "up",
+   "backs": "hydro",
+   "info": "A small skylight over the outboard grow trays, beside the lifeboat housing."
+  },
+  {
+   "id": "win_sky_cabin_a",
+   "name": "Cabin 1 skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    9.7,
+    10.7
+   ],
+   "x": [
+    -9.0,
+    -7.4
+   ],
+   "faces": "up",
+   "backs": "cabin_a",
+   "info": "A small skylight over the bunk, tucked inboard of the lifeboat housing."
+  },
+  {
+   "id": "win_sky_cabin_b",
+   "name": "Cabin 2 skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    12.0,
+    13.6
+   ],
+   "x": [
+    -4.4,
+    -3.0
+   ],
+   "faces": "up",
+   "backs": "cabin_b",
+   "info": "A small skylight over the bunk."
+  },
+  {
+   "id": "win_sky_cabin_c",
+   "name": "Cabin 3 skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    12.0,
+    13.6
+   ],
+   "x": [
+    -0.4,
+    1.0
+   ],
+   "faces": "up",
+   "backs": "cabin_c",
+   "info": "A small skylight over the bunk."
+  },
+  {
+   "id": "win_sky_paxlounge",
+   "name": "Passenger lounge skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    11.6,
+    13.6
+   ],
+   "x": [
+    5.4,
+    7.0
+   ],
+   "faces": "up",
+   "backs": "paxlounge",
+   "info": "A skylight over the passenger lounge's seats."
+  },
+  {
+   "id": "win_sky_biolab",
+   "name": "Bio lab skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    13.0,
+    14.6
+   ],
+   "x": [
+    17.2,
+    19.4
+   ],
+   "faces": "up",
+   "backs": "biolab",
+   "info": "Daylight over the culture benches, when there is any."
+  },
+  {
+   "id": "win_sky_mapping",
+   "name": "Mapping room skylight",
+   "part": "main",
+   "edge": 7,
+   "y": [
+    -8.6,
+    -7.2
+   ],
+   "x": [
+    17.2,
+    19.0
+   ],
+   "faces": "up",
+   "backs": "mapping",
+   "info": "A small skylight over the chart table."
   }
  ],
  "windowShutters": "Every window has an armored shutter, including the deckhouse and bridge glazing. Shutters close for supercruise, hyperspace, scooping and anywhere near a strong radiation source, and open when the ship is holding station somewhere safe."

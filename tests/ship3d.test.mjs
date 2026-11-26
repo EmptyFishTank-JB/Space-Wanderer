@@ -119,10 +119,8 @@ test('angled windows open into bays with a pony wall; skylights get a light well
     const bay = bays.find((b) => b.window === w.id);
     assert.ok(bay, `${w.id} has no bay`);
     if (bay.kind === 'bay') assert.equal(!!bay.rail, w.rail !== false, `${w.id} pony wall`);
-    for (const sl of bay.slices) {
-      const c = sl.poly.reduce((a, p) => [a[0] + p[0] / sl.poly.length, a[1] + p[1] / sl.poly.length], [0, 0]);
-      assert.ok(insideHull(ship, sl.x, c[0], c[1]), `${w.id} bay leaves the hull at x ${sl.x}`);
-    }
+    // every corner stays inside the skin with room to spare, so no bay surface shows through the hull
+    for (const sl of bay.slices) for (const [y, z] of sl.poly) for (const [dy, dz] of [[0.08, 0], [-0.08, 0], [0, 0.08], [0, -0.08]]) assert.ok(insideHull(ship, sl.x, y + dy, z + dz), `${w.id} bay touches the skin at x ${sl.x}`);
   }
   const { c, r } = shieldEllipsoid(ship);
   const inside = (p) => Math.hypot(...p.map((v, i) => (v - c[i]) / r[i])) <= 1;

@@ -304,6 +304,29 @@ function clipHalf(poly, f) {
   return out;
 }
 
+/**
+ * Pull a clockwise polygon in by d: every edge moves inward and neighbours
+ * meet again at the corners. Works at the hull's concave wing root, where
+ * clipping by each edge's half-plane would cut the wing off.
+ */
+function insetPolygon(poly, d) {
+  const pts = poly.filter((p, i) => { const q = poly[(i + 1) % poly.length]; return Math.hypot(q[0] - p[0], q[1] - p[1]) > 1e-9; });
+  const n = pts.length;
+  const lines = pts.map((A, i) => {
+    const B = pts[(i + 1) % n], dy = B[0] - A[0], dz = B[1] - A[1], l = Math.hypot(dy, dz);
+    const nn = [-dz / l, dy / l]; // outward
+    return { p: [A[0] - nn[0] * d, A[1] - nn[1] * d], v: [dy / l, dz / l], nn };
+  });
+  return pts.map((P, i) => {
+    const L1 = lines[(i - 1 + n) % n], L2 = lines[i];
+    const den = L1.v[0] * L2.v[1] - L1.v[1] * L2.v[0];
+    if (Math.abs(den) < 1e-6) return [P[0] - L2.nn[0] * d, P[1] - L2.nn[1] * d];
+    const t = ((L2.p[0] - L1.p[0]) * L2.v[1] - (L2.p[1] - L1.p[1]) * L2.v[0]) / den;
+    return [L1.p[0] + L1.v[0] * t, L1.p[1] + L1.v[1] * t];
+  });
+}
+
+const BAY_INSET = 0.12; // meters between a bay's outer surfaces and the hull skin
 const PONY_WALL = 0.95; // meters: the low wall (with a rail on top) between a room and its window bay
 
 /**
@@ -333,7 +356,7 @@ export function windowBays(ship) {
     if (Math.min(...zs) > zc) {
       // a skylight: a straight light well from the ceiling up to the glass
       const y0 = Math.min(...ys), y1 = Math.max(...ys);
-      const slices = xs.map((x) => { const st = station(part.stations, x); return { x, poly: [[y0, zc], [y1, zc], [y1, st.zt], [y0, st.zt]] }; });
+      const slices = xs.map((x) => { const st = station(part.stations, x); return { x, poly: [[y0, zc], [y1, zc], [y1, st.zt - BAY_INSET], [y0, st.zt - BAY_INSET]] }; });
       out.push({ window: w.id, room: r.id, deck: r.deck, kind: 'well', side: Math.sign(y0 + y1), x: [w.x[0], w.x[1]], slices, rail: null });
       continue;
     }
@@ -344,7 +367,8 @@ export function windowBays(ship) {
       const st = station(part.stations, x);
       if (!st) continue;
       const yc = partY(part, st);
-      let poly = profile(part.profile, st).map(([y, z]) => [y + yc, z]);
+      // keep the bay a hand's width inside the skin, so its walls never show through the hull
+      let poly = insetPolygon(profile(part.profile, st).map(([y, z]) => [y + yc, z]), BAY_INSET);
       poly = clipHalf(poly, ([y]) => side * (y - wall));
       poly = clipHalf(poly, ([, z]) => z - zf);
       poly = clipHalf(poly, ([, z]) => zc - z);
