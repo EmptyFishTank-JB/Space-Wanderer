@@ -19,7 +19,7 @@ export function renderFeed(ctx, feedId, m, director) {
   const roomW = m.data.rooms[def.room].width;
   const here = m.pos.room === def.room;
   const camX = m.camX ?? director.cameraX(feedId, roomW, m.pos.x * PPM, m.dt, here);
-  return renderRoomFeed(ctx, { ...m, room: def.room, camX, feed: def });
+  return renderRoomFeed(ctx, { ...m, room: def.room, camX, feed: def, feeds: director.feeds });
 }
 
 export class TerrariumRenderer {

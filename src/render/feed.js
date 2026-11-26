@@ -5,6 +5,7 @@ import { W, H, PPM, FLOOR, CEIL, css, mix, mul, hex, rect, glow, hash, clamp01, 
 import { drawRoom, roomWindows } from './rooms.js';
 import { drawTraveler } from './traveler.js';
 import { drawSpaceScene, makeCanvas } from './celestial.js';
+import { renderExteriorFeed } from './exterior.js';
 import { drawSurfaceScene } from './terrain.js';
 import { travelerPose } from './actor.js';
 import { registerRoomPicks, registerMugPick } from './picks.js';
@@ -37,6 +38,17 @@ export function roomLight(state, room, t) {
   return { L: clamp01(L), tint };
 }
 
+const screens = new Map(); // label -> { canvas, at }
+function screenFeed(def, m) {
+  let e = screens.get(def.label);
+  if (!e) { e = { canvas: makeCanvas(W, H), at: -Infinity }; screens.set(def.label, e); }
+  if (m.t - e.at > 0.25 || m.t < e.at) {
+    e.at = m.t;
+    renderExteriorFeed(e.canvas.getContext('2d', { willReadFrequently: true }), { ...m, pickHull: false }, def);
+  }
+  return e.canvas;
+}
+
 export function renderRoomFeed(ctx, m) {
   const { state, data, view, room, camX, t, alpha, feed } = m;
   const roomW = data.rooms[room].width * PPM;
@@ -49,6 +61,20 @@ export function renderRoomFeed(ctx, m) {
   } else {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
+  }
+  // 1b. a wall screen carries the exterior camera it names, refreshed a few times a second
+  for (const win of wins) {
+    if (!win.screen || !m.feeds) continue;
+    const def = m.feeds.find((f) => f.label === win.screen);
+    if (!def) continue;
+    const img = screenFeed(def, m);
+    const x0 = ox + win.x0 * PPM, x1 = ox + win.x1 * PPM;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    // the camera's picture, cropped to the screen's shape
+    const sw = x1 - x0, shh = win.y1 - win.y0, ar = sw / shh, sh = W / ar <= H ? W / ar : H, sww = sh * ar;
+    ctx.drawImage(img, (W - sww) / 2, (H - sh) / 2, sww, sh, x0, win.y0, sw, shh);
+    ctx.restore();
   }
   // 2. the room layer
   const lc = roomLayer().getContext('2d');

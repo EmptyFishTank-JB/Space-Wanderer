@@ -9,6 +9,7 @@
 import { W, H, mix, mul, rect, px, glow, hash, line, clamp01, css } from './gfx.js';
 import { drawSpaceScene } from './celestial.js';
 import { drawSurfaceScene } from './terrain.js';
+import { picks } from './picks.js';
 
 const HULL = [96, 100, 108];
 const DARK = [40, 42, 48];
@@ -33,12 +34,69 @@ export function renderExteriorFeed(ctx, m, def = {}) {
   if (view.scene === 'surface') {
     drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: 0.25 + yaw, pitch: view.altitudeKm > 0 ? pitch - 0.05 : pitch + 0.12, entryHeat: view.entryHeat, buffeting: view.buffeting });
   } else {
-    drawSpaceScene(ctx, view, t, { yaw, pitch, pick: true });
+    drawSpaceScene(ctx, view, t, { yaw, pitch, pick: m.pickHull !== false });
   }
   const shake = view.buffeting ? Math.round(Math.sin(t * 31) * 2 * view.buffeting) : 0;
   const k = { state, view, t, shake, sh: state.ship, heat: state.ship.thermal.heat, wear: state.ship.components.hull_plating.wear };
   (MOUNTS[mount] || MOUNTS.dorsal)(ctx, k);
   overlays(ctx, k, mount);
+  if (m.pickHull !== false) registerHullPicks(mount, k, def);
+}
+
+// ───────── selection: the hull parts each camera shows ─────────
+const pctv = (v) => `${Math.round(clamp01(v) * 100)}%`;
+function condition(sh, id) {
+  const c = sh.components[id];
+  if (!c) return '—';
+  return `${pctv(1 - c.wear)}${c.fault ? `, ${c.fault.severity} fault` : ''}`;
+}
+const DRIVE = { cruise: 'supercruise', charging: 'charging the frame shift drive', hyperspace: 'in hyperspace', scooping: 'skimming the star', orbit: 'holding orbit', landed: 'shut down, on the ground', descent: 'descending', ascent: 'climbing out', void: 'coasting, cold', idle: 'idle' };
+
+function registerHullPicks(mount, k, def) {
+  const sh = k.sh, f = sh.flight, sub = `${def.label || 'Hull camera'} · ${def.mount || mount}`;
+  const add = (id, x, y, w, h, name, lines) => picks.add({ id: `hull:${mount}:${id}`, x, y, w, h, info: () => ({ name, sub, lines: typeof lines === 'function' ? lines() : lines }) });
+  const plating = () => [['Plating', condition(sh, 'hull_plating')], ['Scorch and wear', pctv(sh.components.hull_plating.wear)]];
+  const radiators = () => [['Heat', pctv(k.heat)], ['Vents', condition(sh, 'thermal_vents')], ['State', k.heat > 0.6 ? 'glowing, dumping heat' : k.heat > 0.4 ? 'warm' : 'cool']];
+  const drive = () => [['Drive', DRIVE[f.mode] || f.mode], ['FSD coil', condition(sh, 'drive_coil')]];
+  const sensors = () => [['Array', condition(sh, 'bridge_sensors')], ['Baseline', 'about 25 m, tine to tine']];
+  const gear = () => [['Gear', ['landed', 'descent', 'ascent'].includes(f.mode) ? (f.mode === 'landed' ? 'down and locked, on the ground' : 'down') : 'stowed in the belly']];
+  const shutters = [['Shutters', 'armored; closed for supercruise, hyperspace and scooping']];
+  if (mount === 'dorsal') {
+    add('deck', 0, 104, W, H - 120, 'Top deck', plating);
+    add('sky_p', W / 2 - 90, 112, 60, 46, 'Port gallery skylight', shutters);
+    add('sky_s', W / 2 + 30, 112, 60, 46, 'Starboard gallery skylight', shutters);
+    add('turrets', W / 2 - 22, 104, 44, 6, 'Medium hardpoints', [['Mounts', 'two gimballed pulse lasers, forward deck'], ['State', 'stowed']]);
+    add('roof', 10, H - 16, W - 20, 16, 'Deckhouse roof', plating);
+    add('beacon', W / 2 - 5, H - 8, 10, 8, 'Nav beacon', [['Blink', 'every 2.6 s, on the mast head']]);
+  } else if (mount === 'bow') {
+    add('face', 60, 92, 190, 16, 'Bow face, between the tines', plating);
+    add('bowwin', 96, 96, 120, 6, 'Bow sensor window', [['Behind it', 'star trackers, forward lidar, collision radar'], ...shutters]);
+    add('deckhouse', 128, 81, 68, 11, 'Deckhouse', [['Inside', 'the living deck']]);
+    add('tower', 148, 66, 28, 15, 'Bridge tower', [['Inside', 'the bridge'], ['Glazing', 'raked canopy, shuttered in flight']]);
+    add('tine', 190, 93, W - 190, H - 93, 'Starboard tine', sensors);
+    add('boom', 270, H - 72, W - 270, 50, 'Magnetometer boom and whip antenna', [['Boom', 'holds the magnetometer clear of the ship\'s own fields']]);
+  } else if (mount === 'scoop') {
+    add('intake', 50, H - 30, W - 100, 14, 'Fuel scoop intake', () => [['Scoop', f.mode === 'scooping' ? 'open, drinking plasma' : 'closed'], ['Manifold', condition(sh, 'scoop_manifold')], ['Fuel', `${sh.fuel.tons.toFixed(1)} of ${sh.fuel.capacity} t`]]);
+    add('belly', 0, 0, W, 30, 'Forward belly', plating);
+  } else if (mount === 'stern') {
+    for (const [s2, side] of [[-1, 'Port'], [1, 'Starboard']]) {
+      const cx = W / 2 + s2 * 92;
+      add(`rad_${side}`, cx - 44, 73, 88, H - 83, `${side} radiators`, radiators);
+      add(`bank_${side}`, cx - 31, 66, 62, 6, `${side} main thruster`, drive);
+    }
+    add('inboard', W / 2 - 34, 80, 68, H - 110, 'Inboard engines', drive);
+    add('dish', 62, H - 38, 32, 18, 'Comms dish', [['Steered by', 'the comms room'], ['Parked', 'facing up and aft']]);
+  } else if (mount === 'port' || mount === 'stbd') {
+    const X = (x) => (mount === 'port' ? x : W - x);
+    const lo = Math.min(X(-10), X(150)), hi = Math.max(X(-10), X(150));
+    add('edge', lo, 84, hi - lo, H - 120, `${mount === 'port' ? 'Port' : 'Starboard'} deck edge`, plating);
+    add('wing', lo, H - 60, hi - lo, 60, `${mount === 'port' ? 'Port' : 'Starboard'} wing and gallery windows`, [['Behind them', `the ${mount === 'port' ? 'port' : 'starboard'} gallery`], ...shutters]);
+    add('lifeboat', Math.min(X(120), X(172)), 78, 52, 12, 'Lifeboat housing', [['Boat', 'seats four, launches sideways'], ['Boarded from', 'a ladder in the gallery below']]);
+  } else if (mount === 'ventral') {
+    add('belly', 0, 0, W, 70, 'Belly', plating);
+    add('turrets', W / 2 - 64, 46, 128, 12, 'Large hardpoints', [['Mounts', 'two gimballed, ventral'], ['State', 'stowed']]);
+    add('gear', 0, 20, W, H - 20, 'Landing gear', gear);
+  }
 }
 
 /** Weathering specks over a region. */
