@@ -3,6 +3,7 @@
 // closing tab can never lose the traveler.
 import { STATE_VERSION, initMemory, defaultOutfit } from '../sim/state.js';
 import { initSpace } from '../space/init.js';
+import { initPorts } from '../space/ports.js';
 import { getSystem, exemptFromVariants } from '../space/system.js';
 
 export const SNAPSHOT_KEY = 'deep-space-terrarium.snapshot';
@@ -74,6 +75,7 @@ export function migrate(state, version, data = null) {
     const st = state.space && state.space.stats;
     if (st) { st.rovers = st.rovers || 0; st.roverKm = st.roverKm || 0; }
   }
+  if (version < 8 && state.space) initPorts(state); // inhabited space: credits, reputation, missions
   if (state.space) for (const id of state.space.variantExempt || []) exemptFromVariants(state.space.galaxySeed, id);
   state.version = STATE_VERSION;
   return state;

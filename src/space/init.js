@@ -2,8 +2,14 @@
 import { hashString } from '../sim/rng.js';
 import { nearestStar, starVariant } from './galaxy.js';
 import { getSystem } from './system.js';
+import { initPorts } from './ports.js';
 
 export function initSpace(state, data) {
+  initSpaceCore(state, data);
+  initPorts(state);
+}
+
+function initSpaceCore(state, data) {
   const space = data.space;
   const galaxySeed = hashString(`galaxy|${state.seed}`);
   const start =

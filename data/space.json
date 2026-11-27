@@ -578,5 +578,38 @@
    0.06,
    2.2
   ]
+ },
+ "ports": {
+  "_comment": "Stations, trade and missions. Times in seconds, money in credits.",
+  "requestSeconds": 40,
+  "approachSeconds": [
+   240,
+   420
+  ],
+  "slotSeconds": 90,
+  "padSeconds": 120,
+  "clearSeconds": 150,
+  "ashoreMinutes": [
+   90,
+   210
+  ],
+  "fuelPerTon": 60,
+  "hullRepair": 2200,
+  "missionRangeLy": 110,
+  "maxMissions": 3,
+  "holdForCargoT": 40,
+  "cabins": 3,
+  "price": {
+   "oreKg": 9,
+   "iceKg": 2,
+   "bioSample": 450,
+   "scanData": 160,
+   "part": 45,
+   "filter": 35,
+   "cartridge": 30,
+   "seal": 12,
+   "kcal1000": 6,
+   "barMeal": 18
+  }
  }
 }

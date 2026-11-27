@@ -15,6 +15,7 @@ import { range } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';
 import { missionSeconds } from '../sim/clock.js';
 import { emit } from '../sim/events.js';
+import { stationIn, startDocking, stepDocking } from './ports.js';
 import { factor } from '../sim/ship/wear.js';
 import { getSystem, bodyPos, bodyRadius, LS_PER_AU, LS_PER_REARTH, KM_PER_LS } from './system.js';
 import { onArrival } from './discovery.js';
@@ -28,7 +29,7 @@ const len = (x, y) => Math.sqrt(x * x + y * y);
 /** Ship position in the system plane (Ls). */
 export function shipPos(state, data) {
   const f = state.ship.flight;
-  if (f.at && ['orbit', 'descent', 'landed', 'ascent'].includes(f.mode)) {
+  if (f.at && ['orbit', 'descent', 'landed', 'ascent', 'docking', 'docked', 'undocking'].includes(f.mode)) {
     return bodyPos(currentSystem(state, data), f.at, missionSeconds(state));
   }
   return f.pos;
@@ -67,6 +68,7 @@ export function updateFlight(state, data, dt) {
     case 'scooping': stepScoop(state, data, dt); break;
     case 'descent': stepPhases(state, data, dt, 'descent'); break;
     case 'ascent': stepPhases(state, data, dt, 'ascent'); break;
+    case 'docking': case 'undocking': stepDocking(state, data, dt); break;
     default: break;
   }
 }
@@ -201,6 +203,7 @@ function arriveAtTarget(state, data, sys, tgt) {
   f.mode = 'orbit';
   f.at = tgt.body;
   const b = sys.byId[tgt.body];
+  if (tgt.then === 'dock') { const stn = stationIn(state.space.galaxySeed, state.space.systemId, data.space); if (stn && stn.body === tgt.body) { state.space.visitedBodies[tgt.body] = true; startDocking(state, data, stn); return; } }
   state.space.visitedBodies[tgt.body] = true;
   emit(state, 'orbit_entered', { body: b.name, bodyId: b.id, bodyType: b.type, rings: b.rings, altitudeKm: Math.round((orbitArrive(sys, b.id) - b.radius) * KM_PER_LS) });
 }

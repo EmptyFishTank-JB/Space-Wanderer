@@ -44,6 +44,14 @@ export function appraise(state, ev) {
       const w = special === 'bio_mat' ? 0.6 : special ? 0.4 : 0.28;
       return { w, v: 0.7, subject: special ? `the ${FEATURE[special]} on ${ev.body}` : `the long walk on ${ev.body}`, summary: `Walked ${Math.round(ev.walkedM)} m on ${ev.body}${special ? ` out to the ${FEATURE[special]}` : ''}.`, tags: ['eva', special || 'walk'] };
     }
+    case 'docked':
+      if (!ev.first) return null;
+      return { w: 0.45, v: 0.6, subject: `putting in at ${ev.station}`, summary: `Docked at ${ev.station} in ${ev.system}, a ${ev.faction} ${ev.kind === 'outpost' ? 'outpost' : 'station'}.`, tags: ['port', 'people'] };
+    case 'port_visit':
+      if ((ev.met || 0) < 2) return null;
+      return { w: 0.32, v: 0.65, subject: `an evening at the bar on ${ev.station}`, summary: `Talked with ${ev.met} people at the bar on ${ev.station}.`, tags: ['port', 'people'] };
+    case 'mission_complete': return { w: 0.4, v: 0.6, subject: ev.title, summary: `Delivered: ${ev.title}, for ${ev.reward.toLocaleString('en-US')} credits.`, tags: ['mission', ev.kind] };
+    case 'mission_fail': return { w: 0.38, v: -0.6, subject: ev.title, summary: ev.reason === 'caught' ? `Caught with the cargo at ${ev.station}: ${ev.title}. Fined ${ev.fine} credits.` : `Ran out of time: ${ev.title}.`, tags: ['mission', 'hardship'] };
     case 'rover_end': {
       const f = ev.features || [];
       const special = f.find((k) => ['bio_mat', 'crystalline_spires', 'patterned_vents', 'geyser', 'fumarole', 'ice_ridge', 'scarp', 'ejecta_ray'].includes(k));

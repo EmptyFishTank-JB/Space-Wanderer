@@ -54,6 +54,7 @@ test('power starvation: adrift far from the star with no fuel the ship goes limp
 
 test('anti-soft-lock: with no parts or feedstock left, jury-rigs keep the ship alive', () => {
   const s = fresh('austere');
+  s.space.credits = 0; // broke as well: a station can't sell us a way out
   Object.assign(s.ship.inventory, { parts: 0, filters: 0, cartridges: 0, seals: 0, feedstock: 0 });
   s.ship.salvage.remainingKg = 0;
   for (const id of ['water_recycler', 'o2_scrubber', 'thermal_vents', 'hydro_pump_1', 'ogs']) startFault(s, data, id, 'major');
@@ -70,6 +71,7 @@ test('anti-soft-lock: with no parts or feedstock left, jury-rigs keep the ship a
 
 test('starvation failsafe: an empty larder leans on the algae vat, never kills', () => {
   const s = fresh('hungry');
+  s.space.credits = 0; // and no money for the station's bar or market
   Object.assign(s.ship.food, { pantry: 0, algae: 0, emergency: 0, fresh: [] });
   const evs = runCollect(s, 5 * DAY);
   assert.ok(evs.some((e) => e.type === 'tend_algae' && e.kcal > 0));

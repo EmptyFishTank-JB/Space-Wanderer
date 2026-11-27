@@ -140,6 +140,8 @@ export function writeLog({ state, data, facts, entry }) {
     if (e.samples && e.samples.ice > 0) samples.push(`${kg(e.samples.ice)} kg of ice`);
     lines.find.push(`Walked ${Math.round(e.walkedM)} m out${feats.length ? ` to the ${feats[feats.length - 1]}` : ''} and back.${samples.length ? ` Brought in ${listJoin(samples)}.` : ''}`);
   }
+  for (const p of (v.ports || []).slice(0, 1)) lines.find.push(p.first ? `Put in at ${p.station}, ${p.system}. ${p.faction} territory. People everywhere, after all this time.` : `Docked at ${p.station} again.`);
+  for (const m of (v.missions || []).slice(0, 2)) lines.find.push(m.done ? `Handed over ${m.title}. ${m.reward.toLocaleString('en-US')} credits.` : m.reason === 'caught' ? `They scanned the hold. That's the end of that job: ${m.title}.` : `Missed the deadline: ${m.title}.`);
   for (const e of (v.rovers || []).slice(0, 1)) {
     const feats = (e.features || []).filter((f) => FEATURE[f]).map((f) => FEATURE[f]);
     const samples = [];

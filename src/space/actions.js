@@ -11,6 +11,7 @@ import { surveySystem, scanBody } from './discovery.js';
 import { decideAgenda, plotRoute, agendaHead } from './navigator.js';
 import { planEva, tickEva } from './eva.js';
 import { planRover, tickRover, roverCanDrive } from './rover.js';
+import { stationIn, startUndocking, tradeAtPort, chooseMissions, factionName } from './ports.js';
 import { beginTorpor, endTorpor } from './torpor.js';
 
 const at = (room, station) => ({ room, station });
@@ -54,7 +55,7 @@ export const FLIGHT_ACTIONS = {
       const sys = currentSystem(s, d);
       surveySystem(s, d, sys);
       s.space.agenda = decideAgenda(s, d, sys);
-      emit(s, 'agenda', { system: sys.name, items: s.space.agenda.map((i) => (i.kind === 'visit' ? `${i.land ? 'land' : 'visit'}:${sys.byId[i.body].name}` : i.kind)) });
+      emit(s, 'agenda', { system: sys.name, items: s.space.agenda.map((i) => (i.kind === 'visit' ? `${i.land ? 'land' : 'visit'}:${sys.byId[i.body].name}` : i.kind === 'port' ? `port:${i.why}` : i.kind)) });
     },
   },
 
@@ -172,6 +173,99 @@ export const FLIGHT_ACTIONS = {
       const head = agendaHead(s);
       if (head && head.kind === 'scoop') head.done = true;
     },
+  },
+
+  // put in at the station: fly to its world and dock
+  dock: {
+    category: 'flight', exertion: 0.5, posture: 'sitting', minCommit: 600,
+    gen(s, d) {
+      const f = s.ship.flight;
+      const it = agendaHead(s);
+      if (!it || it.kind !== 'port' || !PARKED.has(f.mode) || !alert(s) || majorAlarmFault(s, d)) return [];
+      return one(0.5, at('bridge', 'helm'), { body: it.body });
+    },
+    start(s, d, a) {
+      const f = s.ship.flight;
+      const stn = stationIn(s.space.galaxySeed, s.space.systemId, d.space);
+      if (!stn) { a.params.aborted = true; return; }
+      if (f.at === stn.body && f.mode === 'orbit') {
+        // already in orbit round the station's world: just call for a pad
+        setCourse(s, d, stn.body, 'dock');
+      } else setCourse(s, d, stn.body, 'dock');
+    },
+    duration: () => -1,
+    done: (s, d, a) => a.params.aborted || s.ship.flight.mode === 'docked' || !['cruise', 'docking', 'orbit'].includes(s.ship.flight.mode) || (s.ship.flight.mode === 'orbit' && a.elapsed > 600),
+  },
+
+  // ashore on the station: the concourse, the bar, the market and the mission board
+  go_ashore: {
+    category: 'social', exertion: 0.6, posture: 'standing', minCommit: 1800, uninterruptible: true,
+    gen(s, d) {
+      const f = s.ship.flight;
+      const it = agendaHead(s);
+      if (f.mode !== 'docked' || !it || it.kind !== 'port' || it.done.ashore) return [];
+      const n = s.traveler.needs;
+      if (n.fatigue > 0.8) return [];
+      return one(0.55 + 0.3 * n.solitude + 0.2 * d.traveler.traits.sociability, at('airlock', 'inner_door'));
+    },
+    start(s, d, a) {
+      const P = d.space.ports;
+      const total = range(s.rng, P.ashoreMinutes[0], P.ashoreMinutes[1]) * 60;
+      const stops = [['gate', 0.06], ['market', 0.16], ['bar', 0.42], ['board', 0.14], ['viewdeck', 0.14], ['gate', 0.08]];
+      a.params.plan = { stops: stops.map(([at2, w]) => ({ at: at2, dur: w * total })), i: 0, t: 0, x: d.rooms.port.stations.gate };
+      const stn = stationIn(s.space.galaxySeed, s.space.systemId, d.space);
+      a.params.station = stn ? stn.name : 'the station';
+      s.traveler.pos = { room: 'port', x: a.params.plan.x };
+      emit(s, 'room_enter', { room: 'port', from: 'airlock', hatch: 'boarding_tube' });
+    },
+    duration: () => -1,
+    fastTick(s, d, a, dt) {
+      const p = a.params.plan;
+      const stop = p.stops[p.i];
+      if (!stop) return;
+      const goal = d.rooms.port.stations[stop.at];
+      // walk between the venues at an easy pace, then linger
+      const v = 1.1;
+      if (Math.abs(goal - p.x) > 0.2) p.x += Math.sign(goal - p.x) * Math.min(v * dt, Math.abs(goal - p.x));
+      else p.t += dt;
+      s.traveler.pos = { room: 'port', x: p.x };
+      const tr = s.traveler;
+      if (stop.at === 'bar') {
+        // company costs nothing; a meal and a drink cost a little
+        tr.needs.solitude = clamp(tr.needs.solitude - dt / 2400);
+        tr.needs.stress = clamp(tr.needs.stress - dt / 7200);
+        if (!p.paid && s.space.credits >= d.space.ports.price.barMeal) { s.space.credits -= d.space.ports.price.barMeal; p.paid = true; }
+        if (p.paid) { tr.needs.hunger = clamp(tr.needs.hunger - dt / 1800); tr.needs.thirst = clamp(tr.needs.thirst - dt / 1200); }
+      }
+      else tr.needs.solitude = clamp(tr.needs.solitude - dt / 9000);
+      if (p.t < stop.dur) return;
+      // what happens at each stop
+      if (stop.at === 'market') tradeAtPort(s, d);
+      if (stop.at === 'bar') emit(s, 'port_visit', { station: a.params.station, venue: 'bar', met: 1 + Math.floor(range(s.rng, 0, 3.5) * d.traveler.traits.sociability * 2), room: 'port' });
+      if (stop.at === 'board') chooseMissions(s, d);
+      p.i++; p.t = 0;
+    },
+    done: (s, d, a) => a.params.plan.i >= a.params.plan.stops.length,
+    complete(s, d, a) {
+      s.traveler.pos = { room: 'airlock', x: d.rooms.airlock.stations.inner_door };
+      emit(s, 'room_enter', { room: 'airlock', from: 'port', hatch: 'boarding_tube' });
+      const it = agendaHead(s);
+      if (it && it.kind === 'port') it.done.ashore = true;
+    },
+  },
+
+  undock: {
+    category: 'flight', exertion: 0.5, posture: 'sitting', minCommit: 300,
+    gen(s, d) {
+      const f = s.ship.flight;
+      if (f.mode !== 'docked' || !alert(s)) return [];
+      const it = agendaHead(s);
+      if (it && it.kind === 'port' && !it.done.ashore) return [];
+      return one(0.46, at('bridge', 'helm'));
+    },
+    start(s, d) { startUndocking(s, d); },
+    duration: () => -1,
+    done: (s) => s.ship.flight.mode !== 'undocking' && s.ship.flight.mode !== 'docked',
   },
 
   set_course: {

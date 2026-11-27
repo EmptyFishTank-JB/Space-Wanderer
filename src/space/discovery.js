@@ -79,6 +79,7 @@ export function scanBody(state, data, sys, b) {
   const sp = state.space;
   sp.scanned[b.id] = true;
   sp.stats.scans++;
+  sp.dataUnsold = (sp.dataUnsold || 0) + 1;
   emit(state, 'body_scan', {
     body: b.name, bodyId: b.id, bodyType: b.type, gravity: Math.round(b.gravity * 100) / 100, tempK: b.tempK,
     atmosphere: b.atmosphere, landable: b.landable, signals: b.signals, ore: b.ore, room: 'bridge',

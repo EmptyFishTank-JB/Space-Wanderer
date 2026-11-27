@@ -15,7 +15,7 @@ const ACTIVITY = {
   gaze_viewport: 'Looking out', read: 'Reading', listen_music: 'Listening to music', sketch: 'Sketching', play_solitaire: 'Playing cards',
   play_instrument: 'Playing an instrument', reflect: 'Thinking', linger: 'Pausing', stroll: 'Walking the ship', tinker: 'Tinkering',
   survey_system: 'Surveying the system', scan_body: 'Scanning', plot_route: 'Plotting a route', set_course: 'Setting course', jump: 'Jumping',
-  scoop_fuel: 'Scooping fuel', land: 'Landing', takeoff: 'Lifting off', eva: 'On EVA', rover_outing: 'Out in the rover', refine_samples: 'Refining samples', melt_ice: 'Melting ice',
+  scoop_fuel: 'Scooping fuel', land: 'Landing', takeoff: 'Lifting off', eva: 'On EVA', rover_outing: 'Out in the rover', dock: 'Docking', go_ashore: 'Ashore on the station', undock: 'Undocking', refine_samples: 'Refining samples', melt_ice: 'Melting ice',
   enter_torpor: 'In torpor',
 };
 const FLIGHT = { idle: 'Holding station', cruise: 'Supercruise', orbit: 'In orbit', landed: 'Landed', descent: 'Descending', ascent: 'Ascending', scooping: 'Scooping', charging: 'Charging jump drive', hyperspace: 'In hyperspace', void: 'Crossing the void' };
@@ -83,6 +83,7 @@ export function telemetryFor(state, data, feedDef, exertion = 0.5) {
       power: sh.power.mode, battery: pct(sh.power.battery / sh.power.batteryCap), reactorKW: Math.round(sh.power.reactorOut || 0),
       fuel: `${sh.fuel.tons.toFixed(1)} / ${sh.fuel.capacity} t`, heat: pct(sh.thermal.heat), o2: sh.atmo.o2.toFixed(1), co2: Math.round(sh.atmo.co2),
       water: Math.round(sh.water.potable), faults,
+      credits: state.space ? Math.round(state.space.credits || 0) : 0, missions: state.space && state.space.missions ? state.space.missions.map((x) => x.title) : [],
     },
   };
 }

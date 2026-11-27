@@ -13,7 +13,8 @@
     { "id": "airlock",       "name": "Airlock / EVA Bay",              "width": 5,  "floor": "deck_plate", "stations": { "inner_door": 0.6, "suit_rack": 2.0, "outer_door": 4.5 } },
     { "id": "workshop",      "name": "Workshop",                       "width": 7,  "floor": "deck_plate", "stations": { "bench": 2.4, "fabricator": 4.4, "lathe": 5.8, "mid": 3.5 } },
     { "id": "engineering",   "name": "Engineering & Fuel Management",  "width": 11, "floor": "grating",    "stations": { "scoop_manifold": 2.4, "console": 3.8, "reactor": 5.6, "vents": 8.4, "drive": 10.2, "mid": 5.5 } },
-    { "id": "surface",       "name": "Planetary Surface (EVA)",        "width": 4000, "floor": "regolith", "exterior": true, "stations": { "ramp": 0 } }
+    { "id": "surface",       "name": "Planetary Surface (EVA)",        "width": 4000, "floor": "regolith", "exterior": true, "stations": { "ramp": 0 } },
+    { "id": "port",          "name": "Station Concourse",              "width": 100, "floor": "deck_plate", "exterior": true, "stations": { "gate": 2, "market": 22, "bar": 46, "board": 68, "viewdeck": 90 } }
   ],
   "hatches": [
     { "id": "h_bridge",      "a": "bridge",        "ax": 4.5,  "b": "corridor_fore", "bx": 0.5,  "seconds": 5, "kind": "ladder", "aDir": "down", "bDir": "up" },

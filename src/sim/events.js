@@ -16,7 +16,7 @@ export const NOTABLE = new Set([
   // Phase 2
   'system_arrival', 'system_survey', 'agenda', 'discovery', 'body_scan', 'route_plotted', 'void_ahead', 'stranded',
   'hyperspace_charge', 'scoop_start', 'scoop_end', 'scoop_abort', 'scoop_misjudge', 'heat_damage', 'orbit_entered',
-  'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'rover_out', 'rover_site', 'rover_end', 'keepsake', 'awe', 'refine', 'melt_ice',
+  'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'rover_out', 'rover_site', 'rover_end', 'docked', 'undocked', 'port_visit', 'trade', 'mission_accept', 'mission_complete', 'mission_fail', 'keepsake', 'awe', 'refine', 'melt_ice',
   'bay_dormant', 'torpor_start', 'torpor_end', 'system_record',
   // Phase 5
   'book_finished', 'reflection',
@@ -49,7 +49,7 @@ export function emptyDigest() {
     maintenance: [], harvests: [], plantings: [], deadTrays: 0, spoiledKg: 0, fabricated: {},
     powerModes: [], alarms: [], hobbies: {}, exercise: 0, resourceLow: [], salvageKg: 0,
     // Phase 2 — the voyage
-    arrivals: [], discoveries: [], landings: [], evas: [], rovers: [], scoops: [], awe: [], torpor: null, heatDamage: 0, keepsakes: [],
+    arrivals: [], discoveries: [], landings: [], evas: [], rovers: [], ports: [], missions: [], scoops: [], awe: [], torpor: null, heatDamage: 0, keepsakes: [],
     books: [],
   };
 }
@@ -78,6 +78,9 @@ function digest(d, ev) {
     case 'discovery': d.discoveries.push({ kind: ev.kind, body: ev.body, bodyType: ev.bodyType, rings: ev.rings, star: ev.star, label: ev.label, rarity: ev.rarity, first: ev.first, system: ev.system, anomaly: ev.anomaly }); break;
     case 'touchdown': d.landings.push({ body: ev.body, bodyType: ev.bodyType, gravity: ev.gravity, tempK: ev.tempK, first: ev.first }); break;
     case 'eva_end': d.evas.push({ body: ev.body, walkedM: ev.walkedM, features: ev.features, samples: ev.samples }); break;
+    case 'docked': d.ports.push({ station: ev.station, system: ev.system, faction: ev.faction, first: ev.first }); break;
+    case 'mission_complete': d.missions.push({ done: true, kind: ev.kind, title: ev.title, reward: ev.reward }); break;
+    case 'mission_fail': d.missions.push({ done: false, kind: ev.kind, title: ev.title, reason: ev.reason }); break;
     case 'rover_end': d.rovers.push({ body: ev.body, km: ev.km, features: ev.features, samples: ev.samples }); break;
     case 'scoop_end': d.scoops.push({ tons: ev.tons, peakHeat: ev.peakHeat, reason: ev.reason }); break;
     case 'awe': d.awe.push(ev.subject); break;

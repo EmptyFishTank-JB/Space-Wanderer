@@ -4,6 +4,7 @@ import { clamp, HOUR } from '../sim/util.js';
 import { factor } from '../sim/ship/wear.js';
 import { neighbors, density, riftLength, nearestStar, systemName, dist3, starVariant } from './galaxy.js';
 import { roverOutingsFor } from './rover.js';
+import { wantsPort, missionTarget, inhabited, stationIn } from './ports.js';
 
 const STAR_RARITY = { O: 1, B: 0.9, A: 0.6, F: 0.35, G: 0.25, K: 0.15, M: 0.05, L: 0.4, T: 0.55, D: 0.6, N: 0.95, BH: 1, Y: 0.8, C: 0.95, RG: 0.7, WR: 1, PSR: 1 };
 
@@ -39,6 +40,11 @@ export function plotRoute(state, data) {
   const fuel = state.ship.fuel.tons - 0.4;
   const curiosity = data.traveler.traits.curiosity;
   const recent = new Set(sp.recent);
+  // a mission's destination pulls the route toward it, and a destination in range is taken outright
+  const target = sp.missions ? missionTarget(state, data) : null;
+  let T = H;
+  if (target) { const v = target.pos.map((x, i) => x - sp.pos[i]); const l = Math.hypot(...v) || 1; T = v.map((x) => x / l); }
+  const portWanted = sp.missions && (state.ship.inventory.parts < 8 || state.traveler.needs.solitude > 0.6 || sp.credits < 600);
   let best = null;
   for (const c of neighbors(sp.galaxySeed, sp.pos, range0, space)) {
     if (recent.has(c.id)) continue;
@@ -47,9 +53,10 @@ export function plotRoute(state, data) {
     const def = space.starClasses[c.cls];
     const after = fuel - cost;
     if (!def.scoopable && after < 1.6 * drive.maxFuelPerJump) continue; // never strand ourselves
-    const progress = ((c.pos[0] - sp.pos[0]) * H[0] + (c.pos[1] - sp.pos[1]) * H[1] + (c.pos[2] - sp.pos[2]) * H[2]) / range0;
+    const progress = ((c.pos[0] - sp.pos[0]) * T[0] + (c.pos[1] - sp.pos[1]) * T[1] + (c.pos[2] - sp.pos[2]) * T[2]) / range0;
     const score = progress + curiosity * STAR_RARITY[starVariant(sp.galaxySeed, c.id, c.cls, space) || c.cls] * 0.5 + (def.scoopable && state.ship.fuel.tons < 0.5 * state.ship.fuel.capacity ? 0.3 : 0)
-      - (cost / drive.maxFuelPerJump) * 0.15 + range(state.rng, -0.1, 0.1);
+      - (cost / drive.maxFuelPerJump) * 0.15 + range(state.rng, -0.1, 0.1)
+      + (target && c.id === target.id ? 5 : 0) + (portWanted && inhabited(sp.galaxySeed, c) ? 0.45 : 0);
     if (!best || score > best.score) best = { score, progress, c, cost };
   }
   // A rift ahead? Look a little down the heading.
@@ -109,6 +116,9 @@ export function decideAgenda(state, data, sys) {
   }
   // Sightseeing: even with no survey reason, a striking world gets a look-only orbit (no landing),
   // so the traveler parks somewhere beautiful instead of only ever working. Picked without the RNG.
+  // a port call comes first when there is a reason to put in (a delivery, supplies, company, work)
+  const why = state.space.missions ? wantsPort(state, data) : null;
+  if (why) { const stn = stationIn(state.space.galaxySeed, state.space.systemId, data.space); items.unshift({ kind: 'port', station: stn.id, body: stn.body, why, done: { ashore: false } }); }
   const sight = scored.find(({ b }) => b.beauty > 0.6 && !items.some((i) => i.body === b.id));
   if (sight && ambition > 0.2 && items.filter((i) => i.kind === 'visit').length < 3) {
     const b = sight.b;
@@ -130,6 +140,11 @@ export function advanceAgenda(state, data) {
   if (item.kind === 'scoop') {
     const fuel = state.ship.fuel;
     if (item.done || fuel.tons >= 0.97 * fuel.capacity) sp.agenda.shift();
+    return;
+  }
+  if (item.kind === 'port') {
+    // done once ashore and away from the pad again
+    if (item.done.ashore && !['docking', 'docked', 'undocking'].includes(f.mode)) sp.agenda.shift();
     return;
   }
   if (item.kind === 'visit') {
