@@ -352,7 +352,7 @@
    "origin": 12,
    "view": "starboard",
    "role": "passage",
-   "new": true,
+   "new": false,
    "name": "Forward service passage",
    "info": "Continues the service spine forward to the lab, the data core, the stores and the refinery. The forward ladder well drops to the lower deck from here."
   },
@@ -524,7 +524,7 @@
    "origin": 14,
    "view": "starboard",
    "role": "hab",
-   "new": true,
+   "new": false,
    "name": "Starboard gallery",
    "info": "A long observation walkway against the starboard side of the hull, with windows in the sloping wall looking out and down. Reached by the cross passage."
   },
@@ -543,7 +543,7 @@
    "origin": -10,
    "view": "port",
    "role": "hab",
-   "new": true,
+   "new": false,
    "name": "Port gallery",
    "info": "A long observation walkway against the port side of the hull, looking out and down."
   },
@@ -562,7 +562,7 @@
    "origin": -16,
    "view": "fore",
    "role": "passage",
-   "new": true,
+   "new": false,
    "name": "Cross passage",
    "info": "Runs across the ship from the end of the forward service passage to both galleries."
   },
@@ -616,10 +616,10 @@
     17.6
    ],
    "axis": "+y",
-   "origin": 6.2,
+   "origin": 9.8,
    "view": "fore",
    "role": "science",
-   "new": true,
+   "new": false,
    "name": "Biology lab",
    "info": "Living samples: an isolation glovebox, incubators, a culture library and a microscope bench. Anything alive from a world's surface is examined here before it goes near the grow trays."
   },
@@ -904,7 +904,7 @@
    "origin": -7.4,
    "view": "port",
    "role": "security",
-   "new": true,
+   "new": false,
    "name": "Brig",
    "info": "Two small detention cells with their own air and a monitored door, for bounty hunting or carrying a prisoner.",
    "missions": true
@@ -924,7 +924,7 @@
    "origin": -7.4,
    "view": "port",
    "role": "service",
-   "new": true,
+   "new": false,
    "name": "Secure cargo",
    "info": "A shielded, scan-resistant vault for valuable or sensitive cargo: data cores, rare samples, and anything a contract says must not be seen.",
    "missions": true
@@ -944,7 +944,7 @@
    "origin": 9.3,
    "view": "starboard",
    "role": "hab",
-   "new": true,
+   "new": false,
    "name": "Passenger cabin 1",
    "info": "A passenger cabin: bunk, fresher, locker and a fold-down desk, opening onto the starboard gallery and its windows.",
    "missions": true
@@ -964,7 +964,7 @@
    "origin": 9.3,
    "view": "starboard",
    "role": "hab",
-   "new": true,
+   "new": false,
    "name": "Passenger cabin 2",
    "info": "A passenger cabin, the same as its neighbors.",
    "missions": true
@@ -984,7 +984,7 @@
    "origin": 9.3,
    "view": "starboard",
    "role": "hab",
-   "new": true,
+   "new": false,
    "name": "Passenger cabin 3",
    "info": "A passenger cabin, the same as its neighbors.",
    "missions": true
@@ -1004,7 +1004,7 @@
    "origin": 9.3,
    "view": "starboard",
    "role": "hab",
-   "new": true,
+   "new": false,
    "name": "Passenger lounge",
    "info": "Seats, a kitchenette and a screen for passengers, so they have somewhere of their own on the voyage and the living deck stays the traveler's.",
    "missions": true
@@ -1043,7 +1043,7 @@
    "origin": 6.2,
    "view": "starboard",
    "role": "science",
-   "new": true,
+   "new": false,
    "name": "Xeno containment",
    "info": "Sealed enclosures for live specimens, each with its own air, temperature and light, opening off the biology lab. Big enough for xenobiology contracts that want something brought back alive.",
    "missions": true
@@ -1094,7 +1094,7 @@
     3.4
    ],
    "y": [
-    -10.0,
+    -10,
     -1.2
    ],
    "axis": "-y",
@@ -1155,12 +1155,12 @@
    "id": "h_spine",
    "path": [
     [
-     -10.5,
+     -11.5,
      0,
      3.4
     ],
     [
-     -10.5,
+     -11.5,
      0,
      4.8
     ]
@@ -1255,6 +1255,114 @@
    ],
    "kind": "crawlway",
    "note": "a run of the under-floor crawl duct, beside the water mains"
+  },
+  {
+   "id": "h_fwd",
+   "at": [
+    -9.9,
+    0,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_cross",
+   "at": [
+    12.1,
+    0,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_gal_s",
+   "at": [
+    13.1,
+    16,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_gal_p",
+   "at": [
+    13.1,
+    -16,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_brig",
+   "at": [
+    5.8,
+    -15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_securecargo",
+   "at": [
+    12.1,
+    -11.6,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_cabin_a",
+   "at": [
+    -7.7,
+    15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_cabin_b",
+   "at": [
+    -3.7,
+    15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_cabin_c",
+   "at": [
+    0.3,
+    15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_paxlounge",
+   "at": [
+    5,
+    15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_biolab",
+   "at": [
+    14.1,
+    13,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_xeno",
+   "at": [
+    18.2,
+    9.7,
+    0
+   ],
+   "kind": "door"
   }
  ],
  "doors": [
@@ -1300,17 +1408,6 @@
     -19.9,
     -1,
     4.8
-   ]
-  },
-  {
-   "between": [
-    "fwd_main",
-    "corridor_aft"
-   ],
-   "at": [
-    -9.9,
-    0,
-    0
    ]
   },
   {
@@ -1377,39 +1474,6 @@
     13.9,
     0,
     -5
-   ]
-  },
-  {
-   "between": [
-    "cross_main",
-    "fwd_main"
-   ],
-   "at": [
-    12.1,
-    0,
-    0
-   ]
-  },
-  {
-   "between": [
-    "cross_main",
-    "gallery_s"
-   ],
-   "at": [
-    13.1,
-    16,
-    0
-   ]
-  },
-  {
-   "between": [
-    "cross_main",
-    "gallery_p"
-   ],
-   "at": [
-    13.1,
-    -16,
-    0
    ]
   },
   {
@@ -1524,100 +1588,12 @@
   },
   {
    "between": [
-    "brig",
-    "gallery_p"
-   ],
-   "at": [
-    5.8,
-    -15.9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "securecargo",
-    "cross_main"
-   ],
-   "at": [
-    12.1,
-    -11.6,
-    0
-   ]
-  },
-  {
-   "between": [
-    "cabin_a",
-    "gallery_s"
-   ],
-   "at": [
-    -7.7,
-    15.9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "cabin_b",
-    "gallery_s"
-   ],
-   "at": [
-    -3.7,
-    15.9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "cabin_c",
-    "gallery_s"
-   ],
-   "at": [
-    0.3,
-    15.9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "paxlounge",
-    "gallery_s"
-   ],
-   "at": [
-    5,
-    15.9,
-    0
-   ]
-  },
-  {
-   "between": [
     "cmstore",
     "cross_main"
    ],
    "at": [
     12.1,
     12.5,
-    0
-   ]
-  },
-  {
-   "between": [
-    "biolab",
-    "cross_main"
-   ],
-   "at": [
-    14.1,
-    13,
-    0
-   ]
-  },
-  {
-   "between": [
-    "xeno",
-    "biolab"
-   ],
-   "at": [
-    18.2,
-    9.7,
     0
    ]
   },
@@ -1693,9 +1669,9 @@
     "lower_passage"
    ],
    "at": [
-    0.0,
+    0,
     -1.1,
-    -5.0
+    -5
    ]
   },
   {
@@ -1716,8 +1692,8 @@
    "kind": "ladder",
    "name": "Trunk ladder well",
    "x": [
-    -11,
-    -10
+    -12,
+    -11
    ],
    "y": [
     -0.5,
@@ -4641,7 +4617,7 @@
    "x": -0.1,
    "y": -5.6,
    "z": [
-    -5.0,
+    -5,
     -1.4
    ],
    "r": 2.6,
@@ -5049,7 +5025,7 @@
     20.4
    ],
    "x": [
-    -14.0,
+    -14,
     -12.6
    ],
    "faces": "up",
@@ -5066,7 +5042,7 @@
     10.7
    ],
    "x": [
-    -9.0,
+    -9,
     -7.4
    ],
    "faces": "up",
@@ -5079,12 +5055,12 @@
    "part": "main",
    "edge": 7,
    "y": [
-    12.0,
+    12,
     13.6
    ],
    "x": [
     -4.4,
-    -3.0
+    -3
    ],
    "faces": "up",
    "backs": "cabin_b",
@@ -5096,12 +5072,12 @@
    "part": "main",
    "edge": 7,
    "y": [
-    12.0,
+    12,
     13.6
    ],
    "x": [
     -0.4,
-    1.0
+    1
    ],
    "faces": "up",
    "backs": "cabin_c",
@@ -5118,7 +5094,7 @@
    ],
    "x": [
     5.4,
-    7.0
+    7
    ],
    "faces": "up",
    "backs": "paxlounge",
@@ -5130,7 +5106,7 @@
    "part": "main",
    "edge": 7,
    "y": [
-    13.0,
+    13,
     14.6
    ],
    "x": [
@@ -5152,7 +5128,7 @@
    ],
    "x": [
     17.2,
-    19.0
+    19
    ],
    "faces": "up",
    "backs": "mapping",
@@ -5185,7 +5161,7 @@
     -16.85
    ],
    "z": [
-    6.0,
+    6,
     6.6
    ],
    "faces": "out to starboard",
@@ -5202,7 +5178,7 @@
     -15.25
    ],
    "z": [
-    6.0,
+    6,
     6.6
    ],
    "faces": "out to port",

@@ -8,6 +8,8 @@ const SECTION_ORDER = ['Command', 'Living', 'Life support', 'Engineering', 'Serv
 const SECTION_OF = {
   bridge: 'Command', lounge: 'Living', quarters: 'Living', galley: 'Living', hydro: 'Life support', lifesupport: 'Life support',
   engineering: 'Engineering', workshop: 'Engineering', storage: 'Service', airlock: 'Service', corridor_fore: 'Passages', corridor_aft: 'Passages',
+  fwd_main: 'Passages', cross_main: 'Passages', gallery_s: 'Living', gallery_p: 'Living', cabin_a: 'Passengers', cabin_b: 'Passengers', cabin_c: 'Passengers', paxlounge: 'Passengers',
+  brig: 'Missions', securecargo: 'Missions', biolab: 'Science', xeno: 'Science',
 };
 export const sectionOf = (f) => (f.room ? SECTION_OF[f.room] || 'Service' : f.rover || f.exterior === 'bay' ? 'Vehicles' : f.port ? 'Station' : 'Exterior');
 const feedName = (f) => (f.id === 'EVA-POV' ? 'EVA-POV HELMET' : `${f.id} ${f.label}`);

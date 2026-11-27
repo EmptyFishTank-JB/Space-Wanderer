@@ -18,8 +18,21 @@ const THEME = {
   airlock: { wall: [78, 80, 84], trim: [56, 58, 62], floor: [70, 72, 76] },
   corridor_fore: { wall: [62, 66, 72], trim: [44, 48, 52], floor: [56, 58, 62] },
   corridor_aft: { wall: [60, 64, 68], trim: [42, 46, 50], floor: [54, 56, 60] },
+  fwd_main: { wall: [60, 64, 68], trim: [42, 46, 50], floor: [54, 56, 60] },
+  cross_main: { wall: [62, 66, 70], trim: [44, 48, 52], floor: [56, 58, 62] },
+  gallery_s: { wall: [70, 80, 88], trim: [50, 58, 64], floor: [84, 70, 62] },
+  gallery_p: { wall: [70, 80, 88], trim: [50, 58, 64], floor: [84, 70, 62] },
+  cabin_a: { wall: [100, 92, 84], trim: [74, 68, 62], floor: [88, 74, 70] },
+  cabin_b: { wall: [92, 96, 104], trim: [68, 70, 78], floor: [80, 78, 84] },
+  cabin_c: { wall: [96, 100, 90], trim: [70, 74, 66], floor: [84, 82, 74] },
+  paxlounge: { wall: [96, 84, 74], trim: [70, 62, 54], floor: [100, 72, 62] },
+  brig: { wall: [66, 66, 70], trim: [46, 46, 50], floor: [58, 58, 62] },
+  securecargo: { wall: [58, 62, 58], trim: [40, 44, 40], floor: [54, 56, 54] },
+  biolab: { wall: [180, 190, 188], trim: [120, 130, 128], floor: [150, 156, 154] },
+  xeno: { wall: [56, 70, 66], trim: [38, 50, 46], floor: [50, 60, 58] },
 };
-const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'LIVING', corridor_aft: 'SERVICE', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG' };
+const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'LIVING', corridor_aft: 'SERVICE', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG',
+  fwd_main: 'FWD', cross_main: 'CROSS', gallery_s: 'STBD GAL', gallery_p: 'PORT GAL', cabin_a: 'CABIN 1', cabin_b: 'CABIN 2', cabin_c: 'CABIN 3', paxlounge: 'PAX LOUNGE', brig: 'BRIG', securecargo: 'SECURE', biolab: 'BIO LAB', xeno: 'XENO' };
 
 const LED = { ok: [80, 230, 120], warn: [255, 180, 40], bad: [255, 60, 50], off: [40, 44, 40] };
 
@@ -37,6 +50,12 @@ export function roomWindows(room) {
     case 'lifesupport': return [{ x0: 2.0, x1: 3.5, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-DORSAL' }];
     case 'storage': return [{ x0: 3.9, x1: 5.4, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-PORT' }];
     case 'workshop': return [{ x0: 4.6, x1: 6.1, y0: CEIL + 8, y1: CEIL + 26, screen: 'EXT-STBD' }];
+    // the galleries: angled windows in bays all along the outboard wall, skylights over them
+    case 'gallery_s': return [{ x0: 1.4, x1: 7.6, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 8.4, x1: 14.6, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 15.4, x1: 22.6, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 1.5, x1: 19.5, y0: 8, y1: CEIL - 10 }];
+    case 'gallery_p': return [{ x0: 1.4, x1: 7.6, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 8.4, x1: 14.6, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 15.4, x1: 22.6, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 4.5, x1: 22.5, y0: 8, y1: CEIL - 10 }];
+    case 'cabin_a': case 'cabin_b': case 'cabin_c': return [{ x0: 1.2, x1: 2.6, y0: 8, y1: CEIL - 10 }]; // a small skylight over the bunk
+    case 'paxlounge': return [{ x0: 2.8, x1: 4.6, y0: 8, y1: CEIL - 10 }];
+    case 'biolab': return [{ x0: 6.2, x1: 7.5, y0: CEIL + 6, y1: FLOOR - 34, bay: true }, { x0: 3.0, x1: 5.2, y0: 8, y1: CEIL - 10 }];
     default: return [];
   }
 }
@@ -84,8 +103,16 @@ function drawShell(ctx, rc) {
     rect(ctx, [180, 180, 170], L + x - 8, CEIL - 3, 16, 2);
     rc.lamps.push({ x: L + x, y: CEIL });
   }
-  // windows: cut through to space
+  // windows: cut through to space, broken round any door in the same wall
+  const doorsHere = data.nav.endpoints.filter((e) => e.room === room && e.kind === 'door').map((e) => [e.x - 0.75, e.x + 0.75]);
+  const pieces = [];
   for (const win of roomWindows(room)) {
+    if (win.screen || win.y1 < CEIL) { pieces.push(win); continue; } // screens and skylights stay whole
+    let segs = [[win.x0, win.x1]];
+    for (const [a0, a1] of doorsHere) segs = segs.flatMap(([s0, s1]) => (a1 <= s0 || a0 >= s1 ? [[s0, s1]] : [[s0, a0], [a1, s1]].filter(([u, v]) => v - u >= 0.6)));
+    for (const [x0, x1] of segs) pieces.push({ ...win, x0, x1 });
+  }
+  for (const win of pieces) {
     const x0 = rc.M(win.x0), x1 = rc.M(win.x1);
     rect(ctx, win.screen ? [28, 30, 34] : mul(th.trim, 0.9), x0 - 3, win.y0 - 3, x1 - x0 + 6, win.y1 - win.y0 + 6);
     if (win.round) {
@@ -641,7 +668,90 @@ const ROOMS = {
 
   corridor_fore(ctx, rc) { corridor(ctx, rc, 'junction_box_fore', 7.0); },
   corridor_aft(ctx, rc) { corridor(ctx, rc, null, 0); },
+  fwd_main(ctx, rc) { corridor(ctx, rc, null, 0); },
+  cross_main(ctx, rc) { corridor(ctx, rc, null, 0); },
+  gallery_s(ctx, rc) { gallery(ctx, rc); },
+  gallery_p(ctx, rc) { gallery(ctx, rc); },
+  cabin_a(ctx, rc) { cabin(ctx, rc, 0); },
+  cabin_b(ctx, rc) { cabin(ctx, rc, 1); },
+  cabin_c(ctx, rc) { cabin(ctx, rc, 2); },
+  paxlounge(ctx, rc) {
+    const { M, d } = rc, st = d.rooms.paxlounge.stations;
+    // a wall screen, a row of seats, the kitchenette with its kettle
+    monitor(ctx, rc, M(st.screen) - 12, CEIL + 16, 24, 14, (x, y, w, h) => { for (let i = 0; i < 5; i++) rect(ctx, [80, 140, 190], x + 2, y + 2 + i * 2, w - 4 - (i * 5) % 9, 1); });
+    for (let i = 0; i < 3; i++) { const x = M(st.seats) - 18 + i * 13; rect(ctx, [120, 84, 70], x, FLOOR - 16, 11, 7); rect(ctx, [104, 70, 58], x, FLOOR - 28, 3, 12); rect(ctx, [60, 50, 44], x + 4, FLOOR - 9, 2, 9); }
+    cabinet(ctx, M(st.kitchenette) - 16, FLOOR - 32, 32, 32, [150, 150, 146]);
+    rect(ctx, [200, 200, 196], M(st.kitchenette) - 16, FLOOR - 33, 32, 2);
+    rect(ctx, [60, 60, 66], M(st.kitchenette) + 4, FLOOR - 40, 7, 7);
+  },
+  brig(ctx, rc) {
+    const { M, d } = rc, st = d.rooms.brig.stations;
+    for (const c of [st.cell_1, st.cell_2]) {
+      // a cell: a bunk behind bars, a monitored door light
+      rect(ctx, [40, 40, 44], M(c) - 30, CEIL + 10, 60, FLOOR - CEIL - 10);
+      rect(ctx, [80, 76, 70], M(c) - 24, FLOOR - 18, 30, 6);
+      for (let x = M(c) - 30; x <= M(c) + 30; x += 6) rect(ctx, [150, 154, 160], x, CEIL + 10, 2, FLOOR - CEIL - 10);
+      rect(ctx, [150, 154, 160], M(c) - 30, CEIL + 10, 62, 3);
+      blinkLed(ctx, rc, M(c) + 26, CEIL + 16, LED.ok);
+    }
+  },
+  securecargo(ctx, rc) {
+    const { M, d } = rc, st = d.rooms.securecargo.stations;
+    // a shielded vault behind a cage, the cargo inside under seal
+    rect(ctx, [36, 40, 36], M(st.vault) - 70, CEIL + 12, 140, FLOOR - CEIL - 12);
+    const cargo = rc.s.space && rc.s.space.missions ? rc.s.space.missions.filter((m) => m.kind === 'smuggle').reduce((a, m) => a + m.tons, 0) : 0;
+    for (let i = 0; i < Math.min(8, Math.ceil(cargo)); i++) rect(ctx, [110, 100, 70], M(st.vault) - 60 + (i % 4) * 30, FLOOR - 16 - Math.floor(i / 4) * 16, 26, 14);
+    for (let x = M(st.vault) - 70; x <= M(st.vault) + 70; x += 8) rect(ctx, [90, 96, 90], x, CEIL + 12, 1, FLOOR - CEIL - 12);
+    blinkLed(ctx, rc, M(st.vault) + 64, CEIL + 18, cargo > 0 ? LED.warn : LED.ok);
+  },
+  biolab(ctx, rc) {
+    const { M, d, s } = rc, st = d.rooms.biolab.stations;
+    // the glovebox, the incubators, the microscope bench; the sample shelf fills as samples come in
+    rect(ctx, [190, 200, 205], M(st.glovebox) - 20, FLOOR - 44, 40, 26);
+    rect(ctx, [150, 200, 210], M(st.glovebox) - 16, FLOOR - 40, 32, 16, 0.7);
+    disc(ctx, [40, 44, 48], M(st.glovebox) - 7, FLOOR - 30, 3); disc(ctx, [40, 44, 48], M(st.glovebox) + 7, FLOOR - 30, 3);
+    cabinet(ctx, M(st.glovebox) - 20, FLOOR - 18, 40, 18, [170, 176, 178]);
+    for (let i = 0; i < 2; i++) { cabinet(ctx, M(st.incubator) - 14 + i * 15, FLOOR - 40, 13, 40, [200, 204, 206]); blinkLed(ctx, rc, M(st.incubator) - 8 + i * 15, FLOOR - 36, LED.ok); }
+    cabinet(ctx, M(st.microscope) - 18, FLOOR - 22, 36, 22, [170, 176, 178]);
+    rect(ctx, [60, 64, 70], M(st.microscope) - 3, FLOOR - 34, 6, 12);
+    const bio = s.space ? s.space.cargo.bio : 0;
+    for (let i = 0; i < Math.min(10, bio); i++) rect(ctx, [90, 160, 90], M(st.incubator) - 14 + i * 3, CEIL + 22, 2, 5);
+  },
+  xeno(ctx, rc) {
+    const { M, d, s, t } = rc, st = d.rooms.xeno.stations;
+    // sealed enclosures, each with its own light; a live specimen moves in one when there is one aboard
+    for (let i = 0; i < 2; i++) {
+      const x = M(st.enclosure) - 46 + i * 48;
+      rect(ctx, [30, 44, 40], x, CEIL + 14, 44, FLOOR - CEIL - 14);
+      rect(ctx, [120, 190, 170], x + 2, CEIL + 16, 40, FLOOR - CEIL - 18, 0.25);
+      rect(ctx, [160, 220, 200], x, CEIL + 14, 44, 2);
+    }
+    const live = s.space && s.space.cargo.bio > 0;
+    if (live) { const x = M(st.enclosure) - 30 + Math.sin(t * 0.7) * 10, y = FLOOR - 10 + Math.sin(t * 2.1) * 2; rect(ctx, [90, 170, 110], x, y, 6, 4); px(ctx, [220, 240, 200], x + 5, y); }
+  },
 };
+
+/** A gallery: a long walkway, angled windows behind a pony wall, benches facing out. */
+function gallery(ctx, rc) {
+  const { M, d, room } = rc, st = d.rooms[room].stations;
+  for (const x of [st.bench, st.bench + 6]) { rect(ctx, [110, 84, 66], M(x) - 14, FLOOR - 14, 28, 5); rect(ctx, [70, 56, 46], M(x) - 12, FLOOR - 9, 3, 9); rect(ctx, [70, 56, 46], M(x) + 9, FLOOR - 9, 3, 9); }
+  // planters between the bays
+  for (const x of [8, 15]) { rect(ctx, [90, 70, 56], M(x) - 5, FLOOR - 12, 10, 12); for (let k = 0; k < 6; k++) px(ctx, [70, 140, 80], M(x) - 4 + k * 1.6, FLOOR - 14 - (k % 3) * 2); }
+}
+
+/** A passenger cabin: bunk, fold-down desk, locker; occupied when a passenger is aboard. */
+function cabin(ctx, rc, n) {
+  const { M, d, room } = rc, st = d.rooms[room].stations;
+  rect(ctx, [80, 70, 64], M(st.bunk) - 24, FLOOR - 16, 48, 10);
+  rect(ctx, [200, 196, 186], M(st.bunk) - 22, FLOOR - 20, 44, 4);
+  rect(ctx, [150, 160, 190], M(st.bunk) - 22, FLOOR - 22, 10, 3);
+  rect(ctx, [110, 92, 74], M(st.desk) - 12, FLOOR - 26, 24, 3);
+  rect(ctx, [90, 76, 62], M(st.desk) - 1, FLOOR - 24, 2, 24);
+  cabinet(ctx, M(st.locker) - 9, FLOOR - 52, 18, 52, [120, 116, 110]);
+  // a little of the occupant: a bag on the bunk, a mug on the desk
+  const pax = rc.s.space && rc.s.space.passengers ? rc.s.space.passengers.find((p) => p.cabin === room) : null;
+  if (pax) { rect(ctx, pax.look.top, M(st.bunk) + 8, FLOOR - 25, 10, 6); rect(ctx, [210, 210, 200], M(st.desk) + 5, FLOOR - 31, 4, 5); }
+}
 
 function corridor(ctx, rc, junction, jx) {
   const { M, s } = rc;

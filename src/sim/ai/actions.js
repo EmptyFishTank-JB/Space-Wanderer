@@ -67,7 +67,7 @@ const ROOM_HINTS = {
 
 // rooms with a 'mid' station worth wandering through
 const TINKER_OBJECTS = ['pocket watch', 'puzzle box', 'model ship', 'old radio', 'music box', 'brass compass'];
-const STROLL_ROOMS = ['corridor_fore', 'corridor_aft', 'hydro', 'lifesupport', 'storage', 'workshop', 'engineering'];
+const STROLL_ROOMS = ['corridor_fore', 'corridor_aft', 'hydro', 'lifesupport', 'storage', 'workshop', 'engineering', 'gallery_s', 'gallery_p'];
 
 /** Tomorrow's clothes: not the same top as today, warmer when the ship runs cold, shorts when it runs warm. */
 function pickOutfit(s, w, prev) {
@@ -758,6 +758,26 @@ const CORE_ACTIONS = {
     },
   },
 
+  // a living sample from the surface, under the glovebox and the microscope
+  study_sample: {
+    category: 'chore', exertion: 0.6, posture: 'standing', minCommit: 900,
+    gen(s, d) {
+      const bio = s.space && s.space.cargo.bio;
+      if (!bio || s.traveler.needs.fatigue > 0.75) return [];
+      const since = (s.t - (s.traveler.history.lastStudyT ?? -Infinity)) / HOUR;
+      if (since < 20) return [];
+      return one(0.36 + 0.22 * d.traveler.traits.curiosity, at('biolab', 'glovebox'));
+    },
+    duration: (s) => range(s.rng, 1800, 4200),
+    rates: { stress: -0.04 },
+    complete(s, d) {
+      s.traveler.history.lastStudyT = s.t;
+      const m = s.traveler.mood;
+      m.wonder = clamp(m.wonder + 0.04 * (1 - m.wonder));
+      emit(s, 'study_sample', { samples: s.space.cargo.bio, room: 'biolab' });
+    },
+  },
+
   gaze_viewport: {
     category: 'leisure', exertion: 0.4, posture: 'standing', minCommit: 600,
     gen(s, d) {
@@ -770,7 +790,7 @@ const CORE_ACTIONS = {
       if (fl.mode === 'landed' && fl.touchdownT !== undefined && s.t - fl.touchdownT < 2 * HOUR) sc += 0.2; // landed somewhere new: look at it
       if (v.interest > 0.6 && !s.space.awed[`${v.kind}:${v.id}`]) sc += 0.2;
       if (s.traveler.needs.fatigue > 0.85) sc *= 0.4;
-      return one(Math.min(0.85, sc), [at('lounge', 'viewport'), at('bridge', 'viewport')], { subject: v.kind, id: v.id ?? null, name: v.name ?? null, interest: Math.round(v.interest * 100) / 100 });
+      return one(Math.min(0.85, sc), [at('lounge', 'viewport'), at('bridge', 'viewport'), at('gallery_s', 'viewport'), at('gallery_p', 'viewport')], { subject: v.kind, id: v.id ?? null, name: v.name ?? null, interest: Math.round(v.interest * 100) / 100 });
     },
     // a long look, not an hour frozen at the glass: the interest stretches it, but only so far
     duration: (s, d, a) => range(s.rng, 300, 1100) * (1 + 0.5 * a.params.interest),
