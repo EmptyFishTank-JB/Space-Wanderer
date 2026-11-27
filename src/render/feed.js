@@ -9,6 +9,21 @@ import { renderExteriorFeed } from './exterior.js';
 import { drawSurfaceScene } from './terrain.js';
 import { travelerPose } from './actor.js';
 import { registerRoomPicks, registerMugPick, picks } from './picks.js';
+import { roomWindowIds } from './hull3d.js';
+import { manualShut } from './shutters.js';
+
+/** A window's armored shutters, drawn closed over it (only when shut by hand: on its own the ship's cameras show the glass). */
+function drawShutters(lc, room, wins) {
+  const rw = roomWindowIds(room);
+  if (!rw) return;
+  for (const w of wins) {
+    if (w.screen) continue;
+    const ids = w.y1 < CEIL ? rw.sky : rw.wall;
+    if (!ids.length || !ids.every((id) => manualShut(id) === true)) continue;
+    rect(lc, [58, 60, 66], w.x0, w.y0, w.x1 - w.x0, w.y1 - w.y0);
+    for (let y = w.y0; y < w.y1; y += 6) { rect(lc, [76, 78, 86], w.x0, y, w.x1 - w.x0, 1); rect(lc, [40, 42, 46], w.x0, Math.min(w.y1 - 1, y + 5), w.x1 - w.x0, 1); }
+  }
+}
 
 let layer = null;
 function roomLayer() {
@@ -85,6 +100,7 @@ export function renderRoomFeed(ctx, m) {
     lights: [], lamps: [], windows: [], seed: view.seed || 1, powerDim: light.L, flash: 0,
   };
   drawRoom(lc, rc);
+  drawShutters(lc, room, rc.windows);
   let seen = null;
   if (m.pos && m.pos.room === room) {
     const k = travelerPose(state, data, m.tracker, m.pos, t);

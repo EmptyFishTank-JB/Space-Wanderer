@@ -11,6 +11,7 @@ import { drawSpaceScene } from './celestial.js';
 import { drawSurfaceScene } from './terrain.js';
 import { picks } from './picks.js';
 import { shipModel, renderShip, camAngles } from './hull3d.js';
+import { isShut } from './shutters.js';
 
 const HULL = [96, 100, 108];
 const DARK = [40, 42, 48];
@@ -51,7 +52,7 @@ export function renderExteriorFeed(ctx, m, def = {}) {
     const boxes = renderShip(ctx, shot, {
       heat: k.heat, wear: k.wear, landed: f.mode === 'landed', gearDown: ['landed', 'descent', 'ascent'].includes(f.mode),
       drive: view.scene === 'hyperspace' ? 1 : Math.max(view.charging || 0, view.speed > 0.0005 ? 0.8 : 0),
-      shut: ['cruise', 'hyperspace', 'charging', 'scooping'].includes(f.mode), lit: (state.ship.power.lightLevel ?? 1) > 0.2,
+      shut: ['cruise', 'hyperspace', 'charging', 'scooping'].includes(f.mode), shutFor: (part) => isShut(state, part.startsWith('win:') ? part.slice(4) : part), lit: (state.ship.power.lightLevel ?? 1) > 0.2,
       roverOut: !!(state.ship.rover && state.ship.rover.out), roverX: plan ? plan.x : 0, beacon: Math.sin(t * 2.4) > 0.6,
     });
     if (mount === 'scoop' && view.mode === 'scooping') MOUNTS_FX.plasma(ctx, k);

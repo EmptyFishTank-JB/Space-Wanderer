@@ -1678,6 +1678,17 @@
     7.2,
     4.8
    ]
+  },
+  {
+   "between": [
+    "scistores",
+    "coldstore"
+   ],
+   "at": [
+    28.5,
+    8.9,
+    0
+   ]
   }
  ],
  "shafts": [

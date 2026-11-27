@@ -14,6 +14,7 @@ import { mountCaptions } from './ui/captions.js';
 import { mountTelemetry } from './ui/telemetry.js';
 import { mountSelection } from './ui/select.js';
 import { setShipModel } from './render/hull3d.js';
+import { mountWalk } from './ui/walk.js';
 
 function pickStorage() {
   try {
@@ -39,7 +40,8 @@ async function openJournal() {
 async function main() {
   const [data, cameras] = await Promise.all([loadData(), fetchJson('cameras')]);
   // the hull cameras draw the ship from its 3D layout (they fall back to sketches until it loads)
-  await fetchJson('ship3d').then(setShipModel).catch(() => {});
+  const ship3d = await fetchJson('ship3d').catch(() => null);
+  if (ship3d) setShipModel(ship3d);
   const snapshots = new SnapshotStore(pickStorage(), data);
   const journal = await openJournal();
   const params = new URLSearchParams(location.search);
@@ -90,12 +92,16 @@ async function main() {
   });
   listeners.add((evs) => { renderer.push(evs); audio.push(evs); });
   selection = mountSelection({ canvas, director: renderer.director });
-  switcher = mountSwitcher({ director: renderer.director, cameras, canvas, telemetry, selection });
+  // walking the ship in first person (W), when the 3D layout has loaded
+  let walk = null;
+  try { if (ship3d) walk = mountWalk({ canvas, data, ship3d, onChange: (v) => { if (v && selection.on) selection.toggle(false); if (switcher) switcher.setWalking(v); } }); } catch (e) { console.warn('terrarium: walking the ship is unavailable', e); }
+  renderer.walk = walk;
+  switcher = mountSwitcher({ director: renderer.director, cameras, canvas, telemetry, selection, walk });
   mountSound({ audio });
   renderer.start();
   if (firstVisit) {
     // one quiet hint for a first-time viewer, then never again
-    const hint = Object.assign(document.createElement('div'), { className: 'boot-status hint', textContent: 'move the mouse for cameras · S select things · T telemetry · F fullscreen' });
+    const hint = Object.assign(document.createElement('div'), { className: 'boot-status hint', textContent: 'move the mouse for cameras · W walk the ship · S select things · T telemetry · F fullscreen' });
     document.body.appendChild(hint);
     setTimeout(() => hint.classList.add('shown'), 1500);
     setTimeout(() => hint.classList.remove('shown'), 11000);
@@ -141,6 +147,8 @@ async function main() {
 
   // Devtools handle (read-only by convention: the viewer never steers the traveler).
   window.terrarium = { data, runner, journal, renderer, audio, get state() { return runner.state; }, onEvents: (fn) => listeners.add(fn) };
+
+  if (params.has('walk') && walk) walk.enter(runner.state);
 
   if (params.has('debug')) {
     const { mountInspector } = await import('./dev/inspector.js');

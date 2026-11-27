@@ -85,10 +85,17 @@ export class TerrariumRenderer {
     });
     if (feed !== this.feed) { this.feed = feed; if (this.onFeedChange) this.onFeedChange(feed); }
     const view = spaceView(state, this.data);
-    view.chart = !!this.chart; // telemetry on: the star chart overlay
-    renderFeed(this.fbx, feed, { state, data: this.data, view, t: now, alpha, pos, tracker: this.tracker, dt }, this.director);
-    if (this.onFrame) this.onFrame({ state, data: this.data, feedId: feed, feedDef: this.director.feedDef(feed), pos, tracker: this.tracker, view, t: now, dt });
-    const fade = this.director.fadeAmount(now);
+    if (this.walk) this.walk.see(state);
+    if (this.walk && this.walk.on) {
+      // walking the ship: first person, in place of the cameras
+      this.walk.frame(this.fbx, { state, data: this.data, view, t: now, alpha, pos, tracker: this.tracker, dt });
+      if (this.onFrame) this.onFrame({ state, data: this.data, feedId: 'WALK', feedDef: this.walk.feedDef(), pos, tracker: this.tracker, view, t: now, dt });
+    } else {
+      view.chart = !!this.chart; // telemetry on: the star chart overlay
+      renderFeed(this.fbx, feed, { state, data: this.data, view, t: now, alpha, pos, tracker: this.tracker, dt }, this.director);
+      if (this.onFrame) this.onFrame({ state, data: this.data, feedId: feed, feedDef: this.director.feedDef(feed), pos, tracker: this.tracker, view, t: now, dt });
+    }
+    const fade = this.walk && this.walk.on ? 0 : this.director.fadeAmount(now);
     if (fade > 0) rect(this.fbx, [0, 0, 0], 0, 0, W, H, fade);
     const ctx = this.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;

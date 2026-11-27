@@ -34,7 +34,9 @@ const STYLE = `
 .feeds .toggle.on { color: rgba(150, 240, 190, 0.95); }
 `;
 
-export function mountSwitcher({ director, cameras, canvas, telemetry = null, selection = null }) {
+const walking = () => document.body.classList.contains('walking');
+
+export function mountSwitcher({ director, cameras, canvas, telemetry = null, selection = null, walk = null }) {
   const fadeMs = cameras.director.switcherFadeSeconds * 1000;
   const style = document.createElement('style');
   style.textContent = STYLE;
@@ -52,6 +54,18 @@ export function mountSwitcher({ director, cameras, canvas, telemetry = null, sel
   menu.className = 'menu';
   menu.setAttribute('role', 'menu');
   const buttons = new Map();
+  let walkBtn = null;
+  if (walk) {
+    // first person: walk the ship yourself
+    const h = document.createElement('div');
+    h.className = 'sec';
+    h.textContent = 'Walk';
+    walkBtn = document.createElement('button');
+    walkBtn.type = 'button';
+    walkBtn.textContent = 'WALK THE SHIP  (W)';
+    walkBtn.addEventListener('click', () => { walk.toggle(); close(); });
+    menu.append(h, walkBtn);
+  }
   const bySection = new Map(SECTION_ORDER.map((s) => [s, []]));
   for (const f of cameras.feeds) {
     const s = sectionOf(f);
@@ -131,6 +145,8 @@ export function mountSwitcher({ director, cameras, canvas, telemetry = null, sel
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     show();
+    // walking: the walk owns the keys, except fullscreen and telemetry
+    if (walking() && !['f', 'F', 't', 'T'].includes(e.key)) return;
     switch (e.key) {
       case 'Escape': close(); break;
       case 'ArrowLeft': director.pan(now(), -12); e.preventDefault(); break;
@@ -145,9 +161,9 @@ export function mountSwitcher({ director, cameras, canvas, telemetry = null, sel
   });
   // gentle drag-to-pan on the feed itself
   let drag = null;
-  canvas.addEventListener('pointerdown', (e) => { drag = e.clientX; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointerdown', (e) => { if (walking()) return; drag = e.clientX; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', (e) => {
-    if (drag === null) return;
+    if (drag === null || walking()) return;
     const dx = e.clientX - drag;
     drag = e.clientX;
     const scale = canvas.clientWidth / 320;
@@ -156,7 +172,14 @@ export function mountSwitcher({ director, cameras, canvas, telemetry = null, sel
   canvas.addEventListener('pointerup', () => { drag = null; });
 
   return {
+    setWalking(v) {
+      if (walkBtn) walkBtn.textContent = v ? 'BACK TO THE CAMERAS  (ESC)' : 'WALK THE SHIP  (W)';
+      trigger.textContent = v ? 'WALKING THE SHIP  ▾' : trigger.textContent;
+      if (!v && this.last) this.setActive(this.last);
+    },
     setActive(feed) {
+      this.last = feed;
+      if (walking()) return;
       for (const [id, b] of buttons) { b.classList.toggle('on', id === feed); b.setAttribute('aria-checked', String(id === feed)); }
       const f = cameras.feeds.find((x) => x.id === feed);
       trigger.textContent = `${f ? feedName(f) : feed}  ▾`;

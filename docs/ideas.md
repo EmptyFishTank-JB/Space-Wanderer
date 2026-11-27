@@ -98,6 +98,16 @@ The hold already runs out to the belly wall and has room for trade cargo. The co
   - mood, what they asked for and any complaint show when a passenger is selected. There are journal entries, memories and log lines;
   - everything a passenger does on their own comes from the clock and the ship's state, never the sim's RNG.
 
+### Walking the ship (2026-11-27)
+
+- **First person, through the whole ship:** every space in the 3D layout, drawn in the camera feeds' own pixel style. Each room's back wall is its live feed drawing, with the furniture on a layer just off the wall; the other walls, floors and ceilings are plating in the room's colors. The 29 spaces only the 3D layout has get their own furniture.
+- **Doors** open and shut by hand (E), and open by themselves while the traveler or a passenger goes through. **Ladder wells** have hatches, shut until someone climbs. **The freight lift** rides between its three decks.
+- **The ductwork** is crawlable: in through a ceiling or floor grille, along the runs on hands and knees, and up and down the vent shafts' rungs. **Crouching** (C) in the rooms.
+- **Windows:** bays with their pony walls and rails, skylight wells, glass in the deckhouse walls and the bridge canopy. Through them you see the same sky and hull as the hull cameras, with only the faces turned toward you drawn, so the skin round you never gets in the way. **Shutters** open and close by hand, per window or all at once, and the hull and room cameras show them.
+- **People** stand where the sim has them, drawn with the feeds' own figure routine, walking toward the door they're about to go through and climbing the ladders. The prisoners in the brig are behind the bars.
+- **HUD:** the room and deck, heading, crosshair, what you're looking at (named the same way as the selection in the feeds), what E and Q would do, where the traveler is and what they're doing, the deck plan (P). Telemetry (T) works as with the cameras.
+- A door the layout was missing, between the cold store and the science stores, so that every space can be reached.
+
 ### Still to come
 
 Nothing from this list. New ideas go here.

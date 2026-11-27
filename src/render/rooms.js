@@ -35,10 +35,10 @@ const THEME = {
   firecontrol: { wall: [48, 52, 62], trim: [34, 36, 44], floor: [52, 54, 60] },
   magazine: { wall: [70, 66, 58], trim: [50, 46, 40], floor: [60, 58, 54] },
 };
-const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'LIVING', corridor_aft: 'SERVICE', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG',
+export const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'LIVING', corridor_aft: 'SERVICE', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG',
   fwd_main: 'FWD', cross_main: 'CROSS', gallery_s: 'STBD GAL', gallery_p: 'PORT GAL', cabin_a: 'CABIN 1', cabin_b: 'CABIN 2', cabin_c: 'CABIN 3', paxlounge: 'PAX LOUNGE', brig: 'BRIG', securecargo: 'SECURE', biolab: 'BIO LAB', xeno: 'XENO', armory: 'ARMORY', firecontrol: 'FIRE CTRL', magazine: 'MAGAZINE' };
 
-const LED = { ok: [80, 230, 120], warn: [255, 180, 40], bad: [255, 60, 50], off: [40, 44, 40] };
+export const LED = { ok: [80, 230, 120], warn: [255, 180, 40], bad: [255, 60, 50], off: [40, 44, 40] };
 
 /** Window cut-outs per room, in room meters / screen rows. */
 export function roomWindows(room) {
@@ -80,8 +80,8 @@ function blinkLed(ctx, rc, x, y, c, rate = 1) {
 // ───────────────────────── shell ─────────────────────────
 function drawShell(ctx, rc) {
   const { room, data } = rc;
-  const th = THEME[room];
-  const w = data.rooms[room].width * PPM;
+  const th = rc.theme || THEME[room];
+  const w = (rc.roomDef || data.rooms[room]).width * PPM;
   const L = rc.ox, R = rc.ox + w;
   // structure outside the compartment
   rect(ctx, [16, 17, 20], 0, 0, W, H);
@@ -107,6 +107,8 @@ function drawShell(ctx, rc) {
     rect(ctx, [180, 180, 170], L + x - 8, CEIL - 3, 16, 2);
     rc.lamps.push({ x: L + x, y: CEIL });
   }
+  // walking the ship: doors and glass are cut where the 3D layout has them, not drawn here
+  if (rc.walk) return;
   // windows: cut through to space, broken round any door in the same wall
   const doorsHere = data.nav.endpoints.filter((e) => e.room === room && e.kind === 'door').map((e) => [e.x - 0.75, e.x + 0.75]);
   const pieces = [];
@@ -207,7 +209,7 @@ function drawFloorHatches(ctx, rc) {
 }
 
 function drawFloor(ctx, rc, th, L, w) {
-  const mat = rc.data.rooms[rc.room].floor;
+  const mat = (rc.roomDef || rc.data.rooms[rc.room]).floor;
   rect(ctx, th.floor, L, FLOOR, w, 6);
   hline(ctx, mul(th.floor, 1.25), L, L + w, FLOOR);
   if (mat === 'grating' || mat === 'damp_deck') for (let x = 0; x < w; x += 4) vline(ctx, mul(th.floor, 0.6), L + x, FLOOR + 1, FLOOR + 5);
@@ -898,6 +900,92 @@ function terminalText(ctx, rc, x, y, w, h, where) {
 }
 
 /** Draw a whole room (shell + props) into ctx. rc collects light sources for the lighting pass. */
+/** Walking the ship: the back wall's plating on one layer, the room's furniture on another (it stands a little off the wall). */
+export function drawRoomWalk(shell, props, rc) {
+  drawShell(shell, rc);
+  const fn = ROOMS[rc.room];
+  if (fn) fn(props, rc);
+  else drawGeneric(props, rc);
+}
+
+// colors for the rooms the 3D layout has beyond the sim's: by what the room is for
+const ROLE_THEME = {
+  hab: { wall: [100, 92, 84], trim: [74, 68, 62], floor: [88, 76, 70] },
+  passage: { wall: [62, 66, 72], trim: [44, 48, 52], floor: [56, 58, 62] },
+  life: { wall: [70, 86, 80], trim: [50, 62, 58], floor: [60, 70, 66] },
+  service: { wall: [80, 78, 72], trim: [58, 56, 50], floor: [70, 70, 66] },
+  power: { wall: [60, 58, 64], trim: [42, 40, 46], floor: [58, 58, 62] },
+  science: { wall: [150, 160, 162], trim: [104, 112, 114], floor: [120, 126, 128] },
+  sensor: { wall: [56, 62, 76], trim: [40, 44, 54], floor: [60, 62, 70] },
+  security: { wall: [64, 66, 70], trim: [46, 46, 50], floor: [56, 58, 62] },
+  shield: { wall: [56, 64, 80], trim: [40, 46, 60], floor: [54, 58, 68] },
+};
+const ROLE_FLOOR = { hab: 'carpet', passage: 'deck_plate', life: 'grating', service: 'grating', power: 'grating', science: 'tile', sensor: 'deck_plate', security: 'deck_plate', shield: 'grating' };
+/** A room's colors: its own if the sim knows it, else by its role. */
+export const themeFor = (id, role) => THEME[id] || ROLE_THEME[role] || ROLE_THEME.service;
+export const floorFor = (role) => ROLE_FLOOR[role] || 'deck_plate';
+
+// what stands along the back wall of the rooms only the 3D layout has
+const GENERIC = {
+  gym: ['bike', 'weights', 'mat', 'bike'], medbay: ['medbed', 'medcab', 'screen', 'medbed'], isolation: ['medbed', 'screen', 'medcab'], washroom: ['sink', 'sink', 'stall', 'stall'],
+  laundry: ['washer', 'washer', 'table', 'washer'], study: ['bookshelf', 'desk', 'bookshelf'], lab: ['bench', 'screen', 'bench', 'rack'], scistores: ['shelves', 'shelves', 'cabinet'],
+  coldstore: ['freezer', 'freezer', 'freezer'], datacore: ['rack', 'rack', 'rack', 'rack', 'console'], mapping: ['bigscreen', 'console'], comms: ['console', 'rack', 'console', 'rack'],
+  observatory: ['console', 'telescope', 'console'], spares: ['shelves', 'shelves', 'shelves', 'cabinet'], cmstore: ['shelves', 'cabinet', 'shelves'], pantry: ['shelves', 'freezer', 'shelves'],
+  hold: ['crates', 'crates', 'crates', 'crates', 'crates'], refinery: ['tank', 'pipes', 'tank', 'console'], powerroom: ['rack', 'console', 'rack', 'rack'], shieldroom: ['rack', 'console', 'rack'],
+  gravroom: ['rack', 'console'], roverbay: ['toolwall', 'cabinet', 'toolwall'], flyerbay: ['toolwall', 'cabinet'], dronebay: ['cradle', 'cradle', 'console', 'cradle'],
+  suitlock: ['suits', 'suits', 'bench'], shelter: ['bunk', 'cabinet', 'bunk', 'cabinet'],
+};
+const PROP_W = { bike: 1.1, weights: 1.2, mat: 1.6, medbed: 2.0, medcab: 0.9, screen: 1.0, sink: 0.8, stall: 1.0, washer: 0.8, table: 1.4, bookshelf: 1.2, desk: 1.4, bench: 1.8, rack: 0.8, shelves: 1.6, cabinet: 0.9, freezer: 1.0, console: 1.2, bigscreen: 3.0, telescope: 1.4, crates: 1.8, tank: 1.2, pipes: 1.4, toolwall: 2.0, cradle: 1.4, suits: 1.6, bunk: 2.0 };
+
+/** The furniture of a room the sim doesn't draw: spaced along the wall, clear of its doors (rc.avoid: [[u0, u1], ...]). */
+function drawGeneric(ctx, rc) {
+  const { M, t } = rc;
+  const list = GENERIC[rc.room] || [];
+  const len = rc.roomDef.width;
+  const avoid = rc.avoid || [];
+  const free = (u0, u1) => u0 >= 0.2 && u1 <= len - 0.2 && !avoid.some(([a, b]) => u1 > a - 0.15 && u0 < b + 0.15);
+  let u = 0.4;
+  for (const kind of list) {
+    const w = PROP_W[kind] || 1;
+    while (u + w < len - 0.2 && !free(u, u + w)) u += 0.25;
+    if (u + w >= len - 0.2) break;
+    const x = M(u), pw = w * PPM, c = rc.theme.trim;
+    const steel = [120, 124, 130], dark = [40, 42, 46];
+    switch (kind) {
+      case 'bike': rect(ctx, dark, x + 6, FLOOR - 4, pw - 12, 4); rect(ctx, steel, x + pw / 2 - 1, FLOOR - 28, 2, 24); disc(ctx, [60, 62, 66], x + 10, FLOOR - 10, 6); rect(ctx, steel, x + pw / 2 - 6, FLOOR - 30, 12, 2); rect(ctx, [30, 30, 34], x + pw - 14, FLOOR - 36, 10, 3); break;
+      case 'weights': rect(ctx, steel, x + 2, FLOOR - 40, 3, 40); rect(ctx, steel, x + pw - 5, FLOOR - 40, 3, 40); for (let i = 0; i < 3; i++) { rect(ctx, steel, x + 2, FLOOR - 12 - i * 12, pw - 4, 2); disc(ctx, dark, x + 6, FLOOR - 13 - i * 12, 3); disc(ctx, dark, x + pw - 6, FLOOR - 13 - i * 12, 3); } break;
+      case 'mat': rect(ctx, [70, 90, 110], x, FLOOR - 2, pw, 2); break;
+      case 'medbed': rect(ctx, steel, x + 4, FLOOR - 22, pw - 8, 4); rect(ctx, [220, 224, 228], x + 6, FLOOR - 26, pw - 12, 4); rect(ctx, [150, 170, 190], x + 6, FLOOR - 28, 12, 3); rect(ctx, steel, x + 8, FLOOR - 18, 2, 18); rect(ctx, steel, x + pw - 10, FLOOR - 18, 2, 18);
+        monitor(ctx, rc, x + pw - 22, FLOOR - 70, 16, 12, (mx, my, mw, mh) => { for (let i = 0; i < mw - 2; i++) px(ctx, [80, 230, 120], mx + 1 + i, my + mh / 2 + Math.round(Math.sin(t * 6 + i * 0.9) * (i % 7 === 3 ? 4 : 1))); }); break;
+      case 'medcab': cabinet(ctx, x + 2, FLOOR - 64, pw - 4, 64, [200, 204, 206]); rect(ctx, [200, 60, 60], x + pw / 2 - 1, FLOOR - 56, 3, 9); rect(ctx, [200, 60, 60], x + pw / 2 - 4, FLOOR - 53, 9, 3); break;
+      case 'screen': monitor(ctx, rc, x + 2, FLOOR - 76, pw - 4, 22, (mx, my, mw, mh) => { for (let i = 0; i < 5; i++) rect(ctx, [80, 150, 190], mx + 2, my + 2 + i * 4, mw - 6 - (i * 7) % 11, 1); }); break;
+      case 'sink': rect(ctx, [200, 204, 206], x + 4, FLOOR - 34, pw - 8, 5); rect(ctx, steel, x + pw / 2 - 1, FLOOR - 29, 2, 29); rect(ctx, [150, 170, 180], x + 6, FLOOR - 74, pw - 12, 26); rect(ctx, steel, x + pw / 2 - 2, FLOOR - 40, 4, 6); break;
+      case 'stall': rect(ctx, mul(c, 1.2), x + 2, FLOOR - 76, pw - 4, 76); rect(ctx, mul(c, 0.9), x + 4, FLOOR - 72, pw - 8, 70); px(ctx, [200, 160, 60], x + pw - 9, FLOOR - 40); break;
+      case 'washer': cabinet(ctx, x + 2, FLOOR - 34, pw - 4, 34, [210, 212, 214]); disc(ctx, [60, 70, 80], x + pw / 2, FLOOR - 16, 8); disc(ctx, [110, 140, 170], x + pw / 2, FLOOR - 16, 6); blinkLed(ctx, rc, x + pw - 7, FLOOR - 30, LED.ok); break;
+      case 'table': rect(ctx, mul(c, 1.3), x + 2, FLOOR - 28, pw - 4, 3); rect(ctx, mul(c, 0.9), x + 6, FLOOR - 25, 2, 25); rect(ctx, mul(c, 0.9), x + pw - 8, FLOOR - 25, 2, 25); break;
+      case 'bookshelf': rect(ctx, [90, 70, 52], x + 2, FLOOR - 84, pw - 4, 84); for (let r = 0; r < 4; r++) for (let i = 0; i < (pw - 8) / 3; i++) rect(ctx, [[150, 60, 50], [60, 90, 130], [180, 150, 80], [70, 110, 80]][(i * 7 + r * 3) % 4], x + 4 + i * 3, FLOOR - 80 + r * 20, 2, 14 - ((i + r) % 3) * 2); break;
+      case 'desk': rect(ctx, [110, 92, 74], x + 2, FLOOR - 28, pw - 4, 3); rect(ctx, [90, 76, 62], x + 4, FLOOR - 25, 2, 25); cabinet(ctx, x + pw - 18, FLOOR - 25, 14, 25, [100, 84, 68]); monitor(ctx, rc, x + 10, FLOOR - 44, 16, 12, (mx, my, mw) => rect(ctx, [80, 150, 190], mx + 2, my + 3, mw - 4, 1)); break;
+      case 'bench': rect(ctx, [190, 196, 198], x + 2, FLOOR - 32, pw - 4, 4); cabinet(ctx, x + 4, FLOOR - 28, pw - 8, 28, [170, 176, 178]); rect(ctx, [60, 64, 70], x + 14, FLOOR - 42, 6, 10); rect(ctx, [120, 190, 210], x + pw - 26, FLOOR - 40, 8, 8, 0.7); break;
+      case 'rack': cabinet(ctx, x + 2, CEIL + 10, pw - 4, FLOOR - CEIL - 10, [56, 60, 70]); for (let i = 0; i < 12; i++) blinkLed(ctx, rc, x + 6 + (i % 3) * 6, CEIL + 18 + Math.floor(i / 3) * 18, i % 5 === 2 ? LED.warn : LED.ok, 0.4 + (i % 3) * 0.3); break;
+      case 'shelves': rect(ctx, [90, 92, 96], x + 2, CEIL + 16, 2, FLOOR - CEIL - 16); rect(ctx, [90, 92, 96], x + pw - 4, CEIL + 16, 2, FLOOR - CEIL - 16); for (let r = 0; r < 4; r++) { rect(ctx, [110, 112, 116], x + 2, FLOOR - 2 - r * 26, pw - 4, 2); for (let i = 0; i < 4; i++) if (hash(i, r, rc.room.length) > 0.3) rect(ctx, [[150, 130, 90], [110, 120, 130], [170, 150, 110]][(i + r) % 3], x + 6 + i * ((pw - 12) / 4), FLOOR - 16 - r * 26, (pw - 20) / 4, 14); } break;
+      case 'cabinet': cabinet(ctx, x + 2, FLOOR - 70, pw - 4, 70, mul(c, 1.25)); break;
+      case 'freezer': cabinet(ctx, x + 2, FLOOR - 76, pw - 4, 76, [200, 206, 210]); rect(ctx, [140, 180, 210], x + 6, FLOOR - 70, pw - 12, 3); blinkLed(ctx, rc, x + pw - 8, FLOOR - 64, LED.ok); break;
+      case 'console': rect(ctx, [44, 46, 54], x + 2, FLOOR - 30, pw - 4, 4); rect(ctx, [36, 38, 44], x + 6, FLOOR - 26, pw - 12, 26); monitor(ctx, rc, x + 6, CEIL + 34, pw - 12, 16, (mx, my, mw, mh) => { for (let i = 0; i < 4; i++) rect(ctx, (Math.floor(t * 0.7) + i) % 3 ? [70, 130, 190] : [150, 220, 190], mx + 2, my + 2 + i * 3, mw - 6 - (i * 5) % 9, 1); }); break;
+      case 'bigscreen': monitor(ctx, rc, x + 2, CEIL + 16, pw - 4, 56, (mx, my, mw, mh) => { for (let i = 0; i < 30; i++) px(ctx, [150, 200, 230], mx + hash(i, 1, 4) * mw, my + hash(i, 2, 4) * mh); for (let i = 0; i < 6; i++) line(ctx, [60, 130, 180], mx + hash(i, 3, 4) * mw, my + hash(i, 4, 4) * mh, mx + hash(i + 1, 3, 4) * mw, my + hash(i + 1, 4, 4) * mh, 0.6); }); break;
+      case 'telescope': rect(ctx, [60, 64, 70], x + pw / 2 - 3, FLOOR - 40, 6, 40); rect(ctx, [170, 174, 180], x + pw / 2 - 22, FLOOR - 64, 44, 10); disc(ctx, [30, 40, 60], x + pw / 2 + 22, FLOOR - 59, 5); break;
+      case 'crates': for (let i = 0; i < 3; i++) for (let j = 0; j < 2 - (i % 2); j++) { rect(ctx, [120, 104, 72], x + 2 + i * (pw / 3), FLOOR - 18 - j * 18, pw / 3 - 4, 16); rect(ctx, [90, 78, 54], x + 2 + i * (pw / 3), FLOOR - 11 - j * 18, pw / 3 - 4, 1); } break;
+      case 'tank': rect(ctx, [110, 120, 130], x + 4, CEIL + 24, pw - 8, FLOOR - CEIL - 24); rect(ctx, [140, 150, 160], x + 6, CEIL + 24, 3, FLOOR - CEIL - 24); rect(ctx, [200, 160, 60], x + 4, CEIL + 50, pw - 8, 2); break;
+      case 'pipes': for (let i = 0; i < 4; i++) rect(ctx, [[90, 96, 100], [110, 90, 70], [80, 100, 120], [100, 100, 104]][i], x, CEIL + 30 + i * 12, pw, 4); for (let i = 0; i < 3; i++) rect(ctx, [70, 74, 78], x + 6 + i * (pw / 3), CEIL + 26, 3, FLOOR - CEIL - 26); break;
+      case 'toolwall': rect(ctx, [70, 72, 76], x + 2, CEIL + 24, pw - 4, 50); for (let i = 0; i < 10; i++) rect(ctx, [[150, 60, 50], [120, 124, 130], [200, 160, 60]][i % 3], x + 6 + i * ((pw - 12) / 10), CEIL + 30 + (i % 3) * 12, 2, 10 + (i % 2) * 6); cabinet(ctx, x + 4, FLOOR - 30, pw - 8, 30, [150, 60, 50]); break;
+      case 'cradle': rect(ctx, steel, x + 4, FLOOR - 20, pw - 8, 3); rect(ctx, [90, 96, 104], x + 10, FLOOR - 30, pw - 20, 10); for (const dx of [6, pw - 10]) rect(ctx, [60, 62, 68], x + dx, FLOOR - 34, 4, 4); break;
+      case 'suits': for (let i = 0; i < 2; i++) { const sx = x + 8 + i * (pw / 2); rect(ctx, [220, 220, 214], sx, FLOOR - 70, 16, 34); rect(ctx, [220, 220, 214], sx + 2, FLOOR - 36, 5, 30); rect(ctx, [220, 220, 214], sx + 9, FLOOR - 36, 5, 30); rect(ctx, [60, 90, 120], sx + 3, FLOOR - 84, 10, 12); } break;
+      case 'bunk': for (const by of [FLOOR - 14, FLOOR - 50]) { rect(ctx, [80, 70, 64], x + 2, by, pw - 4, 6); rect(ctx, [200, 196, 186], x + 4, by - 4, pw - 8, 4); } rect(ctx, steel, x + 2, FLOOR - 56, 2, 56); rect(ctx, steel, x + pw - 4, FLOOR - 56, 2, 56); break;
+      default: break;
+    }
+    u += w + 0.35;
+  }
+}
+
 export function drawRoom(ctx, rc) {
   drawShell(ctx, rc);
   const fn = ROOMS[rc.room];
@@ -908,4 +996,4 @@ export function drawRoom(ctx, rc) {
 export function roomPixelWidth(data, room) {
   return data.rooms[room].width * PPM;
 }
-export { LED, THEME };
+export { THEME };

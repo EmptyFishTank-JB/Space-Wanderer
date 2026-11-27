@@ -73,6 +73,7 @@ export function mountSelection({ canvas, director }) {
   canvas.addEventListener('pointerleave', () => { mouse = null; });
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (document.body.classList.contains('walking')) return; // S walks backward while walking
     if (e.key === 's' || e.key === 'S') api.toggle();
     if (e.key === 'Escape') clear();
   });

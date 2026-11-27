@@ -17,6 +17,7 @@ import { setShipModel } from '../render/hull3d.js';
 import { activityLabel } from '../ui/telemetry-model.js';
 import { shipHour } from '../sim/clock.js';
 import { SCENARIOS, runUntil } from './scenarios.js';
+import { mountWalk } from '../ui/walk.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -40,7 +41,7 @@ const SCENES = {
   'Ports': [['docking', 'Docking at a station'], ['docked', 'Docked in the hangar'], ['concourse', 'Ashore on the concourse'], ['base', 'Landed at a settlement'], ['basehall', 'Ashore at a settlement'], ['passengers', 'Passengers aboard'], ['paxtour', 'A passenger shown the bridge'], ['paxcomplaint', 'A passenger complains'], ['paxfarewell', 'Passengers waiting to go ashore']],
 };
 
-let data, cameras;
+let data, cameras, walk = null;
 let scene = null; // { s, director, tracker, feed: 'auto' | id, log: [] }
 let playing = true, selecting = false, mouse = null, acc = 0, last = null;
 
@@ -69,6 +70,7 @@ async function open(kind, key, label, btn) {
   drain(s);
   const director = new Director(cameras, { rng: Math.random });
   scene = { s, director, tracker: new TravelerTracker(), feed, log: [], label };
+  if (walk) walk.reset(s);
   $('feed').value = feed;
   $('log').innerHTML = '';
   const a = s.traveler.activity;
@@ -113,7 +115,9 @@ function frame() {
     });
   }
   const cv = $('view'), ctx = cv.getContext('2d', { willReadFrequently: true });
-  renderFeed(ctx, feed, { state: s, data, view: spaceView(s, data), t: now, alpha: 0, pos, tracker, dt }, director);
+  if (walk) walk.see(s);
+  if (walk && walk.on) walk.frame(ctx, { state: s, data, view: spaceView(s, data), t: now, alpha: 0, pos, tracker, dt });
+  else renderFeed(ctx, feed, { state: s, data, view: spaceView(s, data), t: now, alpha: 0, pos, tracker, dt }, director);
   // selection: brackets round whatever is under the pointer
   if (selecting && mouse) {
     const p = picks.at(mouse[0], mouse[1]);
@@ -135,7 +139,12 @@ function frame() {
 
 async function main() {
   [data, cameras] = await Promise.all([loadData(), fetchJson('cameras')]);
-  await fetchJson('ship3d').then(setShipModel).catch(() => {});
+  const ship3d = await fetchJson('ship3d').catch(() => null);
+  if (ship3d) {
+    setShipModel(ship3d);
+    // walk the staged scene in first person (W, or the button); Esc steps back to the cameras
+    walk = mountWalk({ canvas: $('view'), data, ship3d, onChange: (v) => { $('walkbtn').textContent = `Walk: ${v ? 'on' : 'off'} (W)`; } });
+  }
   const menu = $('menu');
   const group = (title, items, kind) => {
     const h = document.createElement('h2'); h.textContent = title; menu.appendChild(h);
@@ -157,7 +166,8 @@ async function main() {
   $('stepmin').addEventListener('click', () => { if (scene) for (let i = 0; i < 60; i++) { step(scene.s, data); for (const e of drain(scene.s)) logLine(describe(e)); } });
   $('stephour').addEventListener('click', () => { if (scene) for (let i = 0; i < 3600; i++) { step(scene.s, data); for (const e of drain(scene.s)) logLine(describe(e)); } });
   $('select').addEventListener('click', () => { selecting = !selecting; $('select').textContent = `Select: ${selecting ? 'on' : 'off'}`; });
-  addEventListener('keydown', (e) => { if (e.key === 's' || e.key === 'S') $('select').click(); if (e.key === ' ') { e.preventDefault(); $('play').click(); } });
+  $('walkbtn').addEventListener('click', () => { if (walk && scene) walk.toggle(scene.s); });
+  addEventListener('keydown', (e) => { if (walk && walk.on) return; if (e.key === 's' || e.key === 'S') $('select').click(); if (e.key === ' ') { e.preventDefault(); $('play').click(); } });
   $('view').addEventListener('mousemove', (e) => { const r = $('view').getBoundingClientRect(); mouse = [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H]; });
   $('view').addEventListener('mouseleave', () => { mouse = null; });
   document.body.dataset.ready = '1';

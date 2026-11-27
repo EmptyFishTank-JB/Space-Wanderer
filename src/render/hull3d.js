@@ -12,6 +12,8 @@ let MODEL = null;
 /** Hand the renderer the 3D layout once it has loaded. */
 export function setShipModel(ship3d) { MODEL = ship3d ? buildModel(ship3d) : null; }
 export const shipModel = () => MODEL;
+/** The windows that light a room: { sky: [ids], wall: [ids] }, or null. */
+export const roomWindowIds = (room) => (MODEL && MODEL.roomWins[room]) || null;
 
 const ROLE_C = {
   hab: [79, 179, 191], life: [102, 181, 108], service: [140, 153, 163], passage: [93, 108, 116], power: [224, 160, 58], drive: [110, 114, 180],
@@ -24,9 +26,12 @@ const LIT = [255, 210, 150];
 
 // ───────── the mesh ─────────
 function buildModel(ship) {
-  const tris = []; // { a, b, c (ship-frame points), part, kind, color, n }
+  const tris = []; // { a, b, c (ship-frame points), part, kind, color, n (outward), m (centroid) }
   const parts = {}; // part id -> { name, kind, ref }
-  const add = (part, kind, color, a, b, c) => tris.push({ a, b, c, part, kind, color });
+  // each surface's normal is turned to face away from `inner`, a point inside the shape being built,
+  // so a view from inside the ship can skip what faces away from it
+  let inner = null, noCull = false;
+  const add = (part, kind, color, a, b, c) => tris.push({ a, b, c, part, kind, color, inner, noCull });
   const quad = (part, kind, color, a, b, c, d) => { add(part, kind, color, a, b, c); add(part, kind, color, a, c, d); };
 
   // hull parts: lofted rings, the same way the 3D viewer builds them
@@ -40,6 +45,7 @@ function buildModel(ship) {
     const rings = xs.map((x) => { const st = station(p.stations, x); return { x, st, pts: profile(p.profile, st).map(([y, z]) => [x, y + partY(p, st), z]) }; });
     for (let k = 0; k < rings.length - 1; k++) {
       const A = rings[k], B = rings[k + 1], n = A.pts.length;
+      inner = [(A.x + B.x) / 2, partY(p, A.st), (A.st.zk + A.st.zt) / 2];
       const glazed = p.glass && A.x > p.glass.x[0] + 0.01 && A.x <= p.glass.x[1] + 0.01;
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
@@ -49,15 +55,19 @@ function buildModel(ship) {
         quad(id, g ? 'glass' : 'hull', g ? GLASS : panel, A.pts[i], A.pts[j], B.pts[j], B.pts[i]);
       }
     }
-    for (const R of [rings[0], rings[rings.length - 1]]) {
+    for (const [ri, R] of [[0, rings[0]], [1, rings[rings.length - 1]]]) {
       const c = R.pts.reduce((a, q) => [a[0] + q[0] / R.pts.length, a[1] + q[1] / R.pts.length, a[2] + q[2] / R.pts.length], [0, 0, 0]);
+      inner = [c[0] + (ri ? 1 : -1), c[1], c[2]]; // the end caps face fore and aft
       for (let i = 0; i < R.pts.length; i++) add(id, 'hull', HULL, c, R.pts[i], R.pts[(i + 1) % R.pts.length]);
     }
   }
   // windows, a few centimeters proud of the skin
+  const partById = Object.fromEntries(hullParts(ship).map((p) => [p.id, p]));
   for (const w of ship.windows || []) {
     const id = `win:${w.id}`;
     parts[id] = { name: w.name, kind: 'window', ref: w };
+    const wp = partById[w.part], wst = wp && station(wp.stations, (w.x[0] + w.x[1]) / 2);
+    inner = w.cap ? [w.cap - 1, 0, (w.z[0] + w.z[1]) / 2] : wst ? [(w.x[0] + w.x[1]) / 2, partY(wp, wst), (wst.zk + wst.zt) / 2] : null;
     for (const q of windowQuads(ship, w, 1)) {
       if (w.cap) { const o = (p) => [p[0] + 0.05, p[1], p[2]]; quad(id, 'window', GLASS, o(q[0]), o(q[1]), o(q[2]), o(q[3])); }
       else quad(id, 'window', GLASS, ...q);
@@ -66,6 +76,7 @@ function buildModel(ship) {
   // the machinery that shows outside the skin
   const box = (id, color, x, y, z, kind = 'module') => {
     const P = (i, j, k) => [x[i], y[j], z[k]];
+    inner = [(x[0] + x[1]) / 2, (y[0] + y[1]) / 2, (z[0] + z[1]) / 2];
     quad(id, kind, color, P(0, 0, 0), P(1, 0, 0), P(1, 1, 0), P(0, 1, 0)); quad(id, kind, color, P(0, 0, 1), P(1, 0, 1), P(1, 1, 1), P(0, 1, 1));
     quad(id, kind, color, P(0, 0, 0), P(1, 0, 0), P(1, 0, 1), P(0, 0, 1)); quad(id, kind, color, P(0, 1, 0), P(1, 1, 0), P(1, 1, 1), P(0, 1, 1));
     quad(id, kind, color, P(0, 0, 0), P(0, 1, 0), P(0, 1, 1), P(0, 0, 1)); quad(id, kind, color, P(1, 0, 0), P(1, 1, 0), P(1, 1, 1), P(1, 0, 1));
@@ -74,6 +85,7 @@ function buildModel(ship) {
     // axis 'x' or 'z'; c the center of the other two coordinates
     const ring = (t) => Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2; return axis === 'x' ? [t, c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)] : [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a), t]; });
     const A = ring(span[0]), B = ring(span[1]);
+    inner = axis === 'x' ? [(span[0] + span[1]) / 2, c[0], c[1]] : [c[0], c[1], (span[0] + span[1]) / 2];
     const ca = axis === 'x' ? [span[0], c[0], c[1]] : [c[0], c[1], span[0]], cb = axis === 'x' ? [span[1], c[0], c[1]] : [c[0], c[1], span[1]];
     for (let i = 0; i < n; i++) { const j = (i + 1) % n; quad(id, kind, color, A[i], A[j], B[j], B[i]); add(id, kind, color, ca, A[j], A[i]); add(id, kind, color, cb, B[i], B[j]); }
   };
@@ -84,6 +96,9 @@ function buildModel(ship) {
     if (!corners(e).some((p) => !insideHull(ship, ...p))) continue; // wholly inside the hull: never seen
     const id = `mod:${m.id}`;
     parts[id] = { name: m.name, kind: 'module', ref: m };
+    // thin or hollow shapes (rods, dishes, rims round an opening) are drawn from both sides
+    noCull = ['rod', 'dish', 'frame'].includes(m.shape);
+    inner = [(e.x[0] + e.x[1]) / 2, (e.y[0] + e.y[1]) / 2, (e.z[0] + e.z[1]) / 2];
     const kind = /^(nozzle_|engine_)/.test(m.id) ? 'nozzle' : m.role === 'thermal' ? 'radiator' : /^gear_/.test(m.id) ? 'gear' : 'module';
     const color = kind === 'nozzle' ? [92, 96, 150] : ROLE_C[m.role] || ROLE_C.service;
     if (m.shape === 'box' || m.shape === 'rcs') box(id, m.shape === 'rcs' ? [150, 152, 170] : color, m.x, m.y, m.z, kind);
@@ -135,9 +150,20 @@ function buildModel(ship) {
     const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
     const l = Math.hypot(...n) || 1;
     t.n = n.map((q) => q / l);
+    t.m = [0, 1, 2].map((i) => (t.a[i] + t.b[i] + t.c[i]) / 3);
+    if (t.inner && t.n[0] * (t.m[0] - t.inner[0]) + t.n[1] * (t.m[1] - t.inner[1]) + t.n[2] * (t.m[2] - t.inner[2]) < 0) t.n = t.n.map((q) => -q);
+    if (!t.inner) t.noCull = true;
   }
   const cams = Object.fromEntries(((ship.cameras && ship.cameras.exterior) || []).map((c) => [c.id, c]));
-  return { tris, parts, cams, extra };
+  // which windows light which room (for the room cameras to show their shutters): skylights, and glass in the walls
+  const roomWins = {};
+  const deckZ = Object.fromEntries((ship.decks || []).map((d) => [d.id, d.z]));
+  for (const w of ship.windows || []) if (w.backs && !w.cap) ((roomWins[w.backs] ||= { sky: [], wall: [] })[w.faces === 'up' ? 'sky' : 'wall']).push(w.id);
+  for (const p of hullParts(ship)) if (p.glass) for (const r of ship.rooms || []) {
+    const st = station(p.stations, r.x[1]), z = deckZ[r.deck];
+    if (st && z && r.x[1] >= p.glass.x[0] - 0.01 && r.x[1] <= p.glass.x[1] + 0.01 && z[0] >= st.zk - 0.1 && z[1] <= st.zt + 0.1) (roomWins[r.id] ||= { sky: [], wall: [] }).wall.push(`glass:${p.id}`);
+  }
+  return { tris, parts, cams, extra, roomWins };
 }
 
 // ───────── the raster ─────────
@@ -183,7 +209,7 @@ export function renderShip(ctx, cam, o = {}) {
   const shade = (t) => {
     const lam = Math.abs(t.n[0] * LIGHT[0] + t.n[1] * LIGHT[1] + t.n[2] * LIGHT[2]);
     const k = 0.38 + 0.62 * lam;
-    if (t.kind === 'window' || t.kind === 'glass') return o.shut ? mul(hullC, k * 0.9) : o.lit && t.kind === 'window' ? mix(LIT, mul(GLASS, k), 0.35) : mul(GLASS, 0.7 + 0.5 * k);
+    if (t.kind === 'window' || t.kind === 'glass') return (o.shutFor ? o.shutFor(t.kind === 'glass' ? t.part.replace(/^hull:/, 'glass:') : t.part) : o.shut) ? mul(hullC, k * 0.9) : o.lit && t.kind === 'window' ? mix(LIT, mul(GLASS, k), 0.35) : mul(GLASS, 0.7 + 0.5 * k);
     if (t.kind === 'radiator') return glow > 0 ? mix(mul(t.color, k), [255, 150, 60], glow * 0.85) : mul(t.color, k);
     if (t.kind === 'nozzle') return o.drive > 0 ? mix(mul(t.color, k), [170, 200, 255], Math.min(1, o.drive)) : mul(t.color, k);
     if (t.kind === 'hull') return mul(t.color, k * (1 - 0.25 * wear));
@@ -231,10 +257,12 @@ export function renderShip(ctx, cam, o = {}) {
   };
 
   // skip the part the camera is mounted on, if it would only fill the lens
-  const mountedOn = (t) => t.kind !== 'hull' && t.kind !== 'window' && t.kind !== 'glass' && [t.a, t.b, t.c].every((p) => Math.hypot(p[0] - at[0], p[1] - at[1], p[2] - at[2]) < 1.2);
+  const mountedOn = (t) => !o.walk && t.kind !== 'hull' && t.kind !== 'window' && t.kind !== 'glass' && [t.a, t.b, t.c].every((p) => Math.hypot(p[0] - at[0], p[1] - at[1], p[2] - at[2]) < 1.2);
   for (const t of M.tris) {
     if (t.kind === 'gear' && !o.gearDown) continue;
     if (mountedOn(t)) continue;
+    // seen from inside the ship: only what faces the eye (the skin round us faces away, so we see out through the glass)
+    if (o.cull && !t.noCull && t.n[0] * (at[0] - t.m[0]) + t.n[1] * (at[1] - t.m[1]) + t.n[2] * (at[2] - t.m[2]) <= 0) continue;
     const A = view(t.a), B = view(t.b), C = view(t.c);
     if (A[2] < NEAR && B[2] < NEAR && C[2] < NEAR) continue;
     draw(A, B, C, shade(t), idxOf(t.part));
