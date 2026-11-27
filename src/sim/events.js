@@ -16,7 +16,7 @@ export const NOTABLE = new Set([
   // Phase 2
   'system_arrival', 'system_survey', 'agenda', 'discovery', 'body_scan', 'route_plotted', 'void_ahead', 'stranded',
   'hyperspace_charge', 'scoop_start', 'scoop_end', 'scoop_abort', 'scoop_misjudge', 'heat_damage', 'orbit_entered',
-  'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'rover_out', 'rover_site', 'rover_end', 'docked', 'undocked', 'port_visit', 'trade', 'mission_accept', 'mission_complete', 'mission_fail', 'conversation', 'passenger_board', 'passenger_leave', 'study_sample', 'combat_start', 'combat_end', 'combat_submit', 'foe_down', 'foe_disabled', 'patrol_arrives', 'weapons_serviced', 'prisoner_taken', 'prisoner_held', 'prisoner_fed', 'prisoner_hungry', 'prisoner_handover', 'shield_down', 'bounty_paid', 'keepsake', 'awe', 'refine', 'melt_ice',
+  'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'rover_out', 'rover_site', 'rover_end', 'docked', 'undocked', 'port_visit', 'trade', 'mission_accept', 'mission_complete', 'mission_fail', 'conversation', 'passenger_board', 'passenger_leave', 'passenger_request', 'passenger_complaint', 'passenger_wish', 'passenger_reassured', 'passenger_farewell', 'study_sample', 'combat_start', 'combat_end', 'combat_submit', 'foe_down', 'foe_disabled', 'patrol_arrives', 'weapons_serviced', 'prisoner_taken', 'prisoner_held', 'prisoner_fed', 'prisoner_hungry', 'prisoner_handover', 'shield_down', 'bounty_paid', 'keepsake', 'awe', 'refine', 'melt_ice',
   'bay_dormant', 'torpor_start', 'torpor_end', 'system_record',
   // Phase 5
   'book_finished', 'reflection',
@@ -49,7 +49,7 @@ export function emptyDigest() {
     maintenance: [], harvests: [], plantings: [], deadTrays: 0, spoiledKg: 0, fabricated: {},
     powerModes: [], alarms: [], hobbies: {}, exercise: 0, resourceLow: [], salvageKg: 0,
     // Phase 2 — the voyage
-    arrivals: [], discoveries: [], landings: [], evas: [], rovers: [], ports: [], missions: [], talks: [], fights: [], prisoners: [], scoops: [], awe: [], torpor: null, heatDamage: 0, keepsakes: [],
+    arrivals: [], discoveries: [], landings: [], evas: [], rovers: [], ports: [], missions: [], talks: [], fights: [], prisoners: [], paxStories: [], scoops: [], awe: [], torpor: null, heatDamage: 0, keepsakes: [],
     books: [],
   };
 }
@@ -80,6 +80,8 @@ function digest(d, ev) {
     case 'eva_end': d.evas.push({ body: ev.body, walkedM: ev.walkedM, features: ev.features, samples: ev.samples }); break;
     case 'docked': d.ports.push({ station: ev.station, system: ev.system, faction: ev.faction, first: ev.first }); break;
     case 'combat_end': d.fights.push({ foe: ev.foe, cls: ev.cls, result: ev.result, bounty: ev.bounty, wing: ev.wing || 0, downed: ev.downed || 0, patrol: ev.patrol || null, toll: ev.toll || 0 }); break;
+    case 'passenger_request': case 'passenger_complaint': case 'passenger_wish': case 'passenger_farewell': case 'passenger_reassured':
+      d.paxStories.push({ kind: ev.type.slice(10), who: ev.who, line: ev.line, tone: ev.tone, gift: ev.gift, about: ev.about }); break;
     case 'prisoner_handover': d.prisoners.push({ kind: 'handover', who: ev.who, station: ev.station, paid: ev.paid }); break;
     case 'prisoner_fed': d.prisoners.push({ kind: 'talk', who: ev.who, line: ev.line, opened: ev.opened }); break;
     case 'prisoner_hungry': d.prisoners.push({ kind: 'hungry', who: ev.who }); break;

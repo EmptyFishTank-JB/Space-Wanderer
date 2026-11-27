@@ -108,9 +108,14 @@ export function renderRoomFeed(ctx, m) {
     const asleep = p.doing === 'asleep' && Math.abs(p.pos.x - data.rooms[room].stations.bunk) < 0.3;
     const k = { pose: asleep ? 'lie' : p.moving ? 'walk' : 'stand_back', facing: 1, phase: p.pos.x * 3, fatigue: 0, yawn: 0, alpha: 1, x: 0, y: FLOOR, outfit: p.look, skin: p.look.skin, hair: p.look.hair };
     drawTraveler(lc, ox + p.pos.x * PPM, asleep ? FLOOR - 20 : FLOOR, k, t);
+    // bags packed at the airlock
+    if (p.doing === 'waiting at the airlock with their bags') { rect(lc, p.look.top, ox + p.pos.x * PPM + 6, FLOOR - 9, 9, 9); rect(lc, [40, 36, 32], ox + p.pos.x * PPM + 9, FLOOR - 11, 3, 2); }
     picks.add({ id: `pax:${p.id}`, x: ox + p.pos.x * PPM - 8, y: FLOOR - 40, w: 16, h: 40, info: () => {
       const r = state.space.people && state.space.people[p.id];
-      return { name: p.name, sub: `Passenger · going to ${p.going}`, lines: [['Doing', p.doing], ['Cabin', data.rooms[p.cabin].name], ['Trade', p.job], ['Talked', r ? `${r.met} time${r.met > 1 ? 's' : ''}` : 'not yet']] };
+      const st = p.story;
+      const mood = !st ? null : st.mood > 0.72 ? 'enjoying the trip' : st.mood > 0.45 ? 'content' : st.mood > 0.3 ? 'put out' : 'unhappy';
+      const asked = st && st.wish.asked ? `${st.wish.ask.replace(/^asked (if |to |for )?|^wanted to |^hoped /, '')}${st.wish.granted ? ' (done)' : ''}` : 'nothing yet';
+      return { name: p.name, sub: `Passenger · going to ${p.going}`, lines: [['Doing', p.doing], ['Cabin', data.rooms[p.cabin].name], ['Trade', p.job], ['Talked', r ? `${r.met} time${r.met > 1 ? 's' : ''}` : 'not yet'], ...(st ? [['Mood', mood], ['Asked for', asked], ...(st.pending ? [['Complaint', `${st.pending === 'late' ? 'running late' : `the ${st.pending}`}`]] : [])] : [])] };
     } });
   }
   // prisoners: suited in the airlock, walked to the brig a step behind the traveler; in the brig they're drawn in their cells

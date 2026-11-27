@@ -6,6 +6,7 @@ import { initSpace } from '../space/init.js';
 import { initPorts } from '../space/ports.js';
 import { initCombat } from '../space/combat.js';
 import { initPrisoners } from '../space/prisoners.js';
+import { ensureStories } from '../space/paxstories.js';
 import { getSystem, exemptFromVariants } from '../space/system.js';
 
 export const SNAPSHOT_KEY = 'deep-space-terrarium.snapshot';
@@ -81,6 +82,7 @@ export function migrate(state, version, data = null) {
   if (version < 9 && state.space) initCombat(state); // shields and bounty vouchers
   if (version < 10 && state.space) initCombat(state); // the magazine, fire-control servicing, attackers with wingmen
   if (version < 11) initPrisoners(state); // the brig
+  if (version < 12) ensureStories(state); // passengers' requests, complaints and farewells
   if (state.space) for (const id of state.space.variantExempt || []) exemptFromVariants(state.space.galaxySeed, id);
   state.version = STATE_VERSION;
   return state;

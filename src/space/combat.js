@@ -334,6 +334,7 @@ function endCombat(state, data, result) {
     }
   }
   if (cb.firedT > 20) ours.serviceDue = true; // the gimbals and the shield capacitors want looking at
+  sp.lastFightT = state.t;
   sp.combatCooldownT = state.t + (result === 'won' || result === 'foe_fled' || result === 'captured' ? 6 : 18) * 3600;
   sp.stats.fights = (sp.stats.fights || 0) + 1;
   sp.stats.kills = (sp.stats.kills || 0) + downed.length;

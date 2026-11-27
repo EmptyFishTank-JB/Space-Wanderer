@@ -6,7 +6,7 @@ import { baseSecondsFor } from './clock.js';
 import { emptyDigest } from './events.js';
 import { initSpace } from '../space/init.js';
 
-export const STATE_VERSION = 11;
+export const STATE_VERSION = 12;
 
 export function createInitialState(data, { seed = 'terrarium' } = {}) {
   const rng = seedRng(seed);

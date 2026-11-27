@@ -2,12 +2,14 @@
 // the passenger lounge, time in the galleries looking out, reading at the
 // desk, a walk), and walks the ship's passages like the traveler does. Where
 // they go is chosen from the clock, never the sim's RNG, so carrying people
-// does not change the traveler's own story.
+// does not change the traveler's own story. Each also has a small story of
+// their own (paxstories.js): something they ask for, complaints, a farewell.
 import { planPath } from '../sim/traveler/nav.js';
 import { hrng } from './galaxy.js';
 import { rand } from '../sim/rng.js';
 import { shipHour } from '../sim/clock.js';
 import { emit } from '../sim/events.js';
+import { makeStory, tickStory, holdFor, farewell } from './paxstories.js';
 
 const CABINS = ['cabin_a', 'cabin_b', 'cabin_c'];
 const SPEED = 1.0; // m/s, an easy pace
@@ -19,23 +21,41 @@ export function boardPassengers(state, data, mission, people) {
   for (const p of people) {
     const cabin = CABINS.find((c) => !sp.passengers.some((q) => q.cabin === c));
     if (!cabin) break;
-    sp.passengers.push({ ...p, missionId: mission.id, cabin, pos: { room: cabin, x: data.rooms[cabin].stations.mid }, path: null, seg: 0, segT: 0, doing: 'settling in', goal: null });
+    sp.passengers.push({ ...p, missionId: mission.id, cabin, pos: { room: cabin, x: data.rooms[cabin].stations.mid }, path: null, seg: 0, segT: 0, doing: 'settling in', goal: null, boardT: state.t, story: makeStory(sp.galaxySeed, p, state.t) });
     emit(state, 'passenger_board', { who: p.name, going: p.going, cabin, room: cabin });
   }
 }
 
-/** Their mission is done: they go ashore. */
-export function disembark(state, missionId) {
+/** Their mission is done: they say goodbye and go ashore. */
+export function disembark(state, missionId, opts = {}) {
   const sp = state.space;
   if (!sp.passengers) return;
-  for (const p of sp.passengers.filter((q) => q.missionId === missionId)) emit(state, 'passenger_leave', { who: p.name, going: p.going, room: 'airlock' });
+  for (const p of sp.passengers.filter((q) => q.missionId === missionId)) {
+    farewell(state, p, opts);
+    emit(state, 'passenger_leave', { who: p.name, going: p.going, room: 'airlock' });
+  }
   sp.passengers = sp.passengers.filter((q) => q.missionId !== missionId);
+}
+
+/** Passengers whose passage ran out of time ride on to the next port, and leave there, not best pleased. */
+export function disembarkStrays(state, station) {
+  const sp = state.space;
+  const gone = new Set((sp.passengers || []).filter((p) => !(sp.missions || []).some((m) => m.id === p.missionId)).map((p) => p.missionId));
+  for (const id of gone) disembark(state, id, { late: true, station });
+  return gone.size;
 }
 
 /** Where a passenger wants to be right now, and what they are doing there. */
 function goal(state, data, p, i) {
   const h = shipHour(state);
   const st = data.rooms;
+  // somewhere they've been asked to be: the bridge for the tour, a gallery window for a sight
+  const hold = holdFor(state, data, p);
+  if (hold) return hold;
+  // putting in at their destination: bags packed, waiting at the airlock
+  const f = state.ship.flight;
+  const m = (state.space.missions || []).find((x) => x.id === p.missionId);
+  if ((f.mode === 'docking' || f.portLanding) && (!m || (m.to && m.to.starId === state.space.systemId))) return { room: 'airlock', x: st.airlock.stations.suit_rack + 0.7 * i, doing: 'waiting at the airlock with their bags' };
   if (h >= 22.5 || h < 6.8) return { room: p.cabin, x: st[p.cabin].stations.bunk, doing: 'asleep' };
   for (const [a, b] of [[7.3, 8.1], [12.4, 13.2], [18.6, 19.5]]) if (h >= a && h < b) return { room: 'paxlounge', x: st.paxlounge.stations.seats + (i - 1) * 0.6, doing: 'eating in the lounge' };
   // the rest of the day: a fresh choice every half hour or so, from the clock
@@ -78,5 +98,6 @@ export function tickPassengers(state, data, dt) {
       }
     }
     p.moving = !!(p.path && p.seg < p.path.length);
+    tickStory(state, data, p);
   });
 }

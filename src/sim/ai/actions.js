@@ -31,6 +31,17 @@ import { feelWonder } from '../../space/discovery.js';
 import { mealDrink, fillMug, ensureMug } from '../traveler/mug.js';
 import { converse } from '../../space/people.js';
 import { prisonerIn, prisonerAtLock, prisonerSearched, prisonerLockedUp, feedPrisoner } from '../../space/prisoners.js';
+import { grant, startTour, endTour, startReassure, reassure } from '../../space/paxstories.js';
+
+/** Where to stand to talk with someone: the station in their room nearest to them. */
+function nearest(d, room, x) {
+  const st = d.rooms[room].stations;
+  const key = Object.keys(st).reduce((b, k) => (b === null || Math.abs(st[k] - x) < Math.abs(st[b] - x) ? k : b), null);
+  return at(room, key);
+}
+const paxById = (s, id) => ((s.space && s.space.passengers) || []).find((p) => p.id === id) || null;
+/** A passenger who has asked for this and is around to be helped. */
+const paxWanting = (s, kind) => ((s.space && s.space.passengers) || []).find((p) => p.story && p.story.wish.kind === kind && p.story.wish.asked && !p.story.wish.granted && p.doing !== 'asleep');
 
 const sinceH = (s, key) => (s.t - s.traveler.history[key]) / HOUR;
 const at = (room, station) => ({ room, station });
@@ -772,7 +783,7 @@ const CORE_ACTIONS = {
       if (since < 3) return [];
       const p = awake[Math.floor(s.t / 3600) % awake.length];
       const n = s.traveler.needs;
-      return one(0.22 + 0.45 * n.solitude + 0.15 * d.traveler.traits.sociability, at(p.pos.room, 'mid'), { who: p.id });
+      return one(0.22 + 0.45 * n.solitude + 0.15 * d.traveler.traits.sociability, nearest(d, p.pos.room, p.pos.x), { who: p.id });
     },
     duration: (s) => range(s.rng, 900, 2400),
     rates: { stress: -0.05 },
@@ -781,6 +792,49 @@ const CORE_ACTIONS = {
       const p = (s.space.passengers || []).find((q) => q.id === a.params.who);
       if (p) converse(s, p, 'ship');
     },
+  },
+
+  // a passenger asked to see the bridge: meet them there and show them round
+  give_tour: {
+    category: 'social', exertion: 0.4, posture: 'standing', minCommit: 900,
+    gen(s, d) {
+      const p = paxWanting(s, 'tour');
+      if (!p || s.traveler.needs.fatigue > 0.8 || !['cruise', 'orbit', 'idle', 'landed'].includes(s.ship.flight.mode)) return [];
+      return one(0.32 + 0.25 * d.traveler.traits.sociability + 0.2 * s.traveler.needs.solitude, at('bridge', 'viewport'), { who: p.id });
+    },
+    start(s, d, a) { const p = paxById(s, a.params.who); if (p) startTour(s, d, p); },
+    duration: (s) => range(s.rng, 1200, 2400),
+    rates: { stress: -0.04, solitude: -0.05 },
+    complete(s, d, a) { const p = paxById(s, a.params.who); if (p) endTour(s, p); },
+  },
+  // something of theirs stopped working: take it to the bench in their cabin
+  fix_for_passenger: {
+    category: 'chore', exertion: 0.4, posture: 'standing', minCommit: 900,
+    gen(s, d) {
+      const p = paxWanting(s, 'fix');
+      if (!p || s.traveler.needs.fatigue > 0.8) return [];
+      return one(0.34 + 0.2 * d.traveler.traits.discipline + 0.1 * d.traveler.traits.sociability, at(p.cabin, 'desk'), { who: p.id });
+    },
+    duration: (s) => range(s.rng, 900, 2400),
+    rates: { stress: -0.02 },
+    complete(s, d, a) {
+      const p = paxById(s, a.params.who);
+      if (!p) return;
+      if (s.ship.inventory.parts > 0) s.ship.inventory.parts -= 1;
+      grant(s, p);
+    },
+  },
+  // a passenger has a complaint: go and hear them out
+  reassure_passenger: {
+    category: 'social', exertion: 0.3, posture: 'standing', minCommit: 300,
+    gen(s, d) {
+      const p = ((s.space && s.space.passengers) || []).find((q) => q.story && q.story.pending && q.doing !== 'asleep' && !q.moving);
+      if (!p || (s.space && s.space.combat)) return [];
+      return one(0.48 + 0.2 * d.traveler.traits.sociability + 0.1 * d.traveler.traits.discipline, nearest(d, p.pos.room, p.pos.x), { who: p.id });
+    },
+    start(s, d, a) { const p = paxById(s, a.params.who); if (p) startReassure(s, p); },
+    duration: (s) => range(s.rng, 300, 900),
+    complete(s, d, a) { const p = paxById(s, a.params.who); if (p) reassure(s, p); },
   },
 
   // a living sample from the surface, under the glovebox and the microscope

@@ -56,6 +56,12 @@ export function appraise(state, ev) {
       const help = ev.patrol ? `; ${ev.patrol} came in on our side` : '';
       return { w: ev.result === 'won' ? 0.55 + 0.05 * (ev.downed || 0) : ev.result === 'captured' ? 0.6 : 0.5, v: ev.result === 'won' || ev.result === 'foe_fled' || ev.result === 'captured' ? 0.2 : ev.result === 'submitted' ? -0.5 : -0.7, subject: `the fight with ${ev.foe}`, summary: `Pulled out of supercruise by ${who}${help}; ${what}${ev.bounty ? `, ${ev.bounty.toLocaleString('en-US')} credits in bounties` : ''}.`, tags: ['combat', ev.result] };
     }
+    case 'passenger_farewell':
+      if (ev.tone === 'polite') return null;
+      return ev.tone === 'warm'
+        ? { w: ev.gift ? 0.45 : 0.36, v: 0.75, subject: `saying goodbye to ${ev.who}`, summary: `${ev.line}${ev.station ? ` That was at ${ev.station}.` : ''}`, tags: ['people', 'passenger', ev.gift ? 'gift' : 'farewell'] }
+        : { w: 0.3, v: -0.45, subject: `${ev.who} leaving unhappy`, summary: ev.line, tags: ['people', 'passenger', 'hardship'] };
+    case 'passenger_wish': return { w: 0.3, v: 0.65, subject: `${ev.who}'s wish`, summary: ev.line, tags: ['people', 'passenger'] };
     case 'prisoner_handover': return { w: 0.45, v: 0.3, subject: `handing ${ev.who} over at ${ev.station}`, summary: `Handed ${ev.who} to security at ${ev.station} after ${ev.days} days in the brig${ev.paid ? `; ${ev.paid.toLocaleString('en-US')} credits` : ''}.`, tags: ['prisoner', 'port'] };
     case 'prisoner_fed':
       if (!ev.opened) return null;

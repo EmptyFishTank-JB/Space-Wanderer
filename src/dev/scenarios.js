@@ -97,7 +97,7 @@ function portScene(d, until, feeds) {
 }
 
 // a few interior cameras by room, for scenes that follow the traveler somewhere
-const CAMERAS_BY_ROOM = { corridor_aft: 'CAM-11', cross_main: 'CAM-22', gallery_p: 'CAM-24', fwd_main: 'CAM-21', brig: 'CAM-29', airlock: 'CAM-13', armory: 'CAM-33' };
+const CAMERAS_BY_ROOM = { cabin_a: 'CAM-25', cabin_b: 'CAM-26', cabin_c: 'CAM-27', paxlounge: 'CAM-28', gallery_s: 'CAM-23', corridor_aft: 'CAM-11', cross_main: 'CAM-22', gallery_p: 'CAM-24', fwd_main: 'CAM-21', brig: 'CAM-29', airlock: 'CAM-13', armory: 'CAM-33' };
 
 /** A wanted-alive contract in a system with a station, the target taken and drifting alongside. */
 function prisonerScene(d, seed) {
@@ -106,6 +106,18 @@ function prisonerScene(d, seed) {
   const m = { id: `${seed}-b`, kind: 'bounty', alive: true, title: 'Wanted alive: Kestrel', faction: 'elsewhere', target: { name: 'Kestrel', cls: 'raider' }, reward: 4200, to: { starId: s.space.systemId, system: s.space.systemName }, from: { starId: s.space.systemId, station: 'nowhere' }, deadlineT: s.t + 6 * 86400, acceptedT: s.t, captured: true };
   s.space.missions = [m];
   takePrisoner(s, d, { name: 'Kestrel', cls: 'raider' }, m);
+  return s;
+}
+
+/** Two passengers aboard, up and about mid-morning; optionally with the wish they'll ask. */
+function paxScene(d, seed, wish, n = 2) {
+  const s = createInitialState(d, { seed });
+  runUntil(s, d, (x) => x.t > 4 * 3600);
+  const dest = neighbors(s.space.galaxySeed, s.space.pos, 120, d.space).find((c) => c.id !== s.space.systemId);
+  const m = { id: `${seed}-m`, kind: 'passenger', passengers: n, reward: 1600 * n, faction: 'meridian', title: `${n} passengers to Halden 2210`, to: { starId: dest.id, system: 'Halden 2210' }, deadlineT: s.t + 8 * 86400, acceptedT: s.t };
+  s.space.missions = [m];
+  boardPassengers(s, d, m, Array.from({ length: n }, (_, i) => i).map((i) => makePassenger(s.space.galaxySeed, m.id, i, 'Okafor Station', 'Halden 2210')));
+  if (wish) Object.assign(s.space.passengers[0].story.wish, wish, { askAt: s.t });
   return s;
 }
 
@@ -212,10 +224,33 @@ export const SCENARIOS = {
     runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'feed_prisoner' && x.traveler.activity.phase === 'perform', 86400);
     return { s, feeds: ['CAM-29'] };
   },
+  // a passenger asked to see the bridge
+  paxtour(d) {
+    const s = paxScene(d, 'gallery-paxtour', { kind: 'tour', ask: 'asked to see the bridge', done: 'had the tour of the bridge and sat in the helm seat' });
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'give_tour' && x.traveler.activity.phase === 'perform' && x.space.passengers.some((p) => p.pos.room === 'bridge' && !p.moving), 86400);
+    return { s, feeds: ['CAM-01'] };
+  },
+  // the ship running hot; a passenger says so, and the traveler goes to hear them out
+  paxcomplaint(d) {
+    const s = paxScene(d, 'gallery-paxmoan', null);
+    s.space.passengers.forEach((p) => { p.story.wish.askAt = s.t + 9 * 86400; });
+    s.ship.thermal.heat = 0.9;
+    runUntil(s, d, (x) => x.space.passengers.some((p) => p.story.pending), 3600);
+    s.ship.thermal.heat = 0.4;
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'reassure_passenger' && x.traveler.activity.phase === 'perform', 86400);
+    const p = s.space.passengers.find((q) => q.story.hold) || s.space.passengers[0];
+    return { s, feeds: [CAMERAS_BY_ROOM[p.pos.room] || 'CAM-27', 'CAM-27'] };
+  },
+  // putting in at their destination: bags packed at the airlock
+  paxfarewell(d) {
+    const s = paxScene(d, 'gallery-paxbye', null);
+    s.ship.flight.portLanding = 'gallery';
+    s.space.missions.forEach((m) => { m.to.starId = s.space.systemId; });
+    runUntil(s, d, (x) => x.space.passengers.every((p) => p.pos.room === 'airlock' && !p.moving), 3600);
+    return { s, feeds: ['CAM-13'] };
+  },
   passengers(d) {
-    const s = createInitialState(d, { seed: 'gallery-pax' });
-    const m = { id: 'gallery-pax', passengers: 3, to: { system: 'Halden 2210' } };
-    boardPassengers(s, d, m, [0, 1, 2].map((i) => makePassenger(s.space.galaxySeed, m.id, i, 'Okafor Station', 'Halden 2210')));
+    const s = paxScene(d, 'gallery-pax', null, 3);
     runUntil(s, d, (x) => x.t > 9.5 * 3600 && x.space.passengers.some((p) => p.pos.room === 'gallery_s' && !p.moving));
     return { s, feeds: ['CAM-23', 'CAM-28', 'CAM-25'] };
   },

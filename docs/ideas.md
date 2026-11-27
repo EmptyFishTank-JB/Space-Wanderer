@@ -89,6 +89,15 @@ The hold already runs out to the belly wall and has room for trade cargo. The co
   - with the job done, routes steer back to where the contract was signed. Security at any of the issuing faction's stations takes the prisoner for the reward. If the contract runs out first, the next port's security takes them for nothing;
   - the prisoner shows in telemetry and can be selected wherever they are aboard. There are journal entries, memories and log lines for the capture, the meals and the handover.
 
+- **Passengers with their own small stories:**
+  - each passenger comes aboard with something they will ask for, a few hours in: a sight on the way (a ringed world, a gas giant from orbit, a star skimmed close, a landing somewhere), the tour of the bridge, or help with something of theirs that stopped working;
+  - a sight is granted when the voyage brings it: they go to the gallery window and stay a while. The traveler meets them on the bridge for the tour, and fixes the music player or the reading lamp at the desk in their cabin, for a spare part;
+  - they complain when the ship gives them cause: the heat, stale air, the lights down, the larder running low, a fight, running late. The traveler goes and hears them out;
+  - at the end there is a farewell at the airlock, with bags packed as the ship puts in. It is warm (a tip, and sometimes a small gift left on the bunk, which goes on the keepsake shelf), polite, or curt, depending on how the trip went;
+  - passengers whose passage runs out of time are no longer put off mid-voyage. They ride on to the next port and leave there, not best pleased;
+  - mood, what they asked for and any complaint show when a passenger is selected. There are journal entries, memories and log lines;
+  - everything a passenger does on their own comes from the clock and the ship's state, never the sim's RNG.
+
 ### Still to come
 
-- Passengers with their own small stories: requests, complaints, a farewell.
+Nothing from this list. New ideas go here.

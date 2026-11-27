@@ -14,7 +14,7 @@ import { rand, range, int, chance, pick } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
 import { heldFor, freeCells, handOver, handOverStrays, initPrisoners } from './prisoners.js';
-import { boardPassengers, disembark } from './passengers.js';
+import { boardPassengers, disembark, disembarkStrays } from './passengers.js';
 import { makePassenger } from './people.js';
 import { wantedPilot, redeemVouchers, rearm, initCombat } from './combat.js';
 
@@ -157,7 +157,7 @@ export function initPorts(state) {
 }
 
 const missionCargo = (sp) => sp.missions.reduce((a, m) => a + (m.tons || 0), 0);
-const passengers = (sp) => sp.missions.reduce((a, m) => a + (m.passengers || 0), 0);
+const passengers = (sp) => Math.max(sp.missions.reduce((a, m) => a + (m.passengers || 0), 0), (sp.passengers || []).length);
 export const shipPassengers = (state) => (state.space ? passengers(state.space) : 0);
 
 /** Does the traveler want to put in at a port in this system? */
@@ -167,6 +167,7 @@ export function wantsPort(state, data) {
   if (!stn) return null;
   if (sp.missions.some((m) => (m.to && m.to.starId === sp.systemId && m.kind !== 'bounty') || ((m.kind === 'xeno' || m.kind === 'survey' || m.kind === 'bounty') && m.faction === stn.faction && missionReady(state, m)))) return 'deliver';
   if ((sp.prisoners || []).some((p) => p.state === 'held' && !(p.missionId && sp.missions.some((m) => m.id === p.missionId)))) return 'deliver'; // a prisoner nobody is paying for
+  if ((sp.passengers || []).some((p) => !sp.missions.some((m) => m.id === p.missionId))) return 'deliver'; // passengers who should have been somewhere by now
   const inv = sh.inventory;
   if (inv.parts < 8 || inv.filters < 2 || sh.food.pantry < 40000) return 'supplies';
   if (sh.components.hull_plating.wear > 0.55) return 'repairs';
@@ -266,7 +267,7 @@ function arrivePort(state, data, stn) {
       continue;
     }
     if (m.kind === 'xeno') state.space.cargo.bio -= m.samples;
-    if (m.passengers) disembark(state, m.id);
+    if (m.passengers) disembark(state, m.id, { fare: m.reward / m.passengers, station: stn.name });
     if (m.kind === 'bounty' && m.captured) handOver(state, stn, m);
     if (m.kind === 'bounty' && m.alive && !m.captured) m.reward = Math.round((m.reward * 0.35) / 50) * 50; // wanted alive, brought in dead
     sp.credits += m.reward;
@@ -278,6 +279,7 @@ function arrivePort(state, data, stn) {
   }
   redeemVouchers(state); // bounties claimed on pirates met along the way
   handOverStrays(state, stn); // prisoners whose contract ran out
+  disembarkStrays(state, stn.name); // passengers whose passage did
   // the dock's services: fuel, and the shipyard for a worn hull
   const fuel = state.ship.fuel;
   const want = Math.max(0, fuel.capacity - fuel.tons);
@@ -415,8 +417,7 @@ export function expireMissions(state) {
   for (const m of [...sp.missions]) {
     if (state.t < m.deadlineT) continue;
     sp.missions = sp.missions.filter((x) => x !== m);
-    if (m.passengers) disembark(state, m.id);
-    // a prisoner whose contract lapses stays in the brig until the next port's security takes them
+    // passengers ride on to the next port and leave there; a prisoner whose contract lapses stays in the brig until the next port's security takes them
     sp.rep[m.faction] = clamp((sp.rep[m.faction] || 0) - 0.1, -1, 1);
     sp.stats.missionsFailed++;
     emit(state, 'mission_fail', { kind: m.kind, title: m.title, reason: 'late', room: 'bridge' });

@@ -153,6 +153,14 @@ export function writeLog({ state, data, facts, entry }) {
     }[fgt.result]);
     if (fgt.patrol) lines.find.push(`${fgt.patrol} answered the call. Owe them a drink.`);
   }
+  // passengers: a goodbye, a wish come true, a complaint
+  const ps = v.paxStories || [];
+  const bye = ps.find((x) => x.kind === 'farewell' && x.tone !== 'polite') || ps.find((x) => x.kind === 'farewell');
+  if (bye) lines.find.push(bye.tone === 'warm' ? `Said goodbye to ${bye.who}. ${bye.gift ? `Found a ${bye.gift} on the bunk after.` : 'The cabin feels emptier than it should.'}` : bye.tone === 'curt' ? `${bye.who} left without a word. Can't please everyone.` : `${bye.who} went ashore. Shook hands at the lock.`);
+  const wish = ps.find((x) => x.kind === 'wish');
+  if (wish) lines.self.push(`${wish.line} Worth it to see their face.`);
+  const moan = ps.find((x) => x.kind === 'complaint');
+  if (moan && !wish) lines.self.push(`${moan.who} complained about ${moan.about}. Fair enough.`);
   // the brig: someone opening up over a meal, or handed over at last
   const ho = (v.prisoners || []).find((x) => x.kind === 'handover');
   if (ho) lines.find.push(ho.paid ? `Handed ${ho.who} to security at ${ho.station}. ${ho.paid.toLocaleString('en-US')} credits, and the brig's empty again.` : `Handed ${ho.who} to security at ${ho.station}. Nobody's paying for them now, but they're not my problem any more.`);
