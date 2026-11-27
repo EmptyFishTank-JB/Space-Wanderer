@@ -4656,14 +4656,14 @@
     "id": "EXT-DORSAL",
     "name": "Dorsal camera",
     "at": [
-     -25,
+     -24.4,
      0,
-     17.2
+     17.6
     ],
     "look": [
      1,
      0,
-     -0.16
+     -0.12
     ],
     "replaces": "CAM-08 EXT-HULL",
     "info": "On the mast, looking forward over the bridge canopy along the whole dorsal hull to the bow prongs. The old hull camera, moved."
@@ -4672,16 +4672,16 @@
     "id": "EXT-BOW",
     "name": "Bow camera",
     "at": [
-     70.1,
-     11.3,
-     1.15
+     70.6,
+     13.2,
+     2.2
     ],
     "look": [
      -1,
-     -0.04,
-     0.06
+     -0.06,
+     -0.05
     ],
-    "info": "On the blunt tip of the starboard tine, looking back along the flank at the deckhouse and tower. The hero shot for arrivals and star skimming."
+    "info": "On the blunt tip of the starboard tine, looking back along the flank at the deckhouse and tower. The hero shot for arrivals and star skimming. On a short boom, about a meter clear of the hull."
    },
    {
     "id": "EXT-SCOOP",
@@ -4718,30 +4718,30 @@
     "name": "Port flank camera",
     "at": [
      -33,
-     -30.69,
-     4.4
+     -31.6,
+     5.4
     ],
     "look": [
      1,
-     0.12,
-     -0.04
+     0.1,
+     -0.06
     ],
-    "info": "On the port deck edge aft, looking forward along the port side."
+    "info": "On the port deck edge aft, looking forward along the port side. On a short boom, about a meter clear of the hull."
    },
    {
     "id": "EXT-STBD",
     "name": "Starboard flank camera",
     "at": [
      -33,
-     30.69,
-     4.4
+     31.6,
+     5.4
     ],
     "look": [
      1,
-     -0.12,
-     -0.04
+     -0.1,
+     -0.06
     ],
-    "info": "On the starboard deck edge aft, looking forward along the starboard side."
+    "info": "On the starboard deck edge aft, looking forward along the starboard side. On a short boom, about a meter clear of the hull."
    },
    {
     "id": "EXT-VENTRAL",
@@ -4749,14 +4749,14 @@
     "at": [
      26,
      0,
-     -5.52
+     -6.4
     ],
     "look": [
      -1,
      0,
-     -0.32
+     -0.1
     ],
-    "info": "Under the bow, looking aft along the belly: landing gear, the rover platform going down, the ground coming up on landing."
+    "info": "Under the bow, looking aft along the belly: landing gear, the rover platform going down, the ground coming up on landing. On a short boom, about a meter clear of the hull."
    },
    {
     "id": "EXT-BAY",

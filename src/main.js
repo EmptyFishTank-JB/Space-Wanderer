@@ -13,6 +13,7 @@ import { mountSound } from './ui/sound.js';
 import { mountCaptions } from './ui/captions.js';
 import { mountTelemetry } from './ui/telemetry.js';
 import { mountSelection } from './ui/select.js';
+import { setShipModel } from './render/hull3d.js';
 
 function pickStorage() {
   try {
@@ -37,6 +38,8 @@ async function openJournal() {
 
 async function main() {
   const [data, cameras] = await Promise.all([loadData(), fetchJson('cameras')]);
+  // the hull cameras draw the ship from its 3D layout (they fall back to sketches until it loads)
+  await fetchJson('ship3d').then(setShipModel).catch(() => {});
   const snapshots = new SnapshotStore(pickStorage(), data);
   const journal = await openJournal();
   const params = new URLSearchParams(location.search);

@@ -10,6 +10,7 @@ import { W, H, mix, mul, rect, px, glow, hash, line, clamp01, css } from './gfx.
 import { drawSpaceScene } from './celestial.js';
 import { drawSurfaceScene } from './terrain.js';
 import { picks } from './picks.js';
+import { shipModel, renderShip, camAngles } from './hull3d.js';
 
 const HULL = [96, 100, 108];
 const DARK = [40, 42, 48];
@@ -30,17 +31,73 @@ const gearDown = (f) => ['landed', 'descent', 'ascent'].includes(f.mode);
 export function renderExteriorFeed(ctx, m, def = {}) {
   const { state, view, t } = m;
   const mount = typeof def.exterior === 'string' ? def.exterior : 'dorsal';
-  const yaw = def.yaw ?? 0, pitch = def.pitch ?? -0.08;
+  // the real ship, seen from the camera's own mount, whenever the 3D layout is loaded
+  const model = shipModel();
+  const cam = model && mount !== 'bay' ? model.cams[def.label] : null;
+  const ang = cam ? camAngles(cam) : null;
+  const yaw = ang ? ang.yaw : def.yaw ?? 0, pitch = ang ? ang.pitch : def.pitch ?? -0.08;
   if (view.scene === 'surface') {
-    drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: 0.25 + yaw, pitch: view.altitudeKm > 0 ? pitch - 0.05 : pitch + 0.12, entryHeat: view.entryHeat, buffeting: view.buffeting });
+    const sp = cam ? pitch : view.altitudeKm > 0 ? pitch - 0.05 : pitch + 0.12;
+    drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: cam ? yaw : 0.25 + yaw, pitch: sp, entryHeat: view.entryHeat, buffeting: view.buffeting });
   } else {
     drawSpaceScene(ctx, view, t, { yaw, pitch, pick: m.pickHull !== false });
   }
   const shake = view.buffeting ? Math.round(Math.sin(t * 31) * 2 * view.buffeting) : 0;
   const k = { state, view, t, shake, sh: state.ship, heat: state.ship.thermal.heat, wear: state.ship.components.hull_plating.wear };
+  if (cam) {
+    const f = state.ship.flight, a = state.traveler.activity;
+    const plan = a && a.id === 'rover_outing' && a.params.plan;
+    const shot = shake ? { at: [cam.at[0], cam.at[1], cam.at[2] + shake * 0.05], look: cam.look } : cam;
+    const boxes = renderShip(ctx, shot, {
+      heat: k.heat, wear: k.wear, landed: f.mode === 'landed', gearDown: ['landed', 'descent', 'ascent'].includes(f.mode),
+      drive: view.scene === 'hyperspace' ? 1 : Math.max(view.charging || 0, view.speed > 0.0005 ? 0.8 : 0),
+      shut: ['cruise', 'hyperspace', 'charging', 'scooping'].includes(f.mode), lit: (state.ship.power.lightLevel ?? 1) > 0.2,
+      roverOut: !!(state.ship.rover && state.ship.rover.out), roverX: plan ? plan.x : 0, beacon: Math.sin(t * 2.4) > 0.6,
+    });
+    if (mount === 'scoop' && view.mode === 'scooping') MOUNTS_FX.plasma(ctx, k);
+    overlays(ctx, k, mount);
+    if (m.pickHull !== false) registerModelPicks(boxes, k, def);
+    return;
+  }
   (MOUNTS[mount] || MOUNTS.dorsal)(ctx, k);
   overlays(ctx, k, mount);
   if (m.pickHull !== false) registerHullPicks(mount, k, def);
+}
+
+const MOUNTS_FX = {
+  // plasma streaming into the scoop intake, over the drawn ship
+  plasma(ctx, k) {
+    additive(ctx, () => {
+      for (let i = 0; i < 90; i++) {
+        const sx = hash(i, 1, 5) * W, sy = 30 + hash(i, 2, 5) * 80;
+        const u = (k.t * 1.4 + hash(i, 3, 5)) % 1;
+        px(ctx, mix([255, 150, 60], [255, 240, 200], hash(i, 4, 5)), sx + (W / 2 - sx) * u, sy + (H - 24 - sy) * u, 0.6 * (1 - u * 0.5));
+      }
+      glow(ctx, [255, 150, 70], W / 2, H - 24, 90, 0.3);
+    });
+  },
+};
+
+/** Selection on the rendered ship: every part that shows, with live details where the sim has them. */
+function registerModelPicks(boxes, k, def) {
+  const sh = k.sh, f = sh.flight, sub = `${def.label || 'Hull camera'} · ${def.mount || ''}`;
+  const first = (txt) => (txt || '').split(/(?<=\.)\s/)[0];
+  for (const b of boxes) {
+    const { part } = b;
+    const ref = part.ref || {};
+    let lines;
+    if (part.kind === 'hull') lines = [['Plating', condition(sh, 'hull_plating')], ['Scorch and wear', pctv(sh.components.hull_plating.wear)]];
+    else if (part.kind === 'window') lines = [['Shutter', ['cruise', 'hyperspace', 'charging', 'scooping'].includes(f.mode) ? 'closed' : 'open'], ['Lights', ref.backs && !ref.backs.startsWith('mod:') ? ref.backs.replace(/_/g, ' ') : 'sensors']];
+    else if (ref.role === 'thermal') lines = [['Heat', pctv(k.heat)], ['Vents', condition(sh, 'thermal_vents')], ['State', k.heat > 0.6 ? 'glowing, dumping heat' : k.heat > 0.4 ? 'warm' : 'cool']];
+    else if (/^(nozzle_|engine_|rim_)/.test(ref.id || '')) lines = [['Drive', DRIVE[f.mode] || f.mode], ['FSD coil', condition(sh, 'drive_coil')]];
+    else if (ref.id === 'scoop') lines = [['Scoop', f.mode === 'scooping' ? 'open, drinking plasma' : 'closed'], ['Manifold', condition(sh, 'scoop_manifold')], ['Fuel', `${sh.fuel.tons.toFixed(1)} of ${sh.fuel.capacity} t`]];
+    else if (/^gear_/.test(ref.id || '')) lines = [['Gear', f.mode === 'landed' ? 'down and locked, on the ground' : 'down']];
+    else if (/^sensor_|nav_sensors|^ant_|^probe_|mast/.test(ref.id || '')) lines = [['Sensors', condition(sh, 'bridge_sensors')], ['About', first(ref.info)]];
+    else if (ref.role === 'weapon') lines = [['State', 'stowed'], ['About', first(ref.info)]];
+    else if (b.id === 'rover') lines = [['Out', `${((sh.rover && k.state.traveler.activity && k.state.traveler.activity.params.plan ? k.state.traveler.activity.params.plan.x : 0) / 1000).toFixed(1)} km`], ['Battery', pctv(sh.rover ? sh.rover.charge : 1)]];
+    else lines = ref.info ? [['About', first(ref.info)]] : [];
+    picks.add({ id: `hull3d:${b.id}`, x: b.x, y: b.y, w: b.w, h: b.h, info: () => ({ name: part.name, sub, lines }) });
+  }
 }
 
 // ───────── selection: the hull parts each camera shows ─────────

@@ -203,7 +203,8 @@ export function checkArrangement(ship, sim) {
     else if (boxDistance(r, d.at) > 0.7) problems.push(`door ${d.between.join('/')} is ${boxDistance(r, d.at).toFixed(2)} m from ${id}`);
   }
   // every exterior camera is fixed to the ship
-  for (const c of (ship.cameras && ship.cameras.exterior) || []) if (!mounted(ship, c.at)) problems.push(`camera ${c.id} is not mounted on the ship`);
+  // every exterior camera is fixed to the ship: on the skin, a module, or a short boom (up to 1.6 m out)
+  for (const c of (ship.cameras && ship.cameras.exterior) || []) if (!mounted(ship, c.at, 1.6)) problems.push(`camera ${c.id} is not mounted on the ship`);
   // every window lights something: a room or a sensor right behind it
   for (const w of ship.windows || []) {
     if (!w.backs) { problems.push(`window ${w.id} does not say what it lights`); continue; }
@@ -244,7 +245,9 @@ const boxGap = (e, p) => Math.hypot(...[e.x, e.y, e.zRange || e.z].map((r, i) =>
 
 /** Is a point on the ship: in or within reach of the hull skin, on a module, or inside a room (a bay camera)? */
 export function mounted(ship, p, reach = MOUNT_REACH) {
-  const offs = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  // the skin within reach in any direction (axes and diagonals)
+  const offs = [];
+  for (const i of [-1, 0, 1]) for (const j of [-1, 0, 1]) for (const k of [-1, 0, 1]) { const l = Math.hypot(i, j, k) || 1; offs.push([i / l, j / l, k / l]); }
   if (offs.some((o) => insideHull(ship, p[0] + o[0] * reach, p[1] + o[1] * reach, p[2] + o[2] * reach))) return true;
   if ((ship.modules || []).some((m) => boxGap(moduleExtent(m), p) < reach)) return true;
   return withDecks(ship).some((r) => boxGap(r, p) === 0);

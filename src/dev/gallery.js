@@ -14,6 +14,7 @@ import { spaceView } from '../render/spaceview.js';
 import { TravelerTracker } from '../render/actor.js';
 import { startFault } from '../sim/ship/wear.js';
 import { W, H } from '../render/gfx.js';
+import { setShipModel } from '../render/hull3d.js';
 
 const ROOM_FEEDS = ['CAM-01', 'CAM-02', 'CAM-03', 'CAM-04', 'CAM-05', 'CAM-06', 'CAM-07', 'CAM-09', 'CAM-10', 'CAM-11', 'CAM-12', 'CAM-13'];
 
@@ -144,6 +145,8 @@ const SCENARIOS = {
 
 async function main() {
   const [data, cameras] = await Promise.all([loadData(), fetchJson('cameras')]);
+  // the hull cameras draw the ship from its 3D layout (they fall back to sketches until it loads)
+  await fetchJson('ship3d').then(setShipModel).catch(() => {});
   const params = new URLSearchParams(location.search);
   const only = params.get('scenario');
   const root = document.getElementById('gallery');
