@@ -9,6 +9,7 @@ import { renderNoSignal } from './feed.js';
 import { drawHangar } from './celestial.js';
 import { picks } from './picks.js';
 import { stationIn, factionName } from '../space/ports.js';
+import { atTheBar, peopleAt } from '../space/people.js';
 
 const TOPS = [[170, 60, 60], [60, 110, 170], [200, 170, 70], [90, 150, 100], [140, 90, 160], [210, 210, 210], [60, 60, 70], [190, 110, 60]];
 const BOTTOMS = [[50, 52, 60], [70, 60, 50], [40, 60, 90], [90, 90, 96], [30, 30, 34]];
@@ -82,7 +83,20 @@ export function renderPortFeed(ctx, m) {
     const xm = (((hash(i, 3, 51) * room.width + dir * speed * t) % room.width) + room.width) % room.width;
     npc(i, M(xm), dir, 'walk');
   }
-  for (const [st, n] of [['bar', 3], ['market', 2], ['board', 1], ['viewdeck', 2]]) for (let j = 0; j < n; j++) npc(20 + j * 5 + st.length, M(room.stations[st] + (j - n / 2) * 1.4 + 0.6), j % 2 ? 1 : -1, 'stand_back');
+  for (const [st, n] of [['market', 2], ['viewdeck', 2]]) for (let j = 0; j < n; j++) npc(20 + j * 5 + st.length, M(room.stations[st] + (j - n / 2) * 1.4 + 0.6), j % 2 ? 1 : -1, 'stand_back');
+  // the people who are someone: the bartender behind the bar, tonight's regulars, the clerk at the board
+  if (stn) {
+    const day = Math.floor(state.t / 86400);
+    const named = [...atTheBar(state.space.galaxySeed, stn, day), peopleAt(state.space.galaxySeed, stn).find((p) => p.role === 'clerk')];
+    named.forEach((p, j) => {
+      const at = p.role === 'bartender' ? room.stations.bar - 0.3 : p.role === 'clerk' ? room.stations.board + 0.9 : room.stations.bar + 1.2 + (j - 1) * 1.1;
+      const x = M(at);
+      if (x < -20 || x > W + 20) return;
+      drawTraveler(ctx, x, FLOOR, { pose: p.role === 'regular' ? 'stand' : 'stand_back', facing: j % 2 ? -1 : 1, phase: 0, fatigue: 0, yawn: 0, alpha: 1, x: 0, y: FLOOR, outfit: p.look, skin: p.look.skin, hair: p.look.hair }, t + j);
+      const r = state.space.people && state.space.people[p.id];
+      picks.add({ id: `person:${p.id}`, x: x - 8, y: FLOOR - 40, w: 16, h: 40, info: () => ({ name: p.name, sub: `${p.job} · ${stn.name}`, lines: [['Manner', p.manner], ['Age', String(p.age)], ['Met', r ? `${r.met} time${r.met > 1 ? 's' : ''}` : 'not yet'], ...(r && r.topics.length ? [['Last talked about', r.topics[r.topics.length - 1]]] : [])] }) });
+    });
+  }
   // the traveler
   const k = m.tracker ? travelerPose(state, data, m.tracker, state.traveler.pos, t) : null;
   if (k) drawTraveler(ctx, M(state.traveler.pos.x), FLOOR, { ...k, pose: m.tracker && Math.abs(m.tracker.lastX - state.traveler.pos.x) > 1e-3 ? 'walk' : 'stand_back', phase: state.traveler.pos.x * 3 }, t);

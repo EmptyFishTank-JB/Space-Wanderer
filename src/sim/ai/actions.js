@@ -29,6 +29,7 @@ import { FLIGHT_ACTIONS } from '../../space/actions.js';
 import { viewSubject } from '../../space/view.js';
 import { feelWonder } from '../../space/discovery.js';
 import { mealDrink, fillMug, ensureMug } from '../traveler/mug.js';
+import { converse } from '../../space/people.js';
 
 const sinceH = (s, key) => (s.t - s.traveler.history[key]) / HOUR;
 const at = (room, station) => ({ room, station });
@@ -755,6 +756,29 @@ const CORE_ACTIONS = {
       s.journal.sinceLastLog = freshDigest(s);
       tr.needs.solitude = clamp(tr.needs.solitude - 0.08);
       tr.mood.weariness = clamp(tr.mood.weariness - 0.01);
+    },
+  },
+
+  // company aboard: find a passenger and talk
+  chat_passengers: {
+    category: 'leisure', exertion: 0.4, posture: 'standing', minCommit: 600,
+    gen(s, d) {
+      const pax = s.space && s.space.passengers;
+      if (!pax || !pax.length) return [];
+      const awake = pax.filter((p) => p.doing !== 'asleep' && !p.moving);
+      if (!awake.length) return [];
+      const since = (s.t - (s.traveler.history.lastPaxChatT ?? -Infinity)) / HOUR;
+      if (since < 3) return [];
+      const p = awake[Math.floor(s.t / 3600) % awake.length];
+      const n = s.traveler.needs;
+      return one(0.22 + 0.45 * n.solitude + 0.15 * d.traveler.traits.sociability, at(p.pos.room, 'mid'), { who: p.id });
+    },
+    duration: (s) => range(s.rng, 900, 2400),
+    rates: { stress: -0.05 },
+    complete(s, d, a) {
+      s.traveler.history.lastPaxChatT = s.t;
+      const p = (s.space.passengers || []).find((q) => q.id === a.params.who);
+      if (p) converse(s, p, 'ship');
     },
   },
 

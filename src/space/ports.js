@@ -13,6 +13,8 @@ import { getSystem } from './system.js';
 import { rand, range, int, chance, pick } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
+import { boardPassengers, disembark } from './passengers.js';
+import { makePassenger } from './people.js';
 
 const FACTIONS = [
   { id: 'meridian', name: 'Meridian Compact' },
@@ -204,6 +206,7 @@ function arrivePort(state, data, stn) {
       continue;
     }
     if (m.kind === 'xeno') state.space.cargo.bio -= m.samples;
+    if (m.passengers) disembark(state, m.id);
     sp.credits += m.reward;
     sp.stats.earned += m.reward;
     sp.stats.missionsDone++;
@@ -291,6 +294,7 @@ export function chooseMissions(state, data) {
     if (o.kind === 'smuggle' && !chance(state.rng, 0.25)) continue;
     const m = { ...o, acceptedT: state.t, scansAtStart: sp.stats.scans };
     sp.missions.push(m);
+    if (m.passengers) boardPassengers(state, data, m, Array.from({ length: m.passengers }, (_, i) => makePassenger(sp.galaxySeed, m.id, i, sp.offers ? stationIn(sp.galaxySeed, sp.systemId, data.space).name : '', m.to.system)));
     taken.push(m);
     emit(state, 'mission_accept', { kind: m.kind, title: m.title, reward: m.reward, days: Math.round((m.deadlineT - state.t) / 86400), room: 'port' });
   }
@@ -328,6 +332,7 @@ export function expireMissions(state) {
   for (const m of [...sp.missions]) {
     if (state.t < m.deadlineT) continue;
     sp.missions = sp.missions.filter((x) => x !== m);
+    if (m.passengers) disembark(state, m.id);
     sp.rep[m.faction] = clamp((sp.rep[m.faction] || 0) - 0.1, -1, 1);
     sp.stats.missionsFailed++;
     emit(state, 'mission_fail', { kind: m.kind, title: m.title, reason: 'late', room: 'bridge' });

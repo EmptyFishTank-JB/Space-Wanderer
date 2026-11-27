@@ -141,6 +141,8 @@ export function writeLog({ state, data, facts, entry }) {
     lines.find.push(`Walked ${Math.round(e.walkedM)} m out${feats.length ? ` to the ${feats[feats.length - 1]}` : ''} and back.${samples.length ? ` Brought in ${listJoin(samples)}.` : ''}`);
   }
   for (const p of (v.ports || []).slice(0, 1)) lines.find.push(p.first ? `Put in at ${p.station}, ${p.system}. ${p.faction} territory. People everywhere, after all this time.` : `Docked at ${p.station} again.`);
+  const talk = (v.talks || []).find((x) => x.met >= 2) || (v.talks || [])[0];
+  if (talk) lines.find.push(talk.met >= 2 ? `${talk.who} remembered me.${talk.topic ? ` We ended up on ${talk.topic} again.` : ''}` : `Met ${talk.who}${talk.role === 'passenger' ? ', one of the passengers' : talk.role === 'bartender' ? ', who runs the bar' : ''}.`);
   for (const m of (v.missions || []).slice(0, 2)) lines.find.push(m.done ? `Handed over ${m.title}. ${m.reward.toLocaleString('en-US')} credits.` : m.reason === 'caught' ? `They scanned the hold. That's the end of that job: ${m.title}.` : `Missed the deadline: ${m.title}.`);
   for (const e of (v.rovers || []).slice(0, 1)) {
     const feats = (e.features || []).filter((f) => FEATURE[f]).map((f) => FEATURE[f]);

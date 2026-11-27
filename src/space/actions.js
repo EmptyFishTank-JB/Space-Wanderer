@@ -12,6 +12,7 @@ import { decideAgenda, plotRoute, agendaHead } from './navigator.js';
 import { planEva, tickEva } from './eva.js';
 import { planRover, tickRover, roverCanDrive } from './rover.js';
 import { stationIn, startUndocking, tradeAtPort, chooseMissions, factionName } from './ports.js';
+import { atTheBar, peopleAt, converse } from './people.js';
 import { beginTorpor, endTorpor } from './torpor.js';
 
 const at = (room, station) => ({ room, station });
@@ -241,8 +242,18 @@ export const FLIGHT_ACTIONS = {
       if (p.t < stop.dur) return;
       // what happens at each stop
       if (stop.at === 'market') tradeAtPort(s, d);
-      if (stop.at === 'bar') emit(s, 'port_visit', { station: a.params.station, venue: 'bar', met: 1 + Math.floor(range(s.rng, 0, 3.5) * d.traveler.traits.sociability * 2), room: 'port' });
-      if (stop.at === 'board') chooseMissions(s, d);
+      const stn = stationIn(s.space.galaxySeed, s.space.systemId, d.space);
+      if (stop.at === 'bar' && stn) {
+        // the bartender, and whoever is in tonight; the sociable talk to more of them
+        const here = atTheBar(s.space.galaxySeed, stn, Math.floor(s.t / 86400));
+        const talk = here.slice(0, 1 + Math.round(d.traveler.traits.sociability * 2));
+        for (const p of talk) converse(s, p, stn.name);
+        emit(s, 'port_visit', { station: a.params.station, venue: 'bar', met: talk.length, names: talk.map((p) => p.name), room: 'port' });
+      }
+      if (stop.at === 'board') {
+        if (stn) { const clerk = peopleAt(s.space.galaxySeed, stn).find((p) => p.role === 'clerk'); if (clerk) converse(s, clerk, stn.name); }
+        chooseMissions(s, d);
+      }
       p.i++; p.t = 0;
     },
     done: (s, d, a) => a.params.plan.i >= a.params.plan.stops.length,

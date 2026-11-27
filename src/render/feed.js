@@ -8,7 +8,7 @@ import { drawSpaceScene, makeCanvas } from './celestial.js';
 import { renderExteriorFeed } from './exterior.js';
 import { drawSurfaceScene } from './terrain.js';
 import { travelerPose } from './actor.js';
-import { registerRoomPicks, registerMugPick } from './picks.js';
+import { registerRoomPicks, registerMugPick, picks } from './picks.js';
 
 let layer = null;
 function roomLayer() {
@@ -101,6 +101,17 @@ export function renderRoomFeed(ctx, m) {
         rect(lc, [36, 38, 44], ox + k.x - 6, FLOOR - 1, 12, 1);
       }
     }
+  }
+  // passengers in this room, going about their day
+  for (const p of (state.space && state.space.passengers) || []) {
+    if (p.pos.room !== room) continue;
+    const asleep = p.doing === 'asleep' && Math.abs(p.pos.x - data.rooms[room].stations.bunk) < 0.3;
+    const k = { pose: asleep ? 'lie' : p.moving ? 'walk' : 'stand_back', facing: 1, phase: p.pos.x * 3, fatigue: 0, yawn: 0, alpha: 1, x: 0, y: FLOOR, outfit: p.look, skin: p.look.skin, hair: p.look.hair };
+    drawTraveler(lc, ox + p.pos.x * PPM, asleep ? FLOOR - 20 : FLOOR, k, t);
+    picks.add({ id: `pax:${p.id}`, x: ox + p.pos.x * PPM - 8, y: FLOOR - 40, w: 16, h: 40, info: () => {
+      const r = state.space.people && state.space.people[p.id];
+      return { name: p.name, sub: `Passenger · going to ${p.going}`, lines: [['Doing', p.doing], ['Cabin', data.rooms[p.cabin].name], ['Trade', p.job], ['Talked', r ? `${r.met} time${r.met > 1 ? 's' : ''}` : 'not yet']] };
+    } });
   }
   registerRoomPicks(rc, seen);
   const mug = registerMugPick(rc);

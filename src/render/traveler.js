@@ -77,7 +77,7 @@ export function drawTraveler(ctx, x, y, k, t) {
   const suit = k.suited ? EVA_SUIT : (o && o.top) || SUIT;
   const suitD = k.suited ? EVA_D : (o && o.bottom) || SUIT_D;
   const boot = (o && o.shoes) || BOOT;
-  const shin = o && o.shorts ? SKIN : suitD; // shorts leave the lower legs bare
+  const shin = o && o.shorts ? (k.skin || SKIN) : suitD; // shorts leave the lower legs bare
   ctx.globalAlpha = k.alpha ?? 1;
 
   // yawn / rub eyes: the near hand rises to the face
@@ -95,7 +95,7 @@ export function drawTraveler(ctx, x, y, k, t) {
   // far limbs
   limb(ctx, mul(suit, 0.75), X(sk.chest), Y(sk.chest) + 2, X(sk.elbowB), Y(sk.elbowB), 3);
   limb(ctx, mul(suit, 0.75), X(sk.elbowB), Y(sk.elbowB), X(sk.handB), Y(sk.handB), 3);
-  rect(ctx, k.suited ? EVA_D : mul(SKIN, 0.8), X(sk.handB) - 1, Y(sk.handB) - 1, 2, 2);
+  rect(ctx, k.suited ? EVA_D : mul((k.skin || SKIN), 0.8), X(sk.handB) - 1, Y(sk.handB) - 1, 2, 2);
   limb(ctx, mul(suitD, 0.85), X(sk.hip), Y(sk.hip), X(sk.kneeB), Y(sk.kneeB), 4);
   limb(ctx, mul(shin, 0.85), X(sk.kneeB), Y(sk.kneeB), X(sk.footB), Y(sk.footB) - 2, o && o.shorts ? 3 : 4);
   rect(ctx, boot, X(sk.footB) - 2 + (sk.view === 'side' ? f : 0), Y(sk.footB) - 3, 5, 3);
@@ -119,21 +119,21 @@ export function drawTraveler(ctx, x, y, k, t) {
     rect(ctx, EVA_D, hx - 6, hy + 5, 12, 1);
     if (sk.view !== 'back') { rect(ctx, [40, 60, 80], hx - 4 + (sk.view === 'side' ? f * 2 : 0), hy - 3, 8, 6); px(ctx, [200, 230, 255], hx - 2 + (sk.view === 'side' ? f * 3 : 0), hy - 2, 0.7); }
   } else {
-    rect(ctx, SKIN, hx - 4, hy - 5, 9, 10);
-    rect(ctx, SKIN, hx - 1, hy + 5, 3, 2); // neck
+    rect(ctx, (k.skin || SKIN), hx - 4, hy - 5, 9, 10);
+    rect(ctx, (k.skin || SKIN), hx - 1, hy + 5, 3, 2); // neck
     if (sk.view === 'back') {
-      rect(ctx, HAIR, hx - 4, hy - 6, 9, 9);
+      rect(ctx, (k.hair || HAIR), hx - 4, hy - 6, 9, 9);
     } else if (sk.view === 'front') {
-      rect(ctx, HAIR, hx - 4, hy - 6, 9, 3);
-      rect(ctx, HAIR, hx - 4, hy - 4, 1, 4); rect(ctx, HAIR, hx + 4, hy - 4, 1, 4);
+      rect(ctx, (k.hair || HAIR), hx - 4, hy - 6, 9, 3);
+      rect(ctx, (k.hair || HAIR), hx - 4, hy - 4, 1, 4); rect(ctx, (k.hair || HAIR), hx + 4, hy - 4, 1, 4);
       px(ctx, [40, 30, 30], hx - 2, hy - 1); px(ctx, [40, 30, 30], hx + 2, hy - 1);
       if (k.yawn > 0) rect(ctx, [90, 40, 40], hx - 1, hy + 2, 3, 2);
     } else {
       // profile
-      rect(ctx, HAIR, hx - 4 * f - (f < 0 ? 1 : 0) - (f > 0 ? 0 : 3), hy - 6, 6, 3);
-      rect(ctx, HAIR, f > 0 ? hx - 4 : hx + 2, hy - 5, 3, 7);
+      rect(ctx, (k.hair || HAIR), hx - 4 * f - (f < 0 ? 1 : 0) - (f > 0 ? 0 : 3), hy - 6, 6, 3);
+      rect(ctx, (k.hair || HAIR), f > 0 ? hx - 4 : hx + 2, hy - 5, 3, 7);
       px(ctx, [40, 30, 30], hx + 2 * f, hy - 1);
-      px(ctx, mul(SKIN, 0.85), hx + 5 * f, hy + 1); // nose
+      px(ctx, mul((k.skin || SKIN), 0.85), hx + 5 * f, hy + 1); // nose
       if (k.yawn > 0) rect(ctx, [90, 40, 40], hx + 2 * f, hy + 2, 2, 2);
     }
   }
@@ -141,7 +141,7 @@ export function drawTraveler(ctx, x, y, k, t) {
   // near arm
   limb(ctx, suit, X(sk.chest), Y(sk.chest) + 2, X(sk.elbowF), Y(sk.elbowF), 3);
   limb(ctx, suit, X(sk.elbowF), Y(sk.elbowF), X(sk.handF), Y(sk.handF), 3);
-  rect(ctx, k.suited ? EVA_D : SKIN, X(sk.handF) - 1, Y(sk.handF) - 1, 2, 2);
+  rect(ctx, k.suited ? EVA_D : (k.skin || SKIN), X(sk.handF) - 1, Y(sk.handF) - 1, 2, 2);
   if (sk.book) rect(ctx, [150, 60, 50], X(sk.handF) - 2, Y(sk.handF) - 5, 4, 6);
   if (sk.tool) rect(ctx, [160, 160, 170], X(sk.handF), Y(sk.handF) - 1, 4 * f, 1);
   if (sk.mug) { rect(ctx, [206, 204, 196], X(sk.handF) - 1, Y(sk.handF) - 3, 3, 4); px(ctx, [150, 110, 80], X(sk.handF), Y(sk.handF) - 3); }
@@ -153,8 +153,8 @@ function drawLying(ctx, x, y, k, t) {
   // asleep on the bunk (y is the mattress top); blanket rises with breath
   const br = Math.round((Math.sin(t * 0.9) + 1) * 0.5);
   ctx.globalAlpha = k.alpha ?? 1;
-  rect(ctx, SKIN, x - 26, y - 7, 8, 7);
-  rect(ctx, HAIR, x - 28, y - 8, 5, 8);
+  rect(ctx, (k.skin || SKIN), x - 26, y - 7, 8, 7);
+  rect(ctx, (k.hair || HAIR), x - 28, y - 8, 5, 8);
   rect(ctx, [126, 112, 150], x - 19, y - 6 - br, 40, 6 + br);
   rect(ctx, [150, 136, 172], x - 19, y - 6 - br, 40, 1);
   rect(ctx, [100, 88, 122], x - 19, y - 1, 40, 1);

@@ -11,6 +11,8 @@ import { startJump, startDescent } from '../space/flight.js';
 import { plotRoute } from '../space/navigator.js';
 import { roverCanDrive } from '../space/rover.js';
 import { stationIn } from '../space/ports.js';
+import { makePassenger } from '../space/people.js';
+import { boardPassengers } from '../space/passengers.js';
 import { renderFeed } from '../render/app.js';
 import { Director } from '../render/director.js';
 import { spaceView } from '../render/spaceview.js';
@@ -116,6 +118,13 @@ export const SCENARIOS = {
   docking(d) { return portScene(d, (x) => x.ship.flight.mode === 'docking' && x.ship.flight.phases && x.ship.flight.phases.i >= 1 && x.ship.flight.phases.t > 200, ['CAM-08', 'CAM-14', 'CAM-01']); },
   docked(d) { return portScene(d, (x) => x.ship.flight.mode === 'docked', ['CAM-08', 'CAM-17', 'CAM-02']); },
   concourse(d) { return portScene(d, (x) => x.traveler.activity?.id === 'go_ashore' && x.traveler.activity.params.plan?.i >= 2, ['PORT-CAM', 'CAM-08']); },
+  passengers(d) {
+    const s = createInitialState(d, { seed: 'gallery-pax' });
+    const m = { id: 'gallery-pax', passengers: 3, to: { system: 'Halden 2210' } };
+    boardPassengers(s, d, m, [0, 1, 2].map((i) => makePassenger(s.space.galaxySeed, m.id, i, 'Okafor Station', 'Halden 2210')));
+    runUntil(s, d, (x) => x.t > 9.5 * 3600 && x.space.passengers.some((p) => p.pos.room === 'gallery_s' && !p.moving));
+    return { s, feeds: ['CAM-23', 'CAM-28', 'CAM-25'] };
+  },
   descent(d) {
     const s = createInitialState(d, { seed: 'gallery-descent' });
     runUntil(s, d, (x) => x.t > 3 * 3600);

@@ -50,6 +50,9 @@ export function appraise(state, ev) {
     case 'port_visit':
       if ((ev.met || 0) < 2) return null;
       return { w: 0.32, v: 0.65, subject: `an evening at the bar on ${ev.station}`, summary: `Talked with ${ev.met} people at the bar on ${ev.station}.`, tags: ['port', 'people'] };
+    case 'conversation':
+      if (ev.met < 2 && !ev.topic) return null;
+      return { w: ev.met >= 3 ? 0.42 : 0.3, v: 0.65, subject: `talking with ${ev.who}`, summary: ev.met >= 2 ? `${ev.who} again${ev.topic ? `: we talked about ${ev.topic}` : ''}.` : `Met ${ev.who}${ev.topic ? ` and told them about ${ev.topic}` : ''}.`, tags: ['people', ev.role] };
     case 'mission_complete': return { w: 0.4, v: 0.6, subject: ev.title, summary: `Delivered: ${ev.title}, for ${ev.reward.toLocaleString('en-US')} credits.`, tags: ['mission', ev.kind] };
     case 'mission_fail': return { w: 0.38, v: -0.6, subject: ev.title, summary: ev.reason === 'caught' ? `Caught with the cargo at ${ev.station}: ${ev.title}. Fined ${ev.fine} credits.` : `Ran out of time: ${ev.title}.`, tags: ['mission', 'hardship'] };
     case 'rover_end': {

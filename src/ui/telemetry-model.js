@@ -15,7 +15,7 @@ const ACTIVITY = {
   gaze_viewport: 'Looking out', read: 'Reading', listen_music: 'Listening to music', sketch: 'Sketching', play_solitaire: 'Playing cards',
   play_instrument: 'Playing an instrument', reflect: 'Thinking', linger: 'Pausing', stroll: 'Walking the ship', tinker: 'Tinkering',
   survey_system: 'Surveying the system', scan_body: 'Scanning', plot_route: 'Plotting a route', set_course: 'Setting course', jump: 'Jumping',
-  scoop_fuel: 'Scooping fuel', land: 'Landing', takeoff: 'Lifting off', eva: 'On EVA', rover_outing: 'Out in the rover', dock: 'Docking', study_sample: 'Studying a sample', go_ashore: 'Ashore on the station', undock: 'Undocking', refine_samples: 'Refining samples', melt_ice: 'Melting ice',
+  scoop_fuel: 'Scooping fuel', land: 'Landing', takeoff: 'Lifting off', eva: 'On EVA', rover_outing: 'Out in the rover', dock: 'Docking', study_sample: 'Studying a sample', chat_passengers: 'Talking with a passenger', go_ashore: 'Ashore on the station', undock: 'Undocking', refine_samples: 'Refining samples', melt_ice: 'Melting ice',
   enter_torpor: 'In torpor',
 };
 const FLIGHT = { idle: 'Holding station', cruise: 'Supercruise', orbit: 'In orbit', landed: 'Landed', descent: 'Descending', ascent: 'Ascending', scooping: 'Scooping', charging: 'Charging jump drive', hyperspace: 'In hyperspace', void: 'Crossing the void' };
