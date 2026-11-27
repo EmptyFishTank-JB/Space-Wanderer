@@ -596,7 +596,7 @@
   "fuelPerTon": 60,
   "hullRepair": 2200,
   "missionRangeLy": 110,
-  "maxMissions": 3,
+  "maxMissions": 2,
   "holdForCargoT": 40,
   "cabins": 3,
   "price": {

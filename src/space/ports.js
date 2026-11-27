@@ -15,6 +15,7 @@ import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
 import { boardPassengers, disembark } from './passengers.js';
 import { makePassenger } from './people.js';
+import { wantedPilot, redeemVouchers, initCombat } from './combat.js';
 
 const FACTIONS = [
   { id: 'meridian', name: 'Meridian Compact' },
@@ -150,6 +151,7 @@ export function initPorts(state) {
   sp.stats.missionsFailed = sp.stats.missionsFailed || 0;
   sp.stats.earned = sp.stats.earned || 0;
   if (state.traveler.history.lastPortT === undefined) state.traveler.history.lastPortT = state.t - 4 * 86400;
+  initCombat(state);
 }
 
 const missionCargo = (sp) => sp.missions.reduce((a, m) => a + (m.tons || 0), 0);
@@ -167,9 +169,9 @@ export function wantsPort(state, data) {
   if (sh.components.hull_plating.wear > 0.55) return 'repairs';
   const sinceDays = (state.t - (tr.history.lastPortT ?? -Infinity)) / 86400;
   const lonely = tr.needs.solitude * (0.6 + 0.8 * data.traveler.traits.sociability);
-  if (lonely > 0.55 && sinceDays > 2) return 'company';
+  if (lonely > 0.7 && sinceDays > 4) return 'company';
   if (sp.credits < 600 && sinceDays > 1) return 'work';
-  if (sinceDays > 9 && !sp.portsVisited[stn.id]) return 'curious';
+  if (sinceDays > 12 && !sp.portsVisited[stn.id]) return 'curious';
   return null;
 }
 
@@ -227,6 +229,7 @@ function missionReady(state, m) {
   const sp = state.space;
   if (m.kind === 'xeno') return state.space.cargo.bio >= m.samples;
   if (m.kind === 'survey') return sp.stats.scans - m.scansAtStart >= m.bodies;
+  if (m.kind === 'bounty') return !!m.killed;
   return true;
 }
 
@@ -248,7 +251,7 @@ function arrivePort(state, data, stn) {
   const rep = (fac, dv) => { sp.rep[fac] = clamp((sp.rep[fac] || 0) + dv, -1, 1); };
   // deliveries
   for (const m of [...sp.missions]) {
-    const here = m.to ? m.to.starId === sp.systemId : m.faction === stn.faction;
+    const here = m.kind === 'bounty' ? m.faction === stn.faction : m.to ? m.to.starId === sp.systemId : m.faction === stn.faction;
     if (!here || !missionReady(state, m)) continue;
     if (m.kind === 'smuggle' && chance(state.rng, m.risk)) {
       const fine = Math.round(m.reward * 0.6);
@@ -268,6 +271,7 @@ function arrivePort(state, data, stn) {
     sp.missions = sp.missions.filter((x) => x !== m);
     emit(state, 'mission_complete', { kind: m.kind, title: m.title, reward: m.reward, station: stn.name, passengers: m.passengers || 0, room: 'bridge' });
   }
+  redeemVouchers(state); // bounties claimed on pirates met along the way
   // the dock's services: fuel, and the shipyard for a worn hull
   const fuel = state.ship.fuel;
   const want = Math.max(0, fuel.capacity - fuel.tons);
@@ -296,29 +300,38 @@ export function makeOffers(state, data, stn) {
     .filter((c) => c.id !== sp.systemId && c.dist > 12 && inhabited(sp.galaxySeed, c)).slice(0, 40);
   const offers = [];
   const n = int(st, 3, 6);
-  const kinds = ['cargo', 'cargo', 'passenger', 'xeno', 'survey', 'smuggle'];
+  const kinds = ['cargo', 'cargo', 'passenger', 'xeno', 'survey', 'smuggle', 'bounty'];
   for (let i = 0; i < n; i++) {
     const kind = pick(st, kinds);
     const o = { id: `${stn.id}:${day}:${i}`, kind, faction: stn.faction, from: { starId: sp.systemId, station: stn.name } };
-    if (kind === 'cargo' || kind === 'passenger' || kind === 'smuggle') {
+    if (kind === 'bounty') {
+      if (!dests.length) continue;
+      const to = pick(st, dests);
+      o.to = { starId: to.id, system: systemName(sp.galaxySeed, to.id) };
+      o.ly = Math.round(to.dist);
+      o.target = wantedPilot(sp.galaxySeed, o.id);
+      o.reward = o.target.bounty;
+      o.deadlineT = state.t + range(st, 8, 16) * 86400;
+      o.title = `Bounty: ${o.target.name}, a ${o.target.cls}, last seen at ${o.to.system}`;
+    } else if (kind === 'cargo' || kind === 'passenger' || kind === 'smuggle') {
       if (!dests.length) continue;
       const to = pick(st, dests);
       o.to = { starId: to.id, system: systemName(sp.galaxySeed, to.id) };
       o.ly = Math.round(to.dist);
       const legs = Math.max(1, Math.ceil(to.dist / (0.7 * data.space.drive.baseRangeLy)));
-      o.deadlineT = state.t + (2 + legs * 1.6) * 86400 * range(st, 1, 1.5);
-      if (kind === 'cargo') { o.tons = int(st, 4, 24); o.reward = Math.round(800 + 110 * to.dist + 35 * o.tons); o.title = `${o.tons} t of ${pick(st, ['machine parts', 'medical supplies', 'seed stock', 'water purifiers', 'reactor seals', 'textiles', 'archive cores'])} to ${o.to.system}`; }
-      if (kind === 'passenger') { o.passengers = int(st, 1, 3); o.reward = Math.round(1300 + 140 * to.dist * o.passengers); o.title = `${o.passengers === 1 ? 'A passenger' : `${o.passengers} passengers`} to ${o.to.system}`; }
-      if (kind === 'smuggle') { o.tons = int(st, 2, 6); o.risk = range(st, 0.12, 0.3); o.reward = Math.round(2.6 * (800 + 110 * to.dist + 35 * o.tons)); o.title = `${o.tons} t, no questions asked, to ${o.to.system}`; }
+      o.deadlineT = state.t + (4 + legs * 2.6) * 86400 * range(st, 1, 1.5); // room for a wanderer to stop and look on the way
+      if (kind === 'cargo') { o.tons = int(st, 4, 24); o.reward = Math.round(400 + 50 * to.dist + 20 * o.tons); o.title = `${o.tons} t of ${pick(st, ['machine parts', 'medical supplies', 'seed stock', 'water purifiers', 'reactor seals', 'textiles', 'archive cores'])} to ${o.to.system}`; }
+      if (kind === 'passenger') { o.passengers = int(st, 1, 3); o.reward = Math.round(700 + 60 * to.dist * o.passengers); o.title = `${o.passengers === 1 ? 'A passenger' : `${o.passengers} passengers`} to ${o.to.system}`; }
+      if (kind === 'smuggle') { o.tons = int(st, 2, 6); o.risk = range(st, 0.12, 0.3); o.reward = Math.round(2.6 * (400 + 50 * to.dist + 20 * o.tons)); o.title = `${o.tons} t, no questions asked, to ${o.to.system}`; }
     } else if (kind === 'xeno') {
       o.samples = 1;
       o.deadlineT = state.t + range(st, 14, 28) * 86400;
-      o.reward = Math.round(range(st, 3200, 5200));
+      o.reward = Math.round(range(st, 1500, 2600));
       o.title = `A living sample from any world, for ${factionName(stn.faction)} biologists`;
     } else {
       o.bodies = int(st, 3, 6);
       o.deadlineT = state.t + range(st, 18, 35) * 86400;
-      o.reward = 520 * o.bodies;
+      o.reward = 220 * o.bodies;
       o.title = `Survey scans of ${o.bodies} new worlds, for any ${factionName(stn.faction)} station`;
     }
     offers.push(o);
@@ -335,16 +348,19 @@ export function chooseMissions(state, data) {
   const taken = [];
   const room = () => ({ tons: P.holdForCargoT - missionCargo(sp), seats: P.cabins - passengers(sp) });
   const scored = sp.offers.list.map((o) => {
-    let s = o.reward / 4000 + (sp.credits < 2000 ? 0.4 : 0);
+    let s = o.reward / 2500 + (sp.credits < 2000 ? 0.4 : 0) - Math.min(0.4, sp.credits / 40000);
     if (o.kind === 'xeno' || o.kind === 'survey') s += 0.5 * tr.curiosity;
     if (o.kind === 'passenger') s += 0.3 * tr.sociability;
     if (o.kind === 'smuggle') s -= 0.6 * tr.discipline;
+    if (o.kind === 'bounty') s += 0.25 * tr.resilience - 0.35 + (state.ship.components.hull_plating.wear > 0.4 ? -0.4 : 0);
     return { o, s: s + range(state.rng, -0.15, 0.15) };
   }).sort((a, b) => b.s - a.s);
   for (const { o, s } of scored) {
-    if (sp.missions.length >= P.maxMissions || s < 0.55) break;
+    if (sp.missions.length >= P.maxMissions || s < 0.7) break;
     const r = room();
     if ((o.tons || 0) > r.tons || (o.passengers || 0) > r.seats) continue;
+    // a wanderer, not a hauler: with money in hand, only the work that's interesting for its own sake, and not always
+    if (sp.credits > 6000 && !['xeno', 'survey'].includes(o.kind) && !chance(state.rng, 0.25)) continue;
     if (o.kind === 'smuggle' && !chance(state.rng, 0.25)) continue;
     const m = { ...o, acceptedT: state.t, scansAtStart: sp.stats.scans };
     sp.missions.push(m);
@@ -396,7 +412,7 @@ export function expireMissions(state) {
 /** Where the active missions want to go next: a star position to steer for, or null. */
 export function missionTarget(state, data) {
   const sp = state.space;
-  const m = sp.missions.filter((x) => x.to).sort((a, b) => a.deadlineT - b.deadlineT)[0];
+  const m = sp.missions.filter((x) => x.to && !(x.kind === 'bounty' && x.killed)).sort((a, b) => a.deadlineT - b.deadlineT)[0];
   if (!m) return null;
   const st = starById(sp.galaxySeed, m.to.starId, data.space);
   return st ? { id: st.id, pos: st.pos } : null;

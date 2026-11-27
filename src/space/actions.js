@@ -176,6 +176,14 @@ export const FLIGHT_ACTIONS = {
     },
   },
 
+  // under attack: get to the helm and fight (or run)
+  fight: {
+    category: 'critical', exertion: 0.9, posture: 'sitting', minCommit: 30, uninterruptible: true,
+    gen(s) { return s.space && s.space.combat ? one(0.99, at('bridge', 'helm')) : []; },
+    duration: () => -1,
+    done: (s) => !s.space.combat,
+  },
+
   // put in at the port: fly to its world, then dock at the station or land at the settlement's pad
   dock: {
     category: 'flight', exertion: 0.5, posture: 'sitting', minCommit: 600,

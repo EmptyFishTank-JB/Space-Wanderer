@@ -36,6 +36,7 @@ const SCENES = {
   'Ship': [['day', 'A normal day'], ['night', 'Night'], ['faults', 'Faults'], ['hull', 'Hull cameras']],
   'Flight': [['scoop', 'Scooping a star'], ['hyperspace', 'Jump'], ['ringed', 'Ringed world'], ['earthlike', 'Earth-like world'], ['descent', 'Landing'], ['torpor', 'Deep sleep crossing']],
   'Surface': [['eva', 'Planet walk'], ['rover', 'Rover outing: driving'], ['roversite', 'Rover outing: at a site']],
+  'Combat': [['combat', 'Pirate interdiction']],
   'Ports': [['docking', 'Docking at a station'], ['docked', 'Docked in the hangar'], ['concourse', 'Ashore on the concourse'], ['base', 'Landed at a settlement'], ['basehall', 'Ashore at a settlement'], ['passengers', 'Passengers aboard']],
 };
 

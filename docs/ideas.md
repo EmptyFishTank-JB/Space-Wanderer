@@ -57,10 +57,23 @@ The hold already runs out to the belly wall and has room for trade cargo. The co
   Each has a deadline, a reward and faction standing. Routes steer toward a mission's destination.
 - **Credits and missions** show in telemetry. There are journal entries, memories and daily log lines for all of this.
 
+### Also built (2026-11-27)
+
+- **Planetside bases:** about half the settled systems also have a settlement on a landable world. The traveler lands at its pad, goes ashore into the base hall, and lifts off again. The domes show on the horizon.
+- **People:** each station has a bartender, a clerk and regulars, all with names, faces, manners and trades. The same people are there on every visit. Conversations are remembered on both sides (how often they've met, rapport, what they talked about), and later visits pick up the thread.
+- **Passengers:**
+  - they live aboard in their cabins, with a day of their own: sleep, meals in the lounge, the galleries, reading, walks;
+  - the traveler talks with them;
+  - they go ashore at the destination.
+- **Mission rooms in the game:** the galleries, passenger cabins and lounge, brig, secure cargo, bio lab and xeno containment are real rooms with their own cameras.
+- **Combat, first version:**
+  - pirates interdict in inhabited space;
+  - the traveler fights from the helm, and the shield and hull take the damage;
+  - they run with the jump drive when outmatched; the worst outcome is losing the cargo;
+  - bounty contracts on named pilots; vouchers paid at ports.
+
 ### Still to come
 
-- Planetside bases: landing at a settlement on a world's surface.
-- People as characters: names, faces and conversations that come back on later visits.
-- Bounty hunting and combat, still a "maybe". The hardpoints, shield and fire-control room exist in the 3D layout but not in the game.
-- Passengers moving about the ship in the cabins and lounge.
-- Mission rooms in the game: the passenger cabins, brig, secure cargo and xeno containment exist only in the 3D layout so far.
+- Combat with more to it: the fire-control room in the game, choosing to submit, more than one attacker, wingmen.
+- Prisoners in the brig, for bounties that want the target alive.
+- Passengers with their own small stories: requests, complaints, a farewell.

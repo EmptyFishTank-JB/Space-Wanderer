@@ -12,6 +12,7 @@ import { plotRoute } from '../space/navigator.js';
 import { roverCanDrive } from '../space/rover.js';
 import { stationIn, baseIn } from '../space/ports.js';
 import { makePassenger } from '../space/people.js';
+import { startCombat } from '../space/combat.js';
 import { boardPassengers } from '../space/passengers.js';
 import { renderFeed } from '../render/app.js';
 import { Director } from '../render/director.js';
@@ -137,6 +138,13 @@ export const SCENARIOS = {
   concourse(d) { return portScene(d, (x) => x.traveler.activity?.id === 'go_ashore' && x.traveler.activity.params.plan?.i >= 2, ['PORT-CAM', 'CAM-08']); },
   base(d) { return baseScene(d, (x) => x.ship.flight.mode === 'landed' && x.ship.flight.port, ['CAM-17', 'CAM-08', 'CAM-02']); },
   basehall(d) { return baseScene(d, (x) => x.traveler.activity?.id === 'go_ashore' && x.traveler.activity.params.plan?.i >= 2, ['PORT-CAM', 'CAM-19']); },
+  combat(d) {
+    const s = createInitialState(d, { seed: 'gallery-fight' });
+    runUntil(s, d, (x) => x.t > 4 * 3600);
+    startCombat(s, d, { name: 'Lark', cls: 'raider', wanted: true, bounty: 3500 }, 'pirate');
+    runUntil(s, d, (x) => x.space.combat && x.space.combat.firing && x.space.combat.t > 30, 3600);
+    return { s, feeds: ['CAM-08', 'CAM-14', 'CAM-01'] };
+  },
   passengers(d) {
     const s = createInitialState(d, { seed: 'gallery-pax' });
     const m = { id: 'gallery-pax', passengers: 3, to: { system: 'Halden 2210' } };

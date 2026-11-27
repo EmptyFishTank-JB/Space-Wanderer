@@ -50,6 +50,10 @@ export function appraise(state, ev) {
     case 'port_visit':
       if ((ev.met || 0) < 2) return null;
       return { w: 0.32, v: 0.65, subject: `an evening at the bar on ${ev.station}`, summary: `Talked with ${ev.met} people at the bar on ${ev.station}.`, tags: ['port', 'people'] };
+    case 'combat_end': {
+      const what = { won: `brought down ${ev.foe}`, foe_fled: `drove ${ev.foe} off`, fled: `ran from ${ev.foe}`, robbed: `lost the cargo to ${ev.foe}` }[ev.result];
+      return { w: ev.result === 'won' ? 0.55 : 0.5, v: ev.result === 'won' || ev.result === 'foe_fled' ? 0.2 : -0.7, subject: `the fight with ${ev.foe}`, summary: `Pulled out of supercruise by a ${ev.cls}; ${what}${ev.bounty ? `, ${ev.bounty.toLocaleString('en-US')} credits on their head` : ''}.`, tags: ['combat', ev.result] };
+    }
     case 'conversation':
       if (ev.met < 2 && !ev.topic) return null;
       return { w: ev.met >= 3 ? 0.42 : 0.3, v: 0.65, subject: `talking with ${ev.who}`, summary: ev.met >= 2 ? `${ev.who} again${ev.topic ? `: we talked about ${ev.topic}` : ''}.` : `Met ${ev.who}${ev.topic ? ` and told them about ${ev.topic}` : ''}.`, tags: ['people', ev.role] };

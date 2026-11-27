@@ -138,6 +138,12 @@ export function spaceView(state, data) {
     view.objects.push({ kind: 'station', id: stn.id, bearing, elev, angR, dist: ['docking', 'docked', 'undocking'].includes(f.mode) ? 0.001 : d, station: stn, seed: strHash(stn.id) });
     view.station = stn;
   }
+  // a fight: where the attacker is, whether our guns are firing, how hard our shield is being hit
+  if (sp && sp.combat) {
+    const cb = sp.combat;
+    view.combat = { foe: cb.foe, firing: cb.firing && !cb.fleeT, fleeing: !!cb.fleeT, shieldDown: !!(state.ship.combat && state.ship.combat.down), t0: cb.t };
+  }
+  if (sp && sp.lastKillT !== undefined && state.t - sp.lastKillT < 6) view.boom = state.t - sp.lastKillT;
   view.objects.sort((a, b) => b.dist - a.dist); // far first
   view.glare = Math.min(1, starAng * 6 + (f.mode === 'scooping' ? 0.6 : 0));
   return view;

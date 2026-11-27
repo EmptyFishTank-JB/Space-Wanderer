@@ -73,6 +73,7 @@ export function mountTelemetry({ canvas }) {
       + `<div>fuel ${esc(s.fuel)} · heat <span class="${s.heat >= 70 ? 'warn' : ''}">${s.heat}%</span></div>`
       + `<div>O₂ ${s.o2}% · CO₂ <span class="${s.co2 >= 3000 ? 'warn' : ''}">${s.co2} ppm</span> · water ${s.water} L</div>`
       + `<div class="${s.faults ? 'warn' : ''}">${s.faults ? `${s.faults} fault${s.faults > 1 ? 's' : ''} open` : 'all systems nominal'}</div>`
+      + `<div class="${s.combat ? 'warn' : ''}">shield ${esc(s.shield)}${s.combat ? ` · UNDER ATTACK: ${esc(s.combat)}` : ''}</div>`
       + `<div>${s.credits.toLocaleString('en-US')} cr${s.missions.length ? ` · ${s.missions.length} mission${s.missions.length > 1 ? 's' : ''}: ${esc(s.missions[0])}${s.missions.length > 1 ? '…' : ''}` : ''}</div>`;
   }
 

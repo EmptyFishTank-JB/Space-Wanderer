@@ -46,7 +46,7 @@ function voyageFacts(s, d, dg) {
   return {
     system: sys.name, star: sys.star.label, starClass: sys.star.type || sys.star.cls, at: f.at ? sys.byId[f.at].name : null, mode: f.mode,
     atBody: f.at ? (({ name, type, rings, atmosphere, beauty }) => ({ name, type, rings, atmosphere, beauty }))(sys.byId[f.at]) : null,
-    arrivals: dg.arrivals, discoveries: dg.discoveries, landings: dg.landings, evas: dg.evas, rovers: dg.rovers, ports: dg.ports, missions: dg.missions, talks: dg.talks, scoops: dg.scoops,
+    arrivals: dg.arrivals, discoveries: dg.discoveries, landings: dg.landings, evas: dg.evas, rovers: dg.rovers, ports: dg.ports, missions: dg.missions, talks: dg.talks, fights: dg.fights, scoops: dg.scoops,
     awe: dg.awe, torpor: dg.torpor, heatDamage: dg.heatDamage, keepsakes: dg.keepsakes,
     lyTotal: Math.round(sp.stats.ly), systemsTotal: sp.stats.systems, yearsInTorpor: Math.round(sp.stats.torporYears * 10) / 10,
     nextLeg: sp.void ? { void: true, ly: Math.round(sp.void.ly), years: Math.round(sp.void.years * 10) / 10 } : sp.route ? { to: sp.route.name, ly: Math.round(sp.route.dist * 10) / 10 } : null,

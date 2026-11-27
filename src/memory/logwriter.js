@@ -141,6 +141,7 @@ export function writeLog({ state, data, facts, entry }) {
     lines.find.push(`Walked ${Math.round(e.walkedM)} m out${feats.length ? ` to the ${feats[feats.length - 1]}` : ''} and back.${samples.length ? ` Brought in ${listJoin(samples)}.` : ''}`);
   }
   for (const p of (v.ports || []).slice(0, 1)) lines.find.push(p.first ? `Put in at ${p.station}, ${p.system}. ${p.faction} territory. People everywhere, after all this time.` : `Docked at ${p.station} again.`);
+  for (const fgt of (v.fights || []).slice(0, 1)) lines.find.push({ won: `A ${fgt.cls} called ${fgt.foe} pulled us out of cruise. They didn't leave.${fgt.bounty ? ` ${fgt.bounty.toLocaleString('en-US')} on their head.` : ''}`, foe_fled: `${fgt.foe} jumped us and then thought better of it.`, fled: `Ran from ${fgt.foe}. The shield bought the seconds the drive needed.`, robbed: `${fgt.foe} took the cargo. Hands still shaking.` }[fgt.result]);
   const talk = (v.talks || []).find((x) => x.met >= 2) || (v.talks || [])[0];
   if (talk) lines.find.push(talk.met >= 2 ? `${talk.who} remembered me.${talk.topic ? ` We ended up on ${talk.topic} again.` : ''}` : `Met ${talk.who}${talk.role === 'passenger' ? ', one of the passengers' : talk.role === 'bartender' ? ', who runs the bar' : ''}.`);
   for (const m of (v.missions || []).slice(0, 2)) lines.find.push(m.done ? `Handed over ${m.title}. ${m.reward.toLocaleString('en-US')} credits.` : m.reason === 'caught' ? `They scanned the hold. That's the end of that job: ${m.title}.` : `Missed the deadline: ${m.title}.`);
