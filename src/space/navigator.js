@@ -4,7 +4,7 @@ import { clamp, HOUR } from '../sim/util.js';
 import { factor } from '../sim/ship/wear.js';
 import { neighbors, density, riftLength, nearestStar, systemName, dist3, starVariant } from './galaxy.js';
 import { roverOutingsFor } from './rover.js';
-import { wantsPort, missionTarget, inhabited, stationIn } from './ports.js';
+import { wantsPort, missionTarget, inhabited, portIn } from './ports.js';
 
 const STAR_RARITY = { O: 1, B: 0.9, A: 0.6, F: 0.35, G: 0.25, K: 0.15, M: 0.05, L: 0.4, T: 0.55, D: 0.6, N: 0.95, BH: 1, Y: 0.8, C: 0.95, RG: 0.7, WR: 1, PSR: 1 };
 
@@ -118,7 +118,7 @@ export function decideAgenda(state, data, sys) {
   // so the traveler parks somewhere beautiful instead of only ever working. Picked without the RNG.
   // a port call comes first when there is a reason to put in (a delivery, supplies, company, work)
   const why = state.space.missions ? wantsPort(state, data) : null;
-  if (why) { const stn = stationIn(state.space.galaxySeed, state.space.systemId, data.space); items.unshift({ kind: 'port', station: stn.id, body: stn.body, why, done: { ashore: false } }); }
+  if (why) { const stn = portIn(state, data); items.unshift({ kind: 'port', station: stn.id, body: stn.body, base: stn.kind === 'base', why, done: { ashore: false } }); }
   const sight = scored.find(({ b }) => b.beauty > 0.6 && !items.some((i) => i.body === b.id));
   if (sight && ambition > 0.2 && items.filter((i) => i.kind === 'visit').length < 3) {
     const b = sight.b;
@@ -144,7 +144,7 @@ export function advanceAgenda(state, data) {
   }
   if (item.kind === 'port') {
     // done once ashore and away from the pad again
-    if (item.done.ashore && !['docking', 'docked', 'undocking'].includes(f.mode)) sp.agenda.shift();
+    if (item.done.ashore && !['docking', 'docked', 'undocking', 'descent', 'landed', 'ascent'].includes(f.mode)) sp.agenda.shift();
     return;
   }
   if (item.kind === 'visit') {

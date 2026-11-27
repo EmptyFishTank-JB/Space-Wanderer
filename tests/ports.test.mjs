@@ -99,3 +99,20 @@ test('a v7 save gets credits, reputation and an empty mission log', () => {
   assert.deepEqual(st.space.missions, []);
   assert.deepEqual(st.space.rep, {});
 });
+
+test('a settlement on the ground: land at its pad, go ashore, lift off', async () => {
+  const { baseIn } = await import('../src/space/ports.js');
+  const s = fresh('base');
+  runCollect(s, 3 * HOUR);
+  let found = null;
+  for (const c of neighbors(s.space.galaxySeed, s.space.pos, 160, space)) { const b = baseIn(s.space.galaxySeed, c.id, space); if (b) { found = { b, sys: getSystem(s.space.galaxySeed, c.id, space) }; break; } }
+  assert.ok(found, 'no settlement on the ground nearby');
+  moveTo(s, found.sys);
+  s.space.agenda = [{ kind: 'port', station: found.b.id, body: found.b.body, base: true, why: 'company', done: { ashore: false } }];
+  const evs = runUntilEvent(s, ['touchdown', 'docked', 'port_visit', 'liftoff', 'orbit_entered'], 2 * DAY);
+  const names = evs.map((e) => e.type);
+  for (const n of ['touchdown', 'docked', 'port_visit', 'liftoff']) assert.ok(names.includes(n), `no ${n}: ${names.filter((x) => /dock|port|touch|lift|descent/.test(x)).join(' ')}`);
+  assert.equal(evs.find((e) => e.type === 'docked').kind, 'base');
+  assert.ok(names.indexOf('touchdown') < names.indexOf('port_visit') && names.indexOf('port_visit') < names.indexOf('liftoff'));
+  assert.ok(evs.some((e) => e.type === 'conversation'), 'talked with someone at the base');
+});

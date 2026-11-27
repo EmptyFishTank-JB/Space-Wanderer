@@ -38,7 +38,7 @@ export function renderExteriorFeed(ctx, m, def = {}) {
   const yaw = ang ? ang.yaw : def.yaw ?? 0, pitch = ang ? ang.pitch : def.pitch ?? -0.08;
   if (view.scene === 'surface') {
     const sp = cam ? pitch : view.altitudeKm > 0 ? pitch - 0.05 : pitch + 0.12;
-    drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: cam ? yaw : 0.25 + yaw, pitch: sp, entryHeat: view.entryHeat, buffeting: view.buffeting });
+    drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: cam ? yaw : 0.25 + yaw, pitch: sp, entryHeat: view.entryHeat, buffeting: view.buffeting, base: view.base });
   } else {
     drawSpaceScene(ctx, view, t, { yaw, pitch, pick: m.pickHull !== false });
   }

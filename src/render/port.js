@@ -8,7 +8,9 @@ import { travelerPose } from './actor.js';
 import { renderNoSignal } from './feed.js';
 import { drawHangar } from './celestial.js';
 import { picks } from './picks.js';
-import { stationIn, factionName } from '../space/ports.js';
+import { stationIn, portHere, factionName } from '../space/ports.js';
+import { drawSurfaceScene } from './terrain.js';
+import { currentSystem } from '../space/flight.js';
 import { atTheBar, peopleAt } from '../space/people.js';
 
 const TOPS = [[170, 60, 60], [60, 110, 170], [200, 170, 70], [90, 150, 100], [140, 90, 160], [210, 210, 210], [60, 60, 70], [190, 110, 60]];
@@ -22,8 +24,11 @@ export function ashore(state) {
 export function renderPortFeed(ctx, m) {
   const { state, data, t } = m;
   const f = state.ship.flight;
-  if (!ashore(state)) { renderNoSignal(ctx, t, f.mode === 'docked' ? 'CONCOURSE · NOBODY ABOARD' : 'NOT DOCKED'); return; }
-  const stn = stationIn(state.space.galaxySeed, state.space.systemId, data.space);
+  if (!ashore(state)) { renderNoSignal(ctx, t, f.mode === 'docked' || f.port ? 'CONCOURSE · NOBODY ABOARD' : 'NOT DOCKED'); return; }
+  const stn = portHere(state, data) || stationIn(state.space.galaxySeed, state.space.systemId, data.space);
+  const onGround = stn && stn.kind === 'base';
+  const sys = onGround ? currentSystem(state, data) : null;
+  const outside = (yaw) => (onGround ? drawSurfaceScene(ctx, { body: sys.byId[stn.body], sys, t, altitudeKm: 0, yaw, pitch: 0.06, base: stn }) : drawHangar(ctx, {}, t, yaw));
   const room = data.rooms.port;
   const L = room.width * PPM;
   const tx = state.traveler.pos.x * PPM;
@@ -31,8 +36,8 @@ export function renderPortFeed(ctx, m) {
   const ox = -Math.round(camX);
   const M = (xm) => ox + xm * PPM;
   // the hangar behind the viewing deck's glass, then the hall
-  drawHangar(ctx, { }, t, camX * 0.002);
-  const wall = [70, 74, 84], trim = [48, 52, 60];
+  outside(camX * 0.002);
+  const wall = onGround ? [96, 88, 78] : [70, 74, 84], trim = onGround ? [70, 62, 54] : [48, 52, 60];
   const viewX0 = M(room.stations.viewdeck - 8), viewX1 = M(room.stations.viewdeck + 8);
   rect(ctx, [16, 17, 20], 0, 0, W, H);
   // ceiling and its light strips
@@ -43,7 +48,7 @@ export function renderPortFeed(ctx, m) {
   for (let x = Math.floor(camX / 48) * 48; x < camX + W + 48; x += 48) rect(ctx, mul(wall, 0.85), x - camX, CEIL, 1, FLOOR - CEIL);
   if (viewX1 > 0 && viewX0 < W) {
     ctx.save(); ctx.beginPath(); ctx.rect(viewX0, CEIL + 8, viewX1 - viewX0, FLOOR - CEIL - 30); ctx.clip();
-    drawHangar(ctx, {}, t, 0.3);
+    outside(0.3);
     ctx.restore();
     for (let x = viewX0; x < viewX1; x += 64) rect(ctx, trim, x, CEIL + 8, 3, FLOOR - CEIL - 30);
   }

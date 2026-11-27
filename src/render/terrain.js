@@ -102,6 +102,19 @@ export function drawSurfaceScene(ctx, o) {
     const k = (y - hy) / (H - hy);
     rect(ctx, mix(pal.mid, pal.near, Math.min(1, k * 1.4)), 0, y, W, 1);
   }
+  // a settlement: domes, a tower and pad lights on the plain, in one direction
+  if (o.base) {
+    const b0 = 0.55 - yaw;
+    const cx = W / 2 + FOCAL * Math.tan(Math.max(-1.3, Math.min(1.3, b0)));
+    if (cx > -120 && cx < W + 120) {
+      const dome = (x, r, c) => { for (let dy = 0; dy <= r; dy++) { const w = Math.round(Math.sqrt(r * r - dy * dy)); rect(ctx, mix(c, [255, 255, 255], dy / r * 0.12), x - w, hy - dy, w * 2, 1); } };
+      dome(cx - 34, 9, [150, 156, 164]); dome(cx, 15, [168, 172, 178]); dome(cx + 30, 7, [140, 146, 156]);
+      rect(ctx, [120, 124, 132], cx + 46, hy - 30, 3, 30); rect(ctx, [120, 124, 132], cx + 42, hy - 30, 11, 2);
+      for (let i = 0; i < 9; i++) px(ctx, [255, 220, 150], cx - 40 + i * 9, hy - 3 - (i % 3), 0.9);
+      if (Math.sin(t * 2.2) > 0.4) px(ctx, [255, 80, 60], cx + 47, hy - 31);
+      for (let i = 0; i < 6; i++) px(ctx, Math.sin(t * 3 + i) > 0 ? [120, 230, 255] : [40, 80, 100], cx - 60 + i * 24, hy + 2);
+    }
+  }
   // ground clutter with perspective (rocks / ice blocks), moving as we walk
   const camH = 1.7 + alt * 1000;
   for (let i = 0; i < 90; i++) {

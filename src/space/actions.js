@@ -11,7 +11,7 @@ import { surveySystem, scanBody } from './discovery.js';
 import { decideAgenda, plotRoute, agendaHead } from './navigator.js';
 import { planEva, tickEva } from './eva.js';
 import { planRover, tickRover, roverCanDrive } from './rover.js';
-import { stationIn, startUndocking, tradeAtPort, chooseMissions, factionName } from './ports.js';
+import { stationIn, startUndocking, tradeAtPort, chooseMissions, factionName, portHere } from './ports.js';
 import { atTheBar, peopleAt, converse } from './people.js';
 import { beginTorpor, endTorpor } from './torpor.js';
 
@@ -176,26 +176,34 @@ export const FLIGHT_ACTIONS = {
     },
   },
 
-  // put in at the station: fly to its world and dock
+  // put in at the port: fly to its world, then dock at the station or land at the settlement's pad
   dock: {
     category: 'flight', exertion: 0.5, posture: 'sitting', minCommit: 600,
     gen(s, d) {
       const f = s.ship.flight;
       const it = agendaHead(s);
       if (!it || it.kind !== 'port' || !PARKED.has(f.mode) || !alert(s) || majorAlarmFault(s, d)) return [];
-      return one(0.5, at('bridge', 'helm'), { body: it.body });
+      return one(0.5, at('bridge', 'helm'), { body: it.body, base: !!it.base, port: it.station });
     },
     start(s, d, a) {
       const f = s.ship.flight;
+      if (a.params.base) {
+        if (f.at === a.params.body && f.mode === 'orbit') { f.portLanding = a.params.port; startDescent(s, d); }
+        else setCourse(s, d, a.params.body);
+        return;
+      }
       const stn = stationIn(s.space.galaxySeed, s.space.systemId, d.space);
       if (!stn) { a.params.aborted = true; return; }
-      if (f.at === stn.body && f.mode === 'orbit') {
-        // already in orbit round the station's world: just call for a pad
-        setCourse(s, d, stn.body, 'dock');
-      } else setCourse(s, d, stn.body, 'dock');
+      setCourse(s, d, stn.body, 'dock');
+    },
+    tick(s, d, a) {
+      // a settlement: once in orbit round its world, come down to its pad
+      const f = s.ship.flight;
+      if (a.params.base && f.mode === 'orbit' && f.at === a.params.body && !f.portLanding) { f.portLanding = a.params.port; startDescent(s, d); }
     },
     duration: () => -1,
-    done: (s, d, a) => a.params.aborted || s.ship.flight.mode === 'docked' || !['cruise', 'docking', 'orbit'].includes(s.ship.flight.mode) || (s.ship.flight.mode === 'orbit' && a.elapsed > 600),
+    done: (s, d, a) => a.params.aborted || s.ship.flight.mode === 'docked' || (s.ship.flight.mode === 'landed' && !!s.ship.flight.port)
+      || !['cruise', 'docking', 'orbit', 'descent'].includes(s.ship.flight.mode) || (s.ship.flight.mode === 'orbit' && a.elapsed > 900 && !a.params.base),
   },
 
   // ashore on the station: the concourse, the bar, the market and the mission board
@@ -204,7 +212,7 @@ export const FLIGHT_ACTIONS = {
     gen(s, d) {
       const f = s.ship.flight;
       const it = agendaHead(s);
-      if (f.mode !== 'docked' || !it || it.kind !== 'port' || it.done.ashore) return [];
+      if (!(f.mode === 'docked' || (f.mode === 'landed' && f.port)) || !it || it.kind !== 'port' || it.done.ashore) return [];
       const n = s.traveler.needs;
       if (n.fatigue > 0.8) return [];
       return one(0.55 + 0.3 * n.solitude + 0.2 * d.traveler.traits.sociability, at('airlock', 'inner_door'));
@@ -214,7 +222,7 @@ export const FLIGHT_ACTIONS = {
       const total = range(s.rng, P.ashoreMinutes[0], P.ashoreMinutes[1]) * 60;
       const stops = [['gate', 0.06], ['market', 0.16], ['bar', 0.42], ['board', 0.14], ['viewdeck', 0.14], ['gate', 0.08]];
       a.params.plan = { stops: stops.map(([at2, w]) => ({ at: at2, dur: w * total })), i: 0, t: 0, x: d.rooms.port.stations.gate };
-      const stn = stationIn(s.space.galaxySeed, s.space.systemId, d.space);
+      const stn = portHere(s, d);
       a.params.station = stn ? stn.name : 'the station';
       s.traveler.pos = { room: 'port', x: a.params.plan.x };
       emit(s, 'room_enter', { room: 'port', from: 'airlock', hatch: 'boarding_tube' });
@@ -242,7 +250,7 @@ export const FLIGHT_ACTIONS = {
       if (p.t < stop.dur) return;
       // what happens at each stop
       if (stop.at === 'market') tradeAtPort(s, d);
-      const stn = stationIn(s.space.galaxySeed, s.space.systemId, d.space);
+      const stn = portHere(s, d);
       if (stop.at === 'bar' && stn) {
         // the bartender, and whoever is in tonight; the sociable talk to more of them
         const here = atTheBar(s.space.galaxySeed, stn, Math.floor(s.t / 86400));
@@ -269,14 +277,18 @@ export const FLIGHT_ACTIONS = {
     category: 'flight', exertion: 0.5, posture: 'sitting', minCommit: 300,
     gen(s, d) {
       const f = s.ship.flight;
-      if (f.mode !== 'docked' || !alert(s)) return [];
+      if (!(f.mode === 'docked' || (f.mode === 'landed' && f.port)) || !alert(s)) return [];
       const it = agendaHead(s);
       if (it && it.kind === 'port' && !it.done.ashore) return [];
       return one(0.46, at('bridge', 'helm'));
     },
-    start(s, d) { startUndocking(s, d); },
+    start(s, d) {
+      const f = s.ship.flight;
+      if (f.mode === 'landed') { f.port = null; startAscent(s, d); emit(s, 'undocked', { station: '', room: 'bridge' }); }
+      else startUndocking(s, d);
+    },
     duration: () => -1,
-    done: (s) => s.ship.flight.mode !== 'undocking' && s.ship.flight.mode !== 'docked',
+    done: (s) => !['undocking', 'docked', 'ascent', 'landed'].includes(s.ship.flight.mode),
   },
 
   set_course: {

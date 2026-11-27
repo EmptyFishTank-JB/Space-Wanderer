@@ -10,7 +10,7 @@ import { getSystem } from '../space/system.js';
 import { startJump, startDescent } from '../space/flight.js';
 import { plotRoute } from '../space/navigator.js';
 import { roverCanDrive } from '../space/rover.js';
-import { stationIn } from '../space/ports.js';
+import { stationIn, baseIn } from '../space/ports.js';
 import { makePassenger } from '../space/people.js';
 import { boardPassengers } from '../space/passengers.js';
 import { renderFeed } from '../render/app.js';
@@ -55,6 +55,23 @@ function roverScene(d, until, feeds) {
     moveTo(s, f.sys, f.b);
     s.space.agenda = [{ kind: 'visit', body: f.b.id, land: true, eva: 1, rover: 1, lingerH: 0, done: { scanned: true, landed: false, evas: 1, rovers: 0, lingerUntil: null, leftSurface: false } }];
     runUntil(s, d, until, 86400 * 2);
+  }
+  return { s, feeds };
+}
+
+/** In a system with a settlement on the ground, set on landing there, then run until `until`. */
+function baseScene(d, until, feeds) {
+  const s = createInitialState(d, { seed: 'gallery-base' });
+  runUntil(s, d, (x) => x.t > 3 * 3600);
+  for (const c of neighbors(s.space.galaxySeed, s.space.pos, 160, d.space)) {
+    const base = baseIn(s.space.galaxySeed, c.id, d.space);
+    if (!base) continue;
+    const sys = getSystem(s.space.galaxySeed, c.id, d.space);
+    Object.assign(s.space, { systemId: sys.id, pos: sys.pos.slice(), systemName: sys.name, surveyed: true, detected: sys.bodies.map((x) => x.id), scanned: {}, route: null });
+    Object.assign(s.ship.flight, { mode: 'idle', at: null, target: null, v: 0, pos: { x: sys.star.radius * 30, y: 0 } });
+    s.space.agenda = [{ kind: 'port', station: base.id, body: base.body, base: true, why: 'company', done: { ashore: false } }];
+    runUntil(s, d, until, 86400 * 2);
+    break;
   }
   return { s, feeds };
 }
@@ -118,6 +135,8 @@ export const SCENARIOS = {
   docking(d) { return portScene(d, (x) => x.ship.flight.mode === 'docking' && x.ship.flight.phases && x.ship.flight.phases.i >= 1 && x.ship.flight.phases.t > 200, ['CAM-08', 'CAM-14', 'CAM-01']); },
   docked(d) { return portScene(d, (x) => x.ship.flight.mode === 'docked', ['CAM-08', 'CAM-17', 'CAM-02']); },
   concourse(d) { return portScene(d, (x) => x.traveler.activity?.id === 'go_ashore' && x.traveler.activity.params.plan?.i >= 2, ['PORT-CAM', 'CAM-08']); },
+  base(d) { return baseScene(d, (x) => x.ship.flight.mode === 'landed' && x.ship.flight.port, ['CAM-17', 'CAM-08', 'CAM-02']); },
+  basehall(d) { return baseScene(d, (x) => x.traveler.activity?.id === 'go_ashore' && x.traveler.activity.params.plan?.i >= 2, ['PORT-CAM', 'CAM-19']); },
   passengers(d) {
     const s = createInitialState(d, { seed: 'gallery-pax' });
     const m = { id: 'gallery-pax', passengers: 3, to: { system: 'Halden 2210' } };

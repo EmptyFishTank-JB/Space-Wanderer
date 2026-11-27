@@ -94,6 +94,47 @@ export function stationIn(seed, starId, space) {
   return stn;
 }
 
+const BASE_SUFFIX = ['Base', 'Settlement', 'Landing', 'Colony', 'Camp', 'Field'];
+const baseCache = new Map();
+/** A settlement on the ground, in a settled (not frontier) system: { id, name, faction, body, kind: 'base' } or null. */
+export function baseIn(seed, starId, space) {
+  const key = `${seed}|${starId}`;
+  if (baseCache.has(key)) return baseCache.get(key);
+  const star = starById(seed, starId, space);
+  const who = star && inhabited(seed, star);
+  let base = null;
+  if (who && !who.outpost) {
+    const st = hrng(seed, 'base', starId);
+    if (rand(st) < 0.55) {
+      const sys = getSystem(seed, starId, space);
+      const site = sys.bodies.find((b) => b.landable && b.kind !== 'belt' && b.gravity > 0.1 && b.gravity < 1.6 && b.a < 4000);
+      if (site) base = { id: `base:${starId}`, starId, body: site.id, faction: who.faction, kind: 'base', name: `${pick(st, FOUNDERS)} ${pick(st, BASE_SUFFIX)}`, system: sys.name, world: site.name };
+    }
+  }
+  if (baseCache.size > 200) baseCache.delete(baseCache.keys().next().value);
+  baseCache.set(key, base);
+  return base;
+}
+
+/** The port to put in at here: the station, or the settlement on the ground (alternating when there are both). */
+export function portIn(state, data) {
+  const sp = state.space;
+  const stn = stationIn(sp.galaxySeed, sp.systemId, data.space);
+  const base = baseIn(sp.galaxySeed, sp.systemId, data.space);
+  if (stn && base) return (sp.portsVisited[stn.id] || 0) > (sp.portsVisited[base.id] || 0) ? base : stn;
+  return stn || base;
+}
+
+/** The port the ship is at (docked at a station, or landed at a base), or null. */
+export function portHere(state, data) {
+  const f = state.ship.flight, sp = state.space;
+  if (!f.port) return null;
+  const stn = stationIn(sp.galaxySeed, sp.systemId, data.space);
+  if (stn && stn.id === f.port) return stn;
+  const base = baseIn(sp.galaxySeed, sp.systemId, data.space);
+  return base && base.id === f.port ? base : null;
+}
+
 // ───────── state ─────────
 export function initPorts(state) {
   const sp = state.space;
@@ -118,7 +159,7 @@ export const shipPassengers = (state) => (state.space ? passengers(state.space) 
 /** Does the traveler want to put in at a port in this system? */
 export function wantsPort(state, data) {
   const sp = state.space, sh = state.ship, tr = state.traveler;
-  const stn = stationIn(sp.galaxySeed, sp.systemId, data.space);
+  const stn = portIn(state, data);
   if (!stn) return null;
   if (sp.missions.some((m) => (m.to && m.to.starId === sp.systemId) || ((m.kind === 'xeno' || m.kind === 'survey') && m.faction === stn.faction && missionReady(state, m)))) return 'deliver';
   const inv = sh.inventory;
@@ -150,7 +191,7 @@ export function startUndocking(state, data) {
   emit(state, 'dock_phase', { phase: 'lift', station: portName(state, data), room: 'bridge' });
 }
 
-const portName = (state, data) => { const s = stationIn(state.space.galaxySeed, state.space.systemId, data.space); return s ? s.name : 'the station'; };
+const portName = (state, data) => { const s = portHere(state, data) || stationIn(state.space.galaxySeed, state.space.systemId, data.space); return s ? s.name : 'the station'; };
 
 /** Per-second flight update while docking or undocking. */
 export function stepDocking(state, data, dt) {
@@ -187,6 +228,19 @@ function missionReady(state, m) {
   if (m.kind === 'xeno') return state.space.cargo.bio >= m.samples;
   if (m.kind === 'survey') return sp.stats.scans - m.scansAtStart >= m.bodies;
   return true;
+}
+
+/** Touchdown at a settlement's pad: the same welcome as a dock. */
+export function landedAtBase(state, data, base) {
+  const sp = state.space;
+  const f = state.ship.flight;
+  f.port = base.id;
+  const first = !sp.portsVisited[base.id];
+  sp.portsVisited[base.id] = (sp.portsVisited[base.id] || 0) + 1;
+  sp.stats.ports++;
+  state.traveler.history.lastPortT = state.t;
+  emit(state, 'docked', { station: base.name, system: base.system, faction: factionName(base.faction), kind: 'base', world: base.world, first, room: 'bridge' });
+  arrivePort(state, data, base);
 }
 
 function arrivePort(state, data, stn) {

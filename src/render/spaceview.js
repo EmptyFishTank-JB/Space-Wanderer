@@ -29,7 +29,7 @@ function viewerPos(state, data, sys, mt) {
   return shipPos(state, data);
 }
 
-import { stationIn } from '../space/ports.js';
+import { stationIn, portHere } from '../space/ports.js';
 
 export function spaceView(state, data) {
   const f = state.ship.flight;
@@ -54,6 +54,8 @@ export function spaceView(state, data) {
     view.phase = f.phases ? f.phases.list[f.phases.i].name : 'landed';
     view.entryHeat = f.entryHeat || 0;
     view.buffeting = f.buffeting || 0;
+    const port = f.port && sp ? portHere(state, data) : null;
+    if (port && port.kind === 'base') view.base = port;
   }
 
   const p = viewerPos(state, data, sys, mt);

@@ -56,7 +56,7 @@ export function renderRoomFeed(ctx, m) {
   const wins = roomWindows(room);
   // 1. what's outside the glass
   if (wins.length || room === 'airlock') {
-    if (view.scene === 'surface') drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: feed.yaw || 0, pitch: 0.05, entryHeat: view.entryHeat });
+    if (view.scene === 'surface') drawSurfaceScene(ctx, { body: view.body, sys: view.sys, t, altitudeKm: view.altitudeKm, yaw: feed.yaw || 0, pitch: 0.05, entryHeat: view.entryHeat, base: view.base });
     else drawSpaceScene(ctx, view, t, { yaw: feed.yaw || 0, parallax: camX * 0.0006 });
   } else {
     ctx.fillStyle = '#000';

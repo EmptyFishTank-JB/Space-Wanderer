@@ -15,7 +15,7 @@ import { range } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';
 import { missionSeconds } from '../sim/clock.js';
 import { emit } from '../sim/events.js';
-import { stationIn, startDocking, stepDocking } from './ports.js';
+import { stationIn, baseIn, startDocking, stepDocking, landedAtBase } from './ports.js';
 import { factor } from '../sim/ship/wear.js';
 import { getSystem, bodyPos, bodyRadius, LS_PER_AU, LS_PER_REARTH, KM_PER_LS } from './system.js';
 import { onArrival } from './discovery.js';
@@ -357,6 +357,7 @@ function stepPhases(state, data, dt, kind) {
     state.space.stats.landings++;
     f.touchdownT = state.t; // for the linger before lifting off again
     emit(state, 'touchdown', { body: b.name, bodyId: b.id, bodyType: b.type, gravity: round(b.gravity, 2), tempK: b.tempK, first });
+    if (f.portLanding) { const base = baseIn(state.space.galaxySeed, state.space.systemId, data.space); f.portLanding = null; if (base && base.body === b.id) landedAtBase(state, data, base); }
   } else {
     f.mode = 'orbit';
     emit(state, 'orbit_entered', { body: b.name, bodyId: b.id, bodyType: b.type, fromSurface: true });
