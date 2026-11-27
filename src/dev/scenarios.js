@@ -10,6 +10,7 @@ import { getSystem } from '../space/system.js';
 import { startJump, startDescent } from '../space/flight.js';
 import { plotRoute } from '../space/navigator.js';
 import { roverCanDrive } from '../space/rover.js';
+import { stationIn } from '../space/ports.js';
 import { renderFeed } from '../render/app.js';
 import { Director } from '../render/director.js';
 import { spaceView } from '../render/spaceview.js';
@@ -56,6 +57,24 @@ function roverScene(d, until, feeds) {
   return { s, feeds };
 }
 
+/** In a settled system near the start, with a reason to put in at its station, then run until `until`. */
+function portScene(d, until, feeds) {
+  const s = createInitialState(d, { seed: 'gallery-port' });
+  runUntil(s, d, (x) => x.t > 3 * 3600);
+  for (const c of neighbors(s.space.galaxySeed, s.space.pos, 120, d.space)) {
+    const stn = stationIn(s.space.galaxySeed, c.id, d.space);
+    if (!stn) continue;
+    const sys = getSystem(s.space.galaxySeed, c.id, d.space);
+    Object.assign(s.space, { systemId: sys.id, pos: sys.pos.slice(), systemName: sys.name, surveyed: true, detected: sys.bodies.map((x) => x.id), scanned: {}, route: null });
+    Object.assign(s.ship.flight, { mode: 'idle', at: null, target: null, v: 0, pos: { x: sys.star.radius * 30, y: 0 } });
+    s.space.cargo.ore = 24; s.space.dataUnsold = 3;
+    s.space.agenda = [{ kind: 'port', station: stn.id, body: stn.body, why: 'company', done: { ashore: false } }];
+    runUntil(s, d, until, 86400);
+    break;
+  }
+  return { s, feeds };
+}
+
 export const SCENARIOS = {
   day(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: [...ROOM_FEEDS, 'CAM-08'] }; },
   hull(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: ['CAM-08', 'CAM-14', 'CAM-15', 'CAM-16', 'CAM-17', 'CAM-18', 'CAM-19'] }; },
@@ -94,6 +113,9 @@ export const SCENARIOS = {
   },
   rover(d) { return roverScene(d, (x) => x.traveler.activity?.id === 'rover_outing' && x.traveler.activity.params.plan?.aboard && x.traveler.activity.params.plan.x > 1500, ['ROVER-CAM', 'CAM-20', 'CAM-19', 'CAM-17']); },
   roversite(d) { return roverScene(d, (x) => x.traveler.activity?.id === 'rover_outing' && x.traveler.activity.params.plan?.site && x.traveler.activity.params.plan.site.t > 120, ['EVA-POV', 'ROVER-CAM', 'CAM-20']); },
+  docking(d) { return portScene(d, (x) => x.ship.flight.mode === 'docking' && x.ship.flight.phases && x.ship.flight.phases.i >= 1 && x.ship.flight.phases.t > 200, ['CAM-08', 'CAM-14', 'CAM-01']); },
+  docked(d) { return portScene(d, (x) => x.ship.flight.mode === 'docked', ['CAM-08', 'CAM-17', 'CAM-02']); },
+  concourse(d) { return portScene(d, (x) => x.traveler.activity?.id === 'go_ashore' && x.traveler.activity.params.plan?.i >= 2, ['PORT-CAM', 'CAM-08']); },
   descent(d) {
     const s = createInitialState(d, { seed: 'gallery-descent' });
     runUntil(s, d, (x) => x.t > 3 * 3600);

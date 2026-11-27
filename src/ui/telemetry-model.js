@@ -67,7 +67,7 @@ export function telemetryFor(state, data, feedDef, exertion = 0.5) {
   const feedLabel = feedDef ? `${feedDef.id}${feedDef.label ? ` ${feedDef.label}` : ''}` : '';
   const travelerRoom = tr.pos && tr.pos.room;
   return {
-    camera: { feed: feedLabel, room: feedDef && feedDef.room ? titleRoom(data, feedDef.room) : feedDef && feedDef.rover ? 'Rover cab' : feedDef && feedDef.exterior ? `Hull exterior${feedDef.mount ? ` · ${feedDef.mount.toLowerCase()}` : ''}` : 'Helmet' },
+    camera: { feed: feedLabel, room: feedDef && feedDef.room ? titleRoom(data, feedDef.room) : feedDef && feedDef.rover ? 'Rover cab' : feedDef && feedDef.port ? 'Station concourse' : feedDef && feedDef.exterior ? `Hull exterior${feedDef.mount ? ` · ${feedDef.mount.toLowerCase()}` : ''}` : 'Helmet' },
     location: {
       system: sys.name, star: `${sys.star.label}${sys.star.companion ? ' + companion' : ''}`, starType: sys.star.type || sys.star.cls,
       status: where, starDistance: formatDistance(starDist), time: formatShipTime(state),

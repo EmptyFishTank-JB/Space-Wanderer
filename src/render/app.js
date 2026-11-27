@@ -9,6 +9,7 @@ import { renderRoomFeed } from './feed.js';
 import { renderExteriorFeed } from './exterior.js';
 import { renderEvaFeed, evaActive } from './eva.js';
 import { renderRoverFeed, roverActive } from './rover.js';
+import { renderPortFeed, ashore } from './port.js';
 import { makeCanvas } from './celestial.js';
 import { picks } from './picks.js';
 
@@ -17,6 +18,7 @@ export function renderFeed(ctx, feedId, m, director) {
   const def = director.feedDef(feedId);
   if (feedId === EVA) return renderEvaFeed(ctx, m);
   if (def.rover) return renderRoverFeed(ctx, m);
+  if (def.port) return renderPortFeed(ctx, m);
   if (def.exterior) return renderExteriorFeed(ctx, m, def);
   const roomW = m.data.rooms[def.room].width;
   const here = m.pos.room === def.room;
@@ -78,7 +80,7 @@ export class TerrariumRenderer {
     const events = this.events;
     this.events = [];
     const feed = this.director.update(now, {
-      travelerRoom: pos.room, eva: evaActive(state), rover: roverActive(state), events, shipMode: state.ship.flight.mode, heat: state.ship.thermal.heat,
+      travelerRoom: pos.room, eva: evaActive(state), rover: roverActive(state), port: ashore(state), events, shipMode: state.ship.flight.mode, heat: state.ship.thermal.heat,
       travelerStill: !tr.move && tr.activity && tr.activity.phase === 'perform', interestingRooms: interestingRooms(state),
     });
     if (feed !== this.feed) { this.feed = feed; if (this.onFeedChange) this.onFeedChange(feed); }

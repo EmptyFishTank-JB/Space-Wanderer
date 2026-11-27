@@ -29,7 +29,7 @@ export function roomHops(data) {
 export function listenerFor(feedDef, evaActive) {
   if (!feedDef) return { kind: 'room', room: 'bridge' };
   if (feedDef.eva) return evaActive ? { kind: 'eva' } : { kind: 'static' };
-  if (feedDef.exterior || feedDef.rover) return { kind: 'ext' };
+  if (feedDef.exterior || feedDef.rover || feedDef.port) return { kind: 'ext' };
   return { kind: 'room', room: feedDef.room };
 }
 

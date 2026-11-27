@@ -9,7 +9,7 @@ const SECTION_OF = {
   bridge: 'Command', lounge: 'Living', quarters: 'Living', galley: 'Living', hydro: 'Life support', lifesupport: 'Life support',
   engineering: 'Engineering', workshop: 'Engineering', storage: 'Service', airlock: 'Service', corridor_fore: 'Passages', corridor_aft: 'Passages',
 };
-export const sectionOf = (f) => (f.room ? SECTION_OF[f.room] || 'Service' : f.rover || f.exterior === 'bay' ? 'Vehicles' : 'Exterior');
+export const sectionOf = (f) => (f.room ? SECTION_OF[f.room] || 'Service' : f.rover || f.exterior === 'bay' ? 'Vehicles' : f.port ? 'Station' : 'Exterior');
 const feedName = (f) => (f.id === 'EVA-POV' ? 'EVA-POV HELMET' : `${f.id} ${f.label}`);
 
 const STYLE = `

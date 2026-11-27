@@ -23,6 +23,7 @@
     { "id": "CAM-19", "label": "EXT-VENTRAL", "exterior": "ventral", "yaw": 3.1416,  "pitch": -0.12, "mount": "Under the bow" },
     { "id": "CAM-20", "label": "EXT-BAY",     "exterior": "bay",     "yaw": 0,       "pitch": -0.5,  "mount": "Rover bay" },
     { "id": "ROVER-CAM", "label": "CAB",      "rover": true },
+    { "id": "PORT-CAM", "label": "CONCOURSE", "port": true },
     { "id": "EVA-POV", "label": "HELMET",     "eva": true }
   ],
   "director": {
@@ -43,7 +44,9 @@
       "orbit_entered": 40,
       "touchdown": 30,
       "liftoff": 35,
-      "torpor_start": 40
+      "torpor_start": 40,
+      "dock_phase": 40,
+      "undocked": 30
     },
     "exteriorShots": {
       "_comment": "Which hull camera the director cuts to: by event, else by ship mode for the discretionary shots. A hot ship goes to the stern radiators.",
@@ -55,6 +58,8 @@
       "touchdown": ["CAM-19"],
       "liftoff": ["CAM-16", "CAM-19"],
       "torpor_start": ["CAM-08"],
+      "dock_phase": ["CAM-14", "CAM-08"],
+      "undocked": ["CAM-16", "CAM-08"],
       "descent_phase": ["CAM-17", "CAM-18", "CAM-19"],
       "modes": {
         "cruise": ["CAM-08", "CAM-14", "CAM-17", "CAM-18"],

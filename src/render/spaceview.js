@@ -29,6 +29,8 @@ function viewerPos(state, data, sys, mt) {
   return shipPos(state, data);
 }
 
+import { stationIn } from '../space/ports.js';
+
 export function spaceView(state, data) {
   const f = state.ship.flight;
   const sp = state.space;
@@ -109,6 +111,30 @@ export function spaceView(state, data) {
     const rightx = -fwdy, righty = fwdx;
     const light = [(lx * rightx + ly * righty) / ll, 0.12, -(lx * fwdx + ly * fwdy) / ll];
     view.objects.push({ kind: 'body', id: b.id, bearing, elev, angR, dist: d, body: b, light, at: at && b.id === at.id });
+  }
+  // the station, if this system has one: a speck near its world, growing as we come in to dock
+  const stn = sp && stationIn(sp.galaxySeed, sp.systemId, data.space);
+  if (stn) {
+    const host = sys.byId[stn.body];
+    const c = bodyPos(sys, stn.body, mt);
+    const dx = c.x - p.x, dy = c.y - p.y, d = Math.max(len(dx, dy), 1e-6);
+    let bearing = wrap(Math.atan2(dy, dx) - heading) + 0.12, elev = 0.05, angR = Math.max(0.0035, 0.0004 / (d / host.radius + 0.1));
+    if (f.mode === 'docking' && f.phases) {
+      const ph = f.phases.list[f.phases.i], u = Math.min(1, f.phases.t / ph.dur);
+      if (ph.name === 'request') { angR = 0.03; bearing = 0.05; elev = 0.03; }
+      if (ph.name === 'approach') { angR = 0.03 + 0.45 * u * u; bearing = 0.05 * (1 - u); elev = 0.03 * (1 - u); }
+      if (ph.name === 'slot') { angR = 0.48 + 0.9 * u; bearing = 0; elev = 0; }
+      if (ph.name === 'pad') view.scene = 'docked';
+    }
+    if (f.mode === 'docked') view.scene = 'docked';
+    if (f.mode === 'undocking' && f.phases) {
+      const ph = f.phases.list[f.phases.i], u = Math.min(1, f.phases.t / ph.dur);
+      if (ph.name === 'lift') view.scene = 'docked';
+      if (ph.name === 'slot') { angR = 1.2 - 0.8 * u; bearing = Math.PI; }
+      if (ph.name === 'clear') { angR = 0.4 * (1 - u) + 0.02; bearing = Math.PI - 0.2; }
+    }
+    view.objects.push({ kind: 'station', id: stn.id, bearing, elev, angR, dist: ['docking', 'docked', 'undocking'].includes(f.mode) ? 0.001 : d, station: stn, seed: strHash(stn.id) });
+    view.station = stn;
   }
   view.objects.sort((a, b) => b.dist - a.dist); // far first
   view.glare = Math.min(1, starAng * 6 + (f.mode === 'scooping' ? 0.6 : 0));

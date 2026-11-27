@@ -489,6 +489,7 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0,
   ctx.fillRect(0, 0, W, H);
   if (view.scene === 'void') { drawVoid(ctx, t, yaw); return; }
   if (view.scene === 'hyperspace') { drawHyperspace(ctx, view, t); return; }
+  if (view.scene === 'docked') { drawHangar(ctx, view, t, yaw); return; }
   const y0 = yaw + parallax;
   drawStarfield(ctx, view.seed, view.heading + y0, pitch, { speed: view.speed, sky: view.sky, chart: view.chart });
   for (const o of view.objects) {
@@ -496,6 +497,7 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0,
     if (!p) continue;
     const r = angToPx(o.angR);
     if (p.x + r < -W || p.x - r > 2 * W) continue;
+    if (o.kind === 'station') { drawStation(ctx, p.x, p.y, Math.max(1.5, r), o, t); continue; }
     if (pick && p.x > -r && p.x < W + r) registerSkyPick(o, p.x, p.y, r, view.sys);
     if (o.kind === 'star') drawStar(ctx, p.x, p.y, o.angR, o.star, t, 1 + (view.glare || 0));
     else drawBody(ctx, p.x, p.y, r, o.body, o.light, view.seed, t);
@@ -506,6 +508,52 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0,
     glow(ctx, [140, 170, 255], W / 2, H / 2, 60 + 140 * view.charging, 0.25 * view.charging);
     ctx.globalCompositeOperation = 'source-over';
   }
+}
+
+/** A station: a slowly turning many-sided hull, its docking slot lit, running lights blinking. */
+export function drawStation(ctx, x, y, r, o, t) {
+  if (r < 3) {
+    px(ctx, [200, 205, 215], x, y);
+    if (Math.sin(t * 3 + o.seed) > 0.5) px(ctx, [120, 255, 150], x + 1, y);
+    return;
+  }
+  const spin = t * 0.05 + (o.seed % 100) / 100;
+  const n = 8;
+  const pt = (i, k = 1) => { const a = spin + (i / n) * Math.PI * 2; return [x + Math.cos(a) * r * k, y + Math.sin(a) * r * k * 0.92]; };
+  for (let i = 0; i < n; i++) {
+    // faces lit from one side
+    const a = spin + ((i + 0.5) / n) * Math.PI * 2;
+    const lit = 0.45 + 0.4 * Math.max(0, Math.cos(a - 2.4));
+    ctx.fillStyle = css(mul([150, 156, 168], lit));
+    ctx.beginPath(); const [ax, ay] = pt(i), [bx, by] = pt(i + 1); ctx.moveTo(x, y); ctx.lineTo(ax, ay); ctx.lineTo(bx, by); ctx.closePath(); ctx.fill();
+  }
+  // window rows round the hull
+  if (r > 10) for (let i = 0; i < 40; i++) { const a = spin + (i / 40) * Math.PI * 2; const k = 0.55 + 0.3 * hash(i, 1, o.seed); px(ctx, [255, 220, 160], x + Math.cos(a) * r * k, y + Math.sin(a) * r * k * 0.92, 0.7); }
+  // the docking slot, edge-lit
+  const sw = r * 0.5, sh = r * 0.18;
+  ctx.fillStyle = css([8, 10, 14]); ctx.fillRect(Math.round(x - sw / 2), Math.round(y - sh / 2), Math.round(sw), Math.max(1, Math.round(sh)));
+  const on = Math.sin(t * 4) > 0;
+  rect(ctx, on ? [90, 255, 140] : [40, 90, 50], x - sw / 2 - 1, y - sh / 2, 1, Math.max(1, sh));
+  rect(ctx, on ? [255, 80, 70] : [90, 40, 40], x + sw / 2, y - sh / 2, 1, Math.max(1, sh));
+  if (r > 40) { ctx.globalCompositeOperation = 'lighter'; glow(ctx, [180, 220, 255], x, y, sw * 0.6, 0.15); ctx.globalCompositeOperation = 'source-over'; }
+}
+
+/** Inside a station's hangar: walls, gantries, pad lights, another ship on a far pad. */
+export function drawHangar(ctx, view, t, yaw = 0) {
+  const off = Math.round(((yaw % (Math.PI * 2)) / (Math.PI * 2)) * W * 2);
+  for (let y = 0; y < H; y++) { const k = y / H; rect(ctx, mix([34, 38, 46], [58, 62, 70], k), 0, y, W, 1); }
+  // wall ribs and gantries
+  for (let i = -2; i < 12; i++) { const x = ((i * 48 - off) % (W + 96) + W + 96) % (W + 96) - 48; rect(ctx, [26, 28, 34], x, 0, 6, H); rect(ctx, [72, 76, 86], x + 6, 0, 1, H); }
+  for (const yy of [26, 58]) rect(ctx, [44, 48, 56], 0, yy, W, 4);
+  // floodlights
+  for (let i = 0; i < 6; i++) { const x = ((i * 64 + 20 - off) % W + W) % W; rect(ctx, [240, 236, 220], x - 6, 12, 12, 2); ctx.globalCompositeOperation = 'lighter'; glow(ctx, [255, 240, 210], x, 16, 34, 0.12); ctx.globalCompositeOperation = 'source-over'; }
+  // a far pad with someone else's ship on it
+  rect(ctx, [52, 56, 64], 0, 120, W, 60);
+  const sx = ((200 - off) % (W + 120) + W + 120) % (W + 120) - 60;
+  ctx.fillStyle = css([90, 96, 108]); ctx.beginPath(); ctx.moveTo(sx - 40, 118); ctx.lineTo(sx + 44, 112); ctx.lineTo(sx + 52, 120); ctx.lineTo(sx - 46, 122); ctx.closePath(); ctx.fill();
+  // pad markings and their lights
+  for (let i = 0; i < 10; i++) { const x = ((i * 36 - off) % W + W) % W; rect(ctx, [200, 160, 60], x, 150, 18, 2); }
+  for (let i = 0; i < 16; i++) { const x = ((i * 22 - off) % W + W) % W; px(ctx, Math.sin(t * 2 + i) > 0 ? [120, 230, 255] : [40, 80, 100], x, 140); }
 }
 
 export function drawHyperspace(ctx, view, t) {
