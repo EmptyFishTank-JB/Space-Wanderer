@@ -7,7 +7,7 @@ deep-space vessel. Not a game: the viewer never steers anything.
 Elite Dangerous-scale spaceflight, the pixel-art observation window, its
 procedural soundscape, and the traveler's episodic memory, written logs and
 living details. Open with `?debug` for a developer-only inspector, or
-`dev/gallery.html` to see every camera feed rendered from staged scenarios.
+`dev/gallery.html` to see every camera feed rendered from staged scenarios. Open `dev/tester.html` to pick any room, activity, flight or surface scene and watch it run live: change speed, switch cameras, step time, select things and read the event stream.
 
 ---
 
@@ -39,7 +39,7 @@ node tools/run.mjs --hours 8 --timeline    # watch a slice of life in the termin
 node tools/run.mjs --days 30 --summary     # long run + hours-by-activity
 node tools/run.mjs --days 7 --logs         # read the traveler's log entries as they are written
 node tools/run.mjs --days 7 --memories     # watch memories form
-python3 -m http.server 8080                # then http://localhost:8080/  (or /?debug, /dev/gallery.html)
+python3 -m http.server 8080                # then http://localhost:8080/  (or /?debug, /dev/gallery.html, /dev/tester.html)
 ```
 
 No build step, no dependencies. Deploys to GitHub Pages as static files.

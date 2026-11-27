@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ship Tester (dev)</title>
+  <style>
+    :root { --bg: #0b0c10; --panel: #12151b; --rule: #222831; --ink: #cfe3dc; --muted: #7d8f8a; --accent: #6fd3b5; --warn: #e7b25c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; display: grid; grid-template-columns: 250px 1fr 300px; height: 100vh; }
+    aside, section { overflow: auto; border-right: 1px solid var(--rule); }
+    aside { padding: 10px; background: var(--panel); }
+    h1 { font-size: 13px; margin: 0 0 8px; color: var(--accent); }
+    h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 14px 0 4px; }
+    button { all: unset; cursor: pointer; display: block; width: 100%; padding: 3px 6px; border-radius: 3px; color: var(--ink); }
+    button:hover { background: #1c222b; }
+    button.on { background: #1d3a33; color: #e9fff8; }
+    main { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+    .bar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--rule); background: var(--panel); }
+    .bar button { display: inline-block; width: auto; border: 1px solid var(--rule); padding: 3px 8px; }
+    .bar select { background: #0f1217; color: var(--ink); border: 1px solid var(--rule); padding: 3px; font: inherit; }
+    .stage { position: relative; display: grid; place-items: center; min-height: 0; overflow: hidden; }
+    canvas { image-rendering: pixelated; width: 100%; max-width: 1280px; aspect-ratio: 16 / 9; display: block; }
+    #status { padding: 6px 10px; border-top: 1px solid var(--rule); color: var(--muted); white-space: pre-wrap; }
+    #side { padding: 10px; }
+    #pick { border: 1px solid var(--rule); border-radius: 4px; padding: 8px; min-height: 60px; margin-bottom: 10px; }
+    #pick b { color: var(--warn); }
+    #log div { color: var(--muted); border-bottom: 1px dotted #1d232b; padding: 2px 0; }
+    #log div b { color: var(--ink); font-weight: normal; }
+    .busy { color: var(--warn); }
+    .hint { color: var(--muted); margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <aside id="menu"><h1>Ship tester</h1><div class="hint">Pick a scene. It is staged by running a throwaway simulation up to that moment, then keeps running live here.</div></aside>
+  <main>
+    <div class="bar">
+      <label>Camera <select id="feed"></select></label>
+      <button id="play">Pause</button>
+      <label>Speed <select id="speed"><option value="1">1×</option><option value="10">10×</option><option value="60" selected>60×</option><option value="600">600×</option><option value="3600">3600×</option></select></label>
+      <button id="stepmin">+1 min</button>
+      <button id="stephour">+1 hour</button>
+      <button id="select">Select: off</button>
+      <span id="clock"></span>
+    </div>
+    <div class="stage"><canvas id="view" width="320" height="180"></canvas></div>
+    <div id="status">No scene yet.</div>
+  </main>
+  <section id="side"><h2>Selected</h2><div id="pick">Turn selection on and point at anything.</div><h2>Events</h2><div id="log"></div></section>
+  <script type="module" src="../src/dev/tester.js"></script>
+</body>
+</html>
