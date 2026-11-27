@@ -31,6 +31,16 @@ function makePerson(seed, id, role, home) {
   };
 }
 
+/** Someone taken alive on a bounty contract: their callsign, their own face, and a temper of their own. */
+export function makePrisoner(seed, foe, key) {
+  const p = makePerson(seed, `prisoner:${key}`, 'prisoner', null);
+  p.name = foe.name;
+  p.job = `pilot of a ${foe.cls}`;
+  p.manner = pick(hrng(seed, 'prisoner-manner', key), ['sullen', 'defiant', 'talkative', 'wry', 'quiet']);
+  p.look.top = [70, 74, 80]; p.look.bottom = [56, 58, 64]; // a flight suit
+  return p;
+}
+
 /** The people who work and drink at a station: a bartender, a clerk, and a handful of regulars. */
 export function peopleAt(seed, station) {
   const home = station.name;

@@ -113,6 +113,19 @@ export function renderRoomFeed(ctx, m) {
       return { name: p.name, sub: `Passenger · going to ${p.going}`, lines: [['Doing', p.doing], ['Cabin', data.rooms[p.cabin].name], ['Trade', p.job], ['Talked', r ? `${r.met} time${r.met > 1 ? 's' : ''}` : 'not yet']] };
     } });
   }
+  // prisoners: suited in the airlock, walked to the brig a step behind the traveler; in the brig they're drawn in their cells
+  for (const p of (state.space && state.space.prisoners) || []) {
+    if (!p.pos || p.pos.room !== room) continue;
+    const x = p.state === 'held' ? data.rooms.brig.stations[p.cell] : p.pos.x;
+    if (p.state !== 'held') {
+      const k = { pose: p.moving ? 'walk' : 'stand', facing: p.dir || -1, phase: p.pos.x * 3, fatigue: 0, yawn: 0, alpha: 1, x: 0, y: FLOOR, outfit: p.look, skin: p.look.skin, hair: p.look.hair, suited: p.state === 'at_lock' };
+      drawTraveler(lc, ox + x * PPM, FLOOR, k, t);
+    }
+    picks.add({ id: `prisoner:${p.id}`, x: ox + x * PPM - (p.state === 'held' ? 30 : 8), y: FLOOR - 44, w: p.state === 'held' ? 60 : 16, h: 44, info: () => ({
+      name: p.name, sub: `Prisoner · pilot of a ${p.cls}`,
+      lines: [['Doing', p.doing], ['Manner', p.manner], ...(p.state === 'held' ? [['Cell', p.cell === 'cell_1' ? 'one' : 'two'], ['Last meal', `${Math.round((state.t - p.lastMealT) / 3600)} h ago`], ['Aboard', `${Math.round(((state.t - p.takenT) / 86400) * 10) / 10} days`]] : [])],
+    }) });
+  }
   registerRoomPicks(rc, seen);
   const mug = registerMugPick(rc);
   if (mug) {

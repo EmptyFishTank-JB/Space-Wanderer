@@ -503,6 +503,7 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0,
     else drawBody(ctx, p.x, p.y, r, o.body, o.light, view.seed, t);
   }
   if (view.combat || view.boom !== undefined) drawCombat(ctx, view, t, y0, pitch);
+  if (view.captive) drawCaptive(ctx, view.captive, t, y0, pitch);
   if (view.charging > 0) {
     // frame-shift drive spool: the view starts to bloom and shiver
     ctx.globalCompositeOperation = 'lighter';
@@ -525,6 +526,31 @@ function wedge(ctx, p, s, dir, hull, drive) {
   ctx.globalCompositeOperation = 'lighter';
   glow(ctx, drive, p.x - dir * s, p.y, 4, 0.7);
   ctx.globalCompositeOperation = 'source-over';
+}
+
+/** A ship with its drive shot out, tumbling slowly alongside: no drive glow, a distress light, sparks from the stern. */
+function drawCaptive(ctx, c, t, yaw, pitch) {
+  const p = project(0.32, 0.05, yaw, pitch);
+  if (!p) return;
+  // close alongside: big in the frame, lit on one face, the other in shadow
+  const s = c.cls === 'gunship' ? 26 : c.cls === 'raider' ? 21 : 16;
+  const a = t * 0.06;
+  const pt = (u, v) => [p.x + Math.cos(a) * u * s - Math.sin(a) * v * s * 0.6, p.y + Math.sin(a) * u * s * 0.35 + Math.cos(a) * v * s * 0.6];
+  const tri = (pts, c2) => { ctx.fillStyle = css(c2); ctx.beginPath(); pts.forEach(([u, v], i) => { const [x, y] = pt(u, v); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill(); };
+  const lit = 0.75 + 0.25 * Math.sin(a * 3);
+  tri([[1, 0], [-1, -0.45], [-0.7, 0]], mul([120, 124, 134], lit));
+  tri([[1, 0], [-0.7, 0], [-1, 0.45]], mul([70, 72, 80], lit));
+  for (let i = 0; i < 4; i++) { const [x, y] = pt(0.5 - i * 0.3, -0.1); px(ctx, [60, 64, 72], x, y); } // panel seams
+  // the drive housing, dark and scorched where the shots went in
+  const [sx, sy] = pt(-0.85, 0);
+  ctx.fillStyle = css([30, 28, 26]); ctx.fillRect(Math.round(sx - 2), Math.round(sy - 2), 4, 4);
+  const [bx, by] = pt(-0.9, 0);
+  if (Math.sin(t * 2.2) > 0.4) px(ctx, [255, 80, 60], pt(0.2, -0.2)[0], pt(0.2, -0.2)[1]);
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 4; i++) if (hash(i, Math.floor(t * 5), 21) > 0.6) px(ctx, [255, 200, 120], bx + (hash(i, 2, Math.floor(t * 5)) - 0.5) * 6, by + (hash(i, 3, Math.floor(t * 5)) - 0.5) * 6, 0.8);
+  ctx.globalCompositeOperation = 'source-over';
+  // the prisoner coming across on a line, in a suit
+  if (c.crossing) { const u = (t * 0.05) % 1; px(ctx, [230, 230, 236], p.x + (W / 2 - p.x) * u * 0.5, p.y + (H - 30 - p.y) * u * 0.5); }
 }
 
 /** The attackers wheeling round the ship, the guns' fire both ways, security coming in, and the end of it. */

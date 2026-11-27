@@ -148,10 +148,17 @@ export function writeLog({ state, data, facts, entry }) {
       foe_fled: `${fgt.foe}${pack} jumped us and then thought better of it.`,
       fled: `Ran from ${fgt.foe}${pack}. The shield bought the seconds the drive needed.`,
       robbed: `${fgt.foe} took the cargo. Hands still shaking.`,
+      captured: `Shot out ${fgt.foe}'s drive and took them alive${pack ? `; ${pack.slice(5)} ran` : ''}. They're in the brig now.`,
       submitted: fgt.toll ? `${fgt.foe}${pack} had us outgunned. Paid them ${fgt.toll.toLocaleString('en-US')} to leave. Cheaper than a hull.` : `${fgt.foe}${pack} had us outgunned. Cut the drive and dropped the cargo. They took it and went.`,
     }[fgt.result]);
     if (fgt.patrol) lines.find.push(`${fgt.patrol} answered the call. Owe them a drink.`);
   }
+  // the brig: someone opening up over a meal, or handed over at last
+  const ho = (v.prisoners || []).find((x) => x.kind === 'handover');
+  if (ho) lines.find.push(ho.paid ? `Handed ${ho.who} to security at ${ho.station}. ${ho.paid.toLocaleString('en-US')} credits, and the brig's empty again.` : `Handed ${ho.who} to security at ${ho.station}. Nobody's paying for them now, but they're not my problem any more.`);
+  const op = (v.prisoners || []).find((x) => x.kind === 'talk' && x.opened);
+  if (op) lines.self.push(`${op.line} Didn't expect that.`);
+  else if ((v.prisoners || []).some((x) => x.kind === 'hungry')) lines.self.push('Forgot the prisoner\'s meal. They let me know.');
   const talk = (v.talks || []).find((x) => x.met >= 2) || (v.talks || [])[0];
   if (talk) lines.find.push(talk.met >= 2 ? `${talk.who} remembered me.${talk.topic ? ` We ended up on ${talk.topic} again.` : ''}` : `Met ${talk.who}${talk.role === 'passenger' ? ', one of the passengers' : talk.role === 'bartender' ? ', who runs the bar' : ''}.`);
   for (const m of (v.missions || []).slice(0, 2)) lines.find.push(m.done ? `Handed over ${m.title}. ${m.reward.toLocaleString('en-US')} credits.` : m.reason === 'caught' ? `They scanned the hold. That's the end of that job: ${m.title}.` : `Missed the deadline: ${m.title}.`);
@@ -203,7 +210,7 @@ export function writeLog({ state, data, facts, entry }) {
   const budget = 5 + Math.floor(r() * 3);
   let used = 0;
   const take = (arr, n) => {
-    for (const x of arr.slice(0, n)) {
+    for (const x of arr.filter(Boolean).slice(0, n)) {
       const k = sentenceCount(x);
       if (used + k > budget && out.length) continue;
       out.push(x);

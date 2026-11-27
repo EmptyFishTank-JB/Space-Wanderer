@@ -13,6 +13,7 @@ import { roverCanDrive } from '../space/rover.js';
 import { stationIn, baseIn } from '../space/ports.js';
 import { makePassenger } from '../space/people.js';
 import { startCombat } from '../space/combat.js';
+import { takePrisoner } from '../space/prisoners.js';
 import { boardPassengers } from '../space/passengers.js';
 import { renderFeed } from '../render/app.js';
 import { Director } from '../render/director.js';
@@ -95,6 +96,19 @@ function portScene(d, until, feeds) {
   return { s, feeds };
 }
 
+// a few interior cameras by room, for scenes that follow the traveler somewhere
+const CAMERAS_BY_ROOM = { corridor_aft: 'CAM-11', cross_main: 'CAM-22', gallery_p: 'CAM-24', fwd_main: 'CAM-21', brig: 'CAM-29', airlock: 'CAM-13', armory: 'CAM-33' };
+
+/** A wanted-alive contract in a system with a station, the target taken and drifting alongside. */
+function prisonerScene(d, seed) {
+  const s = createInitialState(d, { seed });
+  runUntil(s, d, (x) => x.t > 4 * 3600);
+  const m = { id: `${seed}-b`, kind: 'bounty', alive: true, title: 'Wanted alive: Kestrel', faction: 'elsewhere', target: { name: 'Kestrel', cls: 'raider' }, reward: 4200, to: { starId: s.space.systemId, system: s.space.systemName }, from: { starId: s.space.systemId, station: 'nowhere' }, deadlineT: s.t + 6 * 86400, acceptedT: s.t, captured: true };
+  s.space.missions = [m];
+  takePrisoner(s, d, { name: 'Kestrel', cls: 'raider' }, m);
+  return s;
+}
+
 export const SCENARIOS = {
   day(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: [...ROOM_FEEDS, 'CAM-08'] }; },
   hull(d) { const s = createInitialState(d, { seed: 'gallery' }); runUntil(s, d, (x) => x.t > 3.3 * 3600); return { s, feeds: ['CAM-08', 'CAM-14', 'CAM-15', 'CAM-16', 'CAM-17', 'CAM-18', 'CAM-19'] }; },
@@ -175,6 +189,28 @@ export const SCENARIOS = {
     runUntil(s, d, (x) => !x.space.combat, 3600);
     runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'service_weapons' && x.traveler.activity.phase === 'perform' && x.traveler.activity.elapsed > 60, 86400);
     return { s, feeds: ['CAM-34', 'CAM-35', 'CAM-33'] };
+  },
+  // wanted alive: the drive shot out, their ship drifting alongside, the traveler at the armory rack
+  capture(d) {
+    const s = prisonerScene(d, 'gallery-capture');
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'arm_up' && x.traveler.activity.phase === 'perform', 3600);
+    return { s, feeds: ['CAM-08', 'CAM-33', 'CAM-14'] };
+  },
+  // walking the prisoner through the ship to the brig
+  escort(d) {
+    const s = prisonerScene(d, 'gallery-escort');
+    runUntil(s, d, (x) => x.space.prisoners[0] && x.space.prisoners[0].state === 'escorted' && ['cross_main', 'gallery_p', 'fwd_main', 'corridor_aft'].includes(x.traveler.pos.room), 3600);
+    const room = s.traveler.pos.room;
+    const f = CAMERAS_BY_ROOM[room];
+    return { s, feeds: [f || 'CAM-29', 'CAM-29', 'CAM-13'] };
+  },
+  // a prisoner in the brig, a meal through the hatch
+  brig(d) {
+    const s = prisonerScene(d, 'gallery-brig');
+    runUntil(s, d, (x) => x.space.prisoners[0] && x.space.prisoners[0].state === 'held', 3600);
+    s.space.missions.forEach((m) => { m.faction = 'elsewhere'; }); // keep them aboard
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'feed_prisoner' && x.traveler.activity.phase === 'perform', 86400);
+    return { s, feeds: ['CAM-29'] };
   },
   passengers(d) {
     const s = createInitialState(d, { seed: 'gallery-pax' });

@@ -18,6 +18,7 @@ import { chargeRover } from '../space/rover.js';
 import { expireMissions } from '../space/ports.js';
 import { tickPassengers } from '../space/passengers.js';
 import { stepCombat, checkEncounters } from '../space/combat.js';
+import { stepPrisoners, tickPrisoners } from '../space/prisoners.js';
 import { missionDay } from './clock.js';
 import { updateFlight, updateFlightEnvironment } from '../space/flight.js';
 import { advanceAgenda } from '../space/navigator.js';
@@ -30,6 +31,7 @@ export function step(state, data) {
   updateFlight(state, data, 1);
   if (state.space) stepCombat(state, data, 1);
   tickTraveler(state, data, 1);
+  if (state.space) stepPrisoners(state, data); // someone being walked to the brig keeps up
 
   if (state.tick % cfg.slowEvery === 0) slowTick(state, data, cfg.slowEvery);
   if (state.tick % cfg.hazardEvery === 0) hazardTick(state, data, cfg.hazardEvery);
@@ -54,7 +56,7 @@ function slowTick(state, data, dt) {
   if (def && def.tick) def.tick(state, data, a, dt);
   updateMug(state, dt);
   if (state.ship.rover && state.space) chargeRover(state, data, dt);
-  if (state.space) { expireMissions(state); tickPassengers(state, data, dt); checkEncounters(state, data, dt); }
+  if (state.space) { expireMissions(state); tickPassengers(state, data, dt); tickPrisoners(state, data); checkEncounters(state, data, dt); }
 
   const day = missionDay(state);
   if (tr.history.mealsDay !== day) {

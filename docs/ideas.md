@@ -80,7 +80,15 @@ The hold already runs out to the belly wall and has room for trade cargo. The co
   - firing uses ammunition. With the magazine empty only the lasers fire. Ports refill it;
   - after a fight the traveler goes to fire control to realign the gimbals and reseat the shield capacitors. Until then the guns shoot a little worse.
 
+- **Prisoners in the brig:**
+  - about two bounties in five want the target alive, for 1.6 times the reward. The traveler only takes one with a brig cell free;
+  - once the target is weak, the traveler fires short bursts at the drive instead of the reactor. Any wingmen go down first. Now and then the reactor goes anyway, and the contract pays a third;
+  - a ship with its drive shot out drifts alongside. The traveler fetches a sidearm from the armory, brings the pilot across through the airlock in a suit, searches them, and walks them through the ship to a cell, a step behind;
+  - in the cell they sleep, sit, pace and stand at the bars, in brig-issue coveralls. Their day follows the clock;
+  - the traveler brings a meal through the hatch twice a day or so, and the pantry pays for it. A late meal gets a complaint. Each prisoner has a manner (sullen, defiant, talkative, wry, quiet), and after a few meals most of them say something real, which is remembered;
+  - with the job done, routes steer back to where the contract was signed. Security at any of the issuing faction's stations takes the prisoner for the reward. If the contract runs out first, the next port's security takes them for nothing;
+  - the prisoner shows in telemetry and can be selected wherever they are aboard. There are journal entries, memories and log lines for the capture, the meals and the handover.
+
 ### Still to come
 
-- Prisoners in the brig, for bounties that want the target alive.
 - Passengers with their own small stories: requests, complaints, a farewell.

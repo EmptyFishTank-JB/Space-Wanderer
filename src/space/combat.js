@@ -11,11 +11,15 @@
 // is empty). The worst that happens is losing the cargo, never the traveler.
 // After a fight the fire-control room needs a visit: gimbals realigned,
 // shield capacitors reseated.
+// A contract that wants the target alive changes the end of it: once they're
+// weak the traveler fires short bursts at the drive, and a ship with its
+// drive shot out drifts alongside to be boarded (see prisoners.js).
 import { hrng, starById } from './galaxy.js';
 import { rand, range, chance, pick } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
 import { inhabited, factionName } from './ports.js';
+import { takePrisoner } from './prisoners.js';
 
 const CLASSES = {
   interceptor: { label: 'interceptor', dps: 0.007, shield: 0.8, hull: 0.7, bounty: [800, 1800] },
@@ -27,6 +31,8 @@ const OUR_DPS = 0.02; // all six hardpoints, well laid
 const PATROL_DPS = 0.012;
 const AMMO_PER_S = 0.0012; // a full magazine is about fourteen minutes of firing
 const WING_SCALE = 0.8; // a wingman flies a lighter ship than their leader
+const DISABLE_AT = 0.12; // wanted alive: at this much hull, with the shield gone, their drive is out
+const CAREFUL_BELOW = 0.4; // and below this the traveler stops shooting at the reactor
 const CALLSIGNS = ['Kestrel', 'Hollow Jack', 'Saint Vane', 'the Magpie', 'Red Tally', 'Corvo', 'Lark', 'the Widow', 'Grieve', 'Halloran', 'Sable', 'Tenpenny'];
 const WING_NAMES = ['Pike', 'Dace', 'Rook', 'Shrike', 'Tamsin', 'Okoro', 'Vell', 'Brannock', 'Moss', 'Quill'];
 
@@ -72,7 +78,7 @@ export function pirateGang(seed, key, frontier = false) {
 export function bountyParty(seed, m) {
   const st = hrng(seed, 'escort', m.id);
   const n = m.target.cls === 'gunship' ? 1 : m.target.cls === 'raider' && rand(st) < 0.4 ? 1 : 0;
-  return [{ name: m.target.name, cls: m.target.cls, wanted: true, bounty: m.reward, missionId: m.id }, ...wingmen(st, n, m.target.name)];
+  return [{ name: m.target.name, cls: m.target.cls, wanted: true, bounty: m.reward, missionId: m.id, alive: !!m.alive }, ...wingmen(st, n, m.target.name)];
 }
 
 /** Whether the system's security answers the call, and when it gets here. Only for pirates, only where someone keeps the peace. */
@@ -217,7 +223,8 @@ export function stepCombat(state, data, dt) {
   const patrol = !!(cb.patrol && cb.patrol.here);
   const live = living(cb);
   // our fire, and the patrol's, goes into the weakest of them first: fewer guns on us sooner
-  const tgt = live.reduce((b, x) => (!b || x.shield + x.hull < b.shield + b.hull ? x : b), null);
+  const weight = (x) => x.shield + x.hull + (x.alive && x.hull < CAREFUL_BELOW && live.length > 1 ? 10 : 0);
+  const tgt = live.reduce((b, x) => (!b || weight(x) < weight(b) ? x : b), null);
   cb.target = cb.foes.indexOf(tgt);
   let dmg = 0;
   if (cb.firing && !cb.fleeT) {
@@ -227,6 +234,8 @@ export function stepCombat(state, data, dt) {
     sh.thermal.heat = clamp(sh.thermal.heat + 0.0012 * dt, 0, 1.2);
   }
   if (patrol && !cb.submitT) dmg += PATROL_DPS * dt;
+  // wanted alive: once they're weak, short careful bursts at the drive, not the reactor
+  if (tgt && tgt.alive && tgt.hull < CAREFUL_BELOW) dmg *= 0.5;
   if (tgt && dmg > 0) hurt(tgt, dmg);
   // their fire: every gun still in the fight; the patrol draws some of it; held while the cargo goes out
   let hit = 0;
@@ -250,11 +259,16 @@ export function stepCombat(state, data, dt) {
   if (ours.down && state.t >= ours.rebootT) { ours.down = false; ours.shield = 0.25; emit(state, 'shield_online', { room: 'engineering' }); }
   // ships that go down or break off
   for (const x of live) {
+    if (x.alive && x.hull <= DISABLE_AT && x.shield <= 0) {
+      // the drive goes; now and then the reactor goes with it
+      if (chance(state.rng, 0.1)) { x.hull = 0; emit(state, 'foe_breach', { foe: x.name, room: 'bridge' }); }
+      else { x.gone = 'disabled'; emit(state, 'foe_disabled', { foe: x.name, cls: CLASSES[x.cls].label, room: 'bridge' }); continue; }
+    }
     if (x.hull <= 0) {
       x.gone = 'down';
       sp.lastKillT = state.t; sp.lastKillSlot = cb.foes.indexOf(x);
       if (cb.foes.some((y) => !y.gone)) emit(state, 'foe_down', { foe: x.name, cls: CLASSES[x.cls].label, role: x.role, room: 'bridge' });
-    } else if (x.hull < 0.2 && x.shield <= 0 && chance(state.rng, 0.02 * dt)) {
+    } else if (x.hull < 0.2 && x.hull > DISABLE_AT && x.shield <= 0 && chance(state.rng, 0.02 * dt)) {
       x.gone = 'fled';
       if (cb.foes.some((y) => !y.gone)) emit(state, 'foe_fled', { foe: x.name, role: x.role, room: 'bridge' });
     }
@@ -262,7 +276,7 @@ export function stepCombat(state, data, dt) {
   // with the leader gone the wing loses heart and runs
   const lead = cb.foes[0];
   if (lead.gone) for (const x of cb.foes) if (!x.gone) x.gone = 'fled';
-  if (!living(cb).length) return endCombat(state, data, lead.gone === 'down' ? 'won' : 'foe_fled');
+  if (!living(cb).length) return endCombat(state, data, lead.gone === 'down' ? 'won' : lead.gone === 'disabled' ? 'captured' : 'foe_fled');
   // the traveler sizes it up once at the helm, and again when things go wrong
   const wear = sh.components.hull_plating.wear;
   if (!cb.fleeT && !cb.submitT) {
@@ -296,8 +310,14 @@ function endCombat(state, data, result) {
   for (const x of downed) {
     if (!x.wanted) continue;
     const m = x.missionId && sp.missions.find((y) => y.id === x.missionId);
-    if (m) { m.killed = true; bounty += x.bounty || 0; }
+    if (m) { m.killed = true; if (m.alive) m.aliveLost = true; bounty += m.alive ? 0 : x.bounty || 0; }
     else if (x.bounty) { sp.vouchers.push({ amount: x.bounty, foe: x.name, t: state.t }); bounty += x.bounty; }
+  }
+  // taken alive: their ship drifts alongside until the traveler brings them aboard
+  if (result === 'captured') {
+    const m = lead.missionId && sp.missions.find((y) => y.id === lead.missionId);
+    if (m) m.captured = true;
+    takePrisoner(state, data, lead, m);
   }
   // they take the cargo and go; any mission that needed it is lost
   if (result === 'robbed') failCargo(state, 'robbed');
@@ -314,11 +334,12 @@ function endCombat(state, data, result) {
     }
   }
   if (cb.firedT > 20) ours.serviceDue = true; // the gimbals and the shield capacitors want looking at
-  sp.combatCooldownT = state.t + (result === 'won' || result === 'foe_fled' ? 6 : 18) * 3600;
+  sp.combatCooldownT = state.t + (result === 'won' || result === 'foe_fled' || result === 'captured' ? 6 : 18) * 3600;
   sp.stats.fights = (sp.stats.fights || 0) + 1;
   sp.stats.kills = (sp.stats.kills || 0) + downed.length;
+  if (result === 'captured') sp.stats.captured = (sp.stats.captured || 0) + 1;
   if (result === 'submitted') sp.stats.submitted = (sp.stats.submitted || 0) + 1;
-  tr.needs.stress = clamp(tr.needs.stress + (result === 'won' ? 0.05 : result === 'submitted' ? 0.12 : result === 'foe_fled' ? 0.08 : 0.18));
+  tr.needs.stress = clamp(tr.needs.stress + (result === 'won' || result === 'captured' ? 0.05 : result === 'submitted' ? 0.12 : result === 'foe_fled' ? 0.08 : 0.18));
   tr.needs.fatigue = clamp(tr.needs.fatigue + 0.08);
   emit(state, 'combat_end', {
     foe: lead.name, cls: CLASSES[lead.cls].label, wing: cb.foes.length - 1, downed: downed.length, result, bounty,

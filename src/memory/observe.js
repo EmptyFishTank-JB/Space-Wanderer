@@ -51,11 +51,15 @@ export function appraise(state, ev) {
       if ((ev.met || 0) < 2) return null;
       return { w: 0.32, v: 0.65, subject: `an evening at the bar on ${ev.station}`, summary: `Talked with ${ev.met} people at the bar on ${ev.station}.`, tags: ['port', 'people'] };
     case 'combat_end': {
-      const what = { won: `brought down ${ev.foe}`, foe_fled: `drove ${ev.foe} off`, fled: `ran from ${ev.foe}`, robbed: `lost the cargo to ${ev.foe}`, submitted: ev.toll ? `paid ${ev.foe} ${ev.toll.toLocaleString('en-US')} credits to go away` : `gave the cargo up to ${ev.foe}` }[ev.result];
+      const what = { won: `brought down ${ev.foe}`, foe_fled: `drove ${ev.foe} off`, fled: `ran from ${ev.foe}`, robbed: `lost the cargo to ${ev.foe}`, submitted: ev.toll ? `paid ${ev.foe} ${ev.toll.toLocaleString('en-US')} credits to go away` : `gave the cargo up to ${ev.foe}`, captured: `shot out ${ev.foe}'s drive and took them alive` }[ev.result];
       const who = ev.wing ? `a ${ev.cls} and ${ev.wing === 1 ? 'a wingman' : `${ev.wing} wingmen`}` : `a ${ev.cls}`;
       const help = ev.patrol ? `; ${ev.patrol} came in on our side` : '';
-      return { w: ev.result === 'won' ? 0.55 + 0.05 * (ev.downed || 0) : 0.5, v: ev.result === 'won' || ev.result === 'foe_fled' ? 0.2 : ev.result === 'submitted' ? -0.5 : -0.7, subject: `the fight with ${ev.foe}`, summary: `Pulled out of supercruise by ${who}${help}; ${what}${ev.bounty ? `, ${ev.bounty.toLocaleString('en-US')} credits in bounties` : ''}.`, tags: ['combat', ev.result] };
+      return { w: ev.result === 'won' ? 0.55 + 0.05 * (ev.downed || 0) : ev.result === 'captured' ? 0.6 : 0.5, v: ev.result === 'won' || ev.result === 'foe_fled' || ev.result === 'captured' ? 0.2 : ev.result === 'submitted' ? -0.5 : -0.7, subject: `the fight with ${ev.foe}`, summary: `Pulled out of supercruise by ${who}${help}; ${what}${ev.bounty ? `, ${ev.bounty.toLocaleString('en-US')} credits in bounties` : ''}.`, tags: ['combat', ev.result] };
     }
+    case 'prisoner_handover': return { w: 0.45, v: 0.3, subject: `handing ${ev.who} over at ${ev.station}`, summary: `Handed ${ev.who} to security at ${ev.station} after ${ev.days} days in the brig${ev.paid ? `; ${ev.paid.toLocaleString('en-US')} credits` : ''}.`, tags: ['prisoner', 'port'] };
+    case 'prisoner_fed':
+      if (!ev.opened) return null;
+      return { w: 0.4, v: 0.4, subject: `what ${ev.who} said in the brig`, summary: ev.line, tags: ['prisoner', 'people'] };
     case 'conversation':
       if (ev.met < 2 && !ev.topic) return null;
       return { w: ev.met >= 3 ? 0.42 : 0.3, v: 0.65, subject: `talking with ${ev.who}`, summary: ev.met >= 2 ? `${ev.who} again${ev.topic ? `: we talked about ${ev.topic}` : ''}.` : `Met ${ev.who}${ev.topic ? ` and told them about ${ev.topic}` : ''}.`, tags: ['people', ev.role] };

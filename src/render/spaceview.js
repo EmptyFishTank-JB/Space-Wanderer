@@ -143,6 +143,8 @@ export function spaceView(state, data) {
     const cb = sp.combat;
     view.combat = { foes: cb.foes.map((x, i) => ({ name: x.name, cls: x.cls, role: x.role, gone: x.gone, slot: i })), target: cb.target, firing: cb.firing && !cb.fleeT, fleeing: !!cb.fleeT, submitting: !!cb.submitT, patrol: cb.patrol && cb.patrol.here ? cb.patrol.ships : 0, shieldDown: !!(state.ship.combat && state.ship.combat.down), t0: cb.t };
   }
+  const cap = sp && (sp.prisoners || []).find((p) => p.state === 'alongside' || p.state === 'at_lock');
+  if (cap) view.captive = { cls: cap.cls, crossing: cap.state === 'alongside' };
   if (sp && sp.lastKillT !== undefined && state.t - sp.lastKillT < 6) { view.boom = state.t - sp.lastKillT; view.boomSlot = sp.lastKillSlot || 0; }
   view.objects.sort((a, b) => b.dist - a.dist); // far first
   view.glare = Math.min(1, starAng * 6 + (f.mode === 'scooping' ? 0.6 : 0));

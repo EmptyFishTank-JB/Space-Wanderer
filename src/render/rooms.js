@@ -4,6 +4,7 @@
 import { W, H, PPM, FLOOR, CEIL, mix, mul, rect, px, hash, text, textWidth, hline, vline, disc, clamp01, line } from './gfx.js';
 import { trayStage } from '../sim/ship/hydroponics.js';
 import { writingProgress } from '../memory/captions.js';
+import { drawTraveler } from './traveler.js';
 
 const THEME = {
   bridge: { wall: [56, 62, 76], trim: [40, 44, 54], floor: [66, 68, 76] },
@@ -688,14 +689,28 @@ const ROOMS = {
     rect(ctx, [60, 60, 66], M(st.kitchenette) + 4, FLOOR - 40, 7, 7);
   },
   brig(ctx, rc) {
-    const { M, d } = rc, st = d.rooms.brig.stations;
-    for (const c of [st.cell_1, st.cell_2]) {
-      // a cell: a bunk behind bars, a monitored door light
+    const { M, d, s, t } = rc, st = d.rooms.brig.stations;
+    const held = ((s.space && s.space.prisoners) || []).filter((p) => p.state === 'held');
+    for (const id of ['cell_1', 'cell_2']) {
+      const c = st[id];
+      // a cell: a bunk behind bars, a monitored door light, the meal hatch
       rect(ctx, [40, 40, 44], M(c) - 30, CEIL + 10, 60, FLOOR - CEIL - 10);
       rect(ctx, [80, 76, 70], M(c) - 24, FLOOR - 18, 30, 6);
+      rect(ctx, [190, 186, 176], M(c) - 23, FLOOR - 20, 12, 2);
+      rect(ctx, [120, 122, 126], M(c) + 14, FLOOR - 16, 8, 16); // the toilet
+      // whoever is in it, then the bars in front of them
+      const p = held.find((q) => q.cell === id);
+      if (p) {
+        const k = { facing: 1, phase: t * 3, fatigue: 0, yawn: 0, alpha: 1, x: 0, y: FLOOR, outfit: p.look, skin: p.look.skin, hair: p.look.hair };
+        if (p.doing === 'asleep' || p.doing === 'lying on the bunk, awake') drawTraveler(ctx, M(c) - 6, FLOOR - 20, { ...k, pose: 'lie' }, t);
+        else if (p.doing === 'pacing the cell') { const u = Math.sin(t * 0.5 + c); drawTraveler(ctx, M(c) + u * 16, FLOOR, { ...k, pose: 'walk', facing: Math.cos(t * 0.5 + c) > 0 ? 1 : -1 }, t); }
+        else if (p.doing === 'at the bars') drawTraveler(ctx, M(c) + 14, FLOOR, { ...k, pose: 'stand' }, t);
+        else drawTraveler(ctx, M(c) - 12, FLOOR, { ...k, pose: 'sit_side' }, t);
+      }
       for (let x = M(c) - 30; x <= M(c) + 30; x += 6) rect(ctx, [150, 154, 160], x, CEIL + 10, 2, FLOOR - CEIL - 10);
       rect(ctx, [150, 154, 160], M(c) - 30, CEIL + 10, 62, 3);
-      blinkLed(ctx, rc, M(c) + 26, CEIL + 16, LED.ok);
+      rect(ctx, [110, 114, 120], M(c) - 6, FLOOR - 42, 12, 5); // the meal hatch in the bars
+      blinkLed(ctx, rc, M(c) + 26, CEIL + 16, p ? LED.warn : LED.ok, p ? 0.3 : 1);
     }
   },
   securecargo(ctx, rc) {

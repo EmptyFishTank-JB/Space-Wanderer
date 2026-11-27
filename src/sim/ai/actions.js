@@ -30,6 +30,7 @@ import { viewSubject } from '../../space/view.js';
 import { feelWonder } from '../../space/discovery.js';
 import { mealDrink, fillMug, ensureMug } from '../traveler/mug.js';
 import { converse } from '../../space/people.js';
+import { prisonerIn, prisonerAtLock, prisonerSearched, prisonerLockedUp, feedPrisoner } from '../../space/prisoners.js';
 
 const sinceH = (s, key) => (s.t - s.traveler.history[key]) / HOUR;
 const at = (room, station) => ({ room, station });
@@ -815,6 +816,46 @@ const CORE_ACTIONS = {
     complete(s) {
       s.ship.combat.serviceDue = false;
       emit(s, 'weapons_serviced', { ammo: Math.round(s.ship.combat.ammo * 100), room: 'firecontrol' });
+    },
+  },
+
+  // a prisoner to bring aboard: first a sidearm from the armory
+  arm_up: {
+    category: 'critical', exertion: 0.5, posture: 'standing', minCommit: 60, uninterruptible: true,
+    gen(s) { return prisonerIn(s, 'alongside') ? one(0.95, at('armory', 'rack')) : []; },
+    duration: (s) => range(s.rng, 60, 120),
+    complete(s, d) { prisonerAtLock(s, d); },
+  },
+  // then through the airlock: cycled in, searched, cuffed, out of the suit
+  receive_prisoner: {
+    category: 'critical', exertion: 0.6, posture: 'standing', minCommit: 60, uninterruptible: true,
+    gen(s) { return prisonerIn(s, 'at_lock') ? one(0.95, at('airlock', 'suit_rack')) : []; },
+    duration: (s) => range(s.rng, 150, 280),
+    rates: { stress: 0.02 },
+    complete(s) { prisonerSearched(s); },
+  },
+  // and walked to the brig, a step ahead of them, and the cell locked
+  lock_cell: {
+    category: 'critical', exertion: 0.5, posture: 'standing', minCommit: 60, uninterruptible: true,
+    gen(s) { const p = prisonerIn(s, 'escorted'); return p ? one(0.95, at('brig', p.cell)) : []; },
+    duration: (s) => range(s.rng, 60, 120),
+    complete(s, d) { prisonerLockedUp(s, d); s.traveler.needs.stress = clamp(s.traveler.needs.stress - 0.05); },
+  },
+  // a meal through the cell hatch, twice a day or so
+  feed_prisoner: {
+    category: 'chore', exertion: 0.3, posture: 'standing', minCommit: 300,
+    gen(s, d) {
+      const held = ((s.space && s.space.prisoners) || []).filter((p) => p.state === 'held' && p.doing !== 'asleep');
+      if (!held.length || s.traveler.needs.fatigue > 0.85) return [];
+      const p = held.reduce((a, b) => (a.lastMealT <= b.lastMealT ? a : b));
+      const h = (s.t - p.lastMealT) / HOUR;
+      if (h < 6) return [];
+      return one(Math.min(0.9, 0.35 + 0.06 * (h - 6) + 0.1 * d.traveler.traits.discipline), at('brig', p.cell), { who: p.id });
+    },
+    duration: (s) => range(s.rng, 240, 600),
+    complete(s, d, a) {
+      const p = (s.space.prisoners || []).find((q) => q.id === a.params.who);
+      if (p) feedPrisoner(s, d, p);
     },
   },
 

@@ -13,6 +13,7 @@ import { getSystem } from './system.js';
 import { rand, range, int, chance, pick } from '../sim/rng.js';
 import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
+import { heldFor, freeCells, handOver, handOverStrays, initPrisoners } from './prisoners.js';
 import { boardPassengers, disembark } from './passengers.js';
 import { makePassenger } from './people.js';
 import { wantedPilot, redeemVouchers, rearm, initCombat } from './combat.js';
@@ -152,6 +153,7 @@ export function initPorts(state) {
   sp.stats.earned = sp.stats.earned || 0;
   if (state.traveler.history.lastPortT === undefined) state.traveler.history.lastPortT = state.t - 4 * 86400;
   initCombat(state);
+  initPrisoners(state);
 }
 
 const missionCargo = (sp) => sp.missions.reduce((a, m) => a + (m.tons || 0), 0);
@@ -163,7 +165,8 @@ export function wantsPort(state, data) {
   const sp = state.space, sh = state.ship, tr = state.traveler;
   const stn = portIn(state, data);
   if (!stn) return null;
-  if (sp.missions.some((m) => (m.to && m.to.starId === sp.systemId) || ((m.kind === 'xeno' || m.kind === 'survey') && m.faction === stn.faction && missionReady(state, m)))) return 'deliver';
+  if (sp.missions.some((m) => (m.to && m.to.starId === sp.systemId && m.kind !== 'bounty') || ((m.kind === 'xeno' || m.kind === 'survey' || m.kind === 'bounty') && m.faction === stn.faction && missionReady(state, m)))) return 'deliver';
+  if ((sp.prisoners || []).some((p) => p.state === 'held' && !(p.missionId && sp.missions.some((m) => m.id === p.missionId)))) return 'deliver'; // a prisoner nobody is paying for
   const inv = sh.inventory;
   if (inv.parts < 8 || inv.filters < 2 || sh.food.pantry < 40000) return 'supplies';
   if (sh.components.hull_plating.wear > 0.55) return 'repairs';
@@ -229,7 +232,7 @@ function missionReady(state, m) {
   const sp = state.space;
   if (m.kind === 'xeno') return state.space.cargo.bio >= m.samples;
   if (m.kind === 'survey') return sp.stats.scans - m.scansAtStart >= m.bodies;
-  if (m.kind === 'bounty') return !!m.killed;
+  if (m.kind === 'bounty') return m.alive && m.captured ? !!heldFor(state, m.id) : !!m.killed;
   return true;
 }
 
@@ -264,6 +267,8 @@ function arrivePort(state, data, stn) {
     }
     if (m.kind === 'xeno') state.space.cargo.bio -= m.samples;
     if (m.passengers) disembark(state, m.id);
+    if (m.kind === 'bounty' && m.captured) handOver(state, stn, m);
+    if (m.kind === 'bounty' && m.alive && !m.captured) m.reward = Math.round((m.reward * 0.35) / 50) * 50; // wanted alive, brought in dead
     sp.credits += m.reward;
     sp.stats.earned += m.reward;
     sp.stats.missionsDone++;
@@ -272,6 +277,7 @@ function arrivePort(state, data, stn) {
     emit(state, 'mission_complete', { kind: m.kind, title: m.title, reward: m.reward, station: stn.name, passengers: m.passengers || 0, room: 'bridge' });
   }
   redeemVouchers(state); // bounties claimed on pirates met along the way
+  handOverStrays(state, stn); // prisoners whose contract ran out
   // the dock's services: fuel, and the shipyard for a worn hull
   const fuel = state.ship.fuel;
   const want = Math.max(0, fuel.capacity - fuel.tons);
@@ -314,6 +320,11 @@ export function makeOffers(state, data, stn) {
       o.reward = o.target.bounty;
       o.deadlineT = state.t + range(st, 8, 16) * 86400;
       o.title = `Bounty: ${o.target.name}, a ${o.target.cls}, last seen at ${o.to.system}`;
+      if (rand(hrng(sp.galaxySeed, 'alive', o.id)) < 0.4) {
+        o.alive = true;
+        o.reward = Math.round((o.reward * 1.6) / 50) * 50;
+        o.title = `Wanted alive: ${o.target.name}, a ${o.target.cls}, last seen at ${o.to.system}`;
+      }
     } else if (kind === 'cargo' || kind === 'passenger' || kind === 'smuggle') {
       if (!dests.length) continue;
       const to = pick(st, dests);
@@ -353,13 +364,14 @@ export function chooseMissions(state, data) {
     if (o.kind === 'xeno' || o.kind === 'survey') s += 0.5 * tr.curiosity;
     if (o.kind === 'passenger') s += 0.3 * tr.sociability;
     if (o.kind === 'smuggle') s -= 0.6 * tr.discipline;
-    if (o.kind === 'bounty') s += 0.25 * tr.resilience - 0.35 + (state.ship.components.hull_plating.wear > 0.4 ? -0.4 : 0);
+    if (o.kind === 'bounty') s += 0.25 * tr.resilience - 0.35 + (state.ship.components.hull_plating.wear > 0.4 ? -0.4 : 0) + (o.alive ? 0.1 * tr.discipline : 0);
     return { o, s: s + range(state.rng, -0.15, 0.15) };
   }).sort((a, b) => b.s - a.s);
   for (const { o, s } of scored) {
     if (sp.missions.length >= P.maxMissions || s < 0.7) break;
     const r = room();
     if ((o.tons || 0) > r.tons || (o.passengers || 0) > r.seats) continue;
+    if (o.alive && freeCells(state) < 1) continue; // nowhere to keep them
     // a wanderer, not a hauler: with money in hand, only the work that's interesting for its own sake, and not always
     if (sp.credits > 6000 && !['xeno', 'survey'].includes(o.kind) && !chance(state.rng, 0.25)) continue;
     if (o.kind === 'smuggle' && !chance(state.rng, 0.25)) continue;
@@ -404,6 +416,7 @@ export function expireMissions(state) {
     if (state.t < m.deadlineT) continue;
     sp.missions = sp.missions.filter((x) => x !== m);
     if (m.passengers) disembark(state, m.id);
+    // a prisoner whose contract lapses stays in the brig until the next port's security takes them
     sp.rep[m.faction] = clamp((sp.rep[m.faction] || 0) - 0.1, -1, 1);
     sp.stats.missionsFailed++;
     emit(state, 'mission_fail', { kind: m.kind, title: m.title, reason: 'late', room: 'bridge' });
@@ -413,8 +426,10 @@ export function expireMissions(state) {
 /** Where the active missions want to go next: a star position to steer for, or null. */
 export function missionTarget(state, data) {
   const sp = state.space;
-  const m = sp.missions.filter((x) => x.to && !(x.kind === 'bounty' && x.killed)).sort((a, b) => a.deadlineT - b.deadlineT)[0];
+  const m = sp.missions.filter((x) => x.to && !(x.kind === 'bounty' && (x.killed || x.captured) && !x.from)).sort((a, b) => a.deadlineT - b.deadlineT)[0];
   if (!m) return null;
-  const st = starById(sp.galaxySeed, m.to.starId, data.space);
+  // a bounty brought down or taken alive goes back to where the contract was signed
+  const done = m.kind === 'bounty' && (m.killed || m.captured);
+  const st = starById(sp.galaxySeed, done ? m.from.starId : m.to.starId, data.space);
   return st ? { id: st.id, pos: st.pos } : null;
 }
