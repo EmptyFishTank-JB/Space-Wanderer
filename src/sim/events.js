@@ -16,7 +16,7 @@ export const NOTABLE = new Set([
   // Phase 2
   'system_arrival', 'system_survey', 'agenda', 'discovery', 'body_scan', 'route_plotted', 'void_ahead', 'stranded',
   'hyperspace_charge', 'scoop_start', 'scoop_end', 'scoop_abort', 'scoop_misjudge', 'heat_damage', 'orbit_entered',
-  'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'rover_out', 'rover_site', 'rover_end', 'docked', 'undocked', 'port_visit', 'trade', 'mission_accept', 'mission_complete', 'mission_fail', 'conversation', 'passenger_board', 'passenger_leave', 'study_sample', 'combat_start', 'combat_end', 'shield_down', 'bounty_paid', 'keepsake', 'awe', 'refine', 'melt_ice',
+  'touchdown', 'liftoff', 'eva_step_out', 'eva_feature', 'eva_end', 'rover_out', 'rover_site', 'rover_end', 'docked', 'undocked', 'port_visit', 'trade', 'mission_accept', 'mission_complete', 'mission_fail', 'conversation', 'passenger_board', 'passenger_leave', 'study_sample', 'combat_start', 'combat_end', 'combat_submit', 'foe_down', 'patrol_arrives', 'weapons_serviced', 'shield_down', 'bounty_paid', 'keepsake', 'awe', 'refine', 'melt_ice',
   'bay_dormant', 'torpor_start', 'torpor_end', 'system_record',
   // Phase 5
   'book_finished', 'reflection',
@@ -79,7 +79,7 @@ function digest(d, ev) {
     case 'touchdown': d.landings.push({ body: ev.body, bodyType: ev.bodyType, gravity: ev.gravity, tempK: ev.tempK, first: ev.first }); break;
     case 'eva_end': d.evas.push({ body: ev.body, walkedM: ev.walkedM, features: ev.features, samples: ev.samples }); break;
     case 'docked': d.ports.push({ station: ev.station, system: ev.system, faction: ev.faction, first: ev.first }); break;
-    case 'combat_end': d.fights.push({ foe: ev.foe, cls: ev.cls, result: ev.result, bounty: ev.bounty }); break;
+    case 'combat_end': d.fights.push({ foe: ev.foe, cls: ev.cls, result: ev.result, bounty: ev.bounty, wing: ev.wing || 0, downed: ev.downed || 0, patrol: ev.patrol || null, toll: ev.toll || 0 }); break;
     case 'conversation': d.talks.push({ who: ev.who, role: ev.role, met: ev.met, topic: ev.topic, place: ev.place }); break;
     case 'mission_complete': d.missions.push({ done: true, kind: ev.kind, title: ev.title, reward: ev.reward }); break;
     case 'mission_fail': d.missions.push({ done: false, kind: ev.kind, title: ev.title, reason: ev.reason }); break;

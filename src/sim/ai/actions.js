@@ -802,6 +802,22 @@ const CORE_ACTIONS = {
     },
   },
 
+  // after a fight: realign the gimbals, reseat the shield capacitors, check the feeds from the magazine
+  service_weapons: {
+    category: 'chore', exertion: 0.5, posture: 'standing', minCommit: 900,
+    gen(s, d) {
+      const c = s.ship.combat;
+      if (!c || !c.serviceDue || (s.space && s.space.combat) || s.traveler.needs.fatigue > 0.8) return [];
+      return one(0.42 + 0.3 * d.traveler.traits.discipline, at('firecontrol', 'console'));
+    },
+    duration: (s) => range(s.rng, 1500, 3000),
+    rates: { stress: -0.03 },
+    complete(s) {
+      s.ship.combat.serviceDue = false;
+      emit(s, 'weapons_serviced', { ammo: Math.round(s.ship.combat.ammo * 100), room: 'firecontrol' });
+    },
+  },
+
   gaze_viewport: {
     category: 'leisure', exertion: 0.4, posture: 'standing', minCommit: 600,
     gen(s, d) {

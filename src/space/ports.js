@@ -15,7 +15,7 @@ import { clamp } from '../sim/util.js';
 import { emit } from '../sim/events.js';
 import { boardPassengers, disembark } from './passengers.js';
 import { makePassenger } from './people.js';
-import { wantedPilot, redeemVouchers, initCombat } from './combat.js';
+import { wantedPilot, redeemVouchers, rearm, initCombat } from './combat.js';
 
 const FACTIONS = [
   { id: 'meridian', name: 'Meridian Compact' },
@@ -287,6 +287,7 @@ function arrivePort(state, data, stn) {
     hull.wear = 0.08; hull.knownWear = hull.wear; hull.fault = null;
     emit(state, 'port_service', { service: 'hull_repair', cost: P.hullRepair, room: 'bridge' });
   }
+  rearm(state, data); // the magazine topped up
   sp.offers = makeOffers(state, data, stn);
 }
 

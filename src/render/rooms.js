@@ -30,9 +30,12 @@ const THEME = {
   securecargo: { wall: [58, 62, 58], trim: [40, 44, 40], floor: [54, 56, 54] },
   biolab: { wall: [180, 190, 188], trim: [120, 130, 128], floor: [150, 156, 154] },
   xeno: { wall: [56, 70, 66], trim: [38, 50, 46], floor: [50, 60, 58] },
+  armory: { wall: [64, 66, 60], trim: [44, 46, 42], floor: [56, 58, 54] },
+  firecontrol: { wall: [48, 52, 62], trim: [34, 36, 44], floor: [52, 54, 60] },
+  magazine: { wall: [70, 66, 58], trim: [50, 46, 40], floor: [60, 58, 54] },
 };
 const SHORT = { bridge: 'BRIDGE', lounge: 'LOUNGE', quarters: 'QTRS', galley: 'GALLEY', corridor_fore: 'LIVING', corridor_aft: 'SERVICE', hydro: 'HYDRO', lifesupport: 'LIFE SUP', storage: 'STORES', airlock: 'AIRLOCK', workshop: 'SHOP', engineering: 'ENG',
-  fwd_main: 'FWD', cross_main: 'CROSS', gallery_s: 'STBD GAL', gallery_p: 'PORT GAL', cabin_a: 'CABIN 1', cabin_b: 'CABIN 2', cabin_c: 'CABIN 3', paxlounge: 'PAX LOUNGE', brig: 'BRIG', securecargo: 'SECURE', biolab: 'BIO LAB', xeno: 'XENO' };
+  fwd_main: 'FWD', cross_main: 'CROSS', gallery_s: 'STBD GAL', gallery_p: 'PORT GAL', cabin_a: 'CABIN 1', cabin_b: 'CABIN 2', cabin_c: 'CABIN 3', paxlounge: 'PAX LOUNGE', brig: 'BRIG', securecargo: 'SECURE', biolab: 'BIO LAB', xeno: 'XENO', armory: 'ARMORY', firecontrol: 'FIRE CTRL', magazine: 'MAGAZINE' };
 
 const LED = { ok: [80, 230, 120], warn: [255, 180, 40], bad: [255, 60, 50], off: [40, 44, 40] };
 
@@ -716,6 +719,92 @@ const ROOMS = {
     rect(ctx, [60, 64, 70], M(st.microscope) - 3, FLOOR - 34, 6, 12);
     const bio = s.space ? s.space.cargo.bio : 0;
     for (let i = 0; i < Math.min(10, bio); i++) rect(ctx, [90, 160, 90], M(st.incubator) - 14 + i * 3, CEIL + 22, 2, 5);
+  },
+  firecontrol(ctx, rc) {
+    const { M, d, s, t } = rc, st = d.rooms.firecontrol.stations;
+    const ours = s.ship.combat || { shield: 1.5, down: false, ammo: 1, serviceDue: false };
+    const cb = s.space && s.space.combat;
+    // the computer racks: weapons, shields, targeting; their lights busier in a fight
+    for (const x of [0.9, 7.5]) {
+      cabinet(ctx, M(x) - 14, CEIL + 8, 28, FLOOR - CEIL - 8, [56, 60, 70]);
+      for (let i = 0; i < 9; i++) blinkLed(ctx, rc, M(x) - 9 + (i % 3) * 9, CEIL + 16 + Math.floor(i / 3) * 14, i === 4 && ours.serviceDue ? LED.warn : LED.ok, cb ? 3 : 0.4);
+    }
+    // the console: shield, hardpoints, the plot
+    rect(ctx, [44, 46, 54], M(st.console) - 34, FLOOR - 30, 68, 4);
+    rect(ctx, [36, 38, 44], M(st.console) - 30, FLOOR - 26, 60, 26);
+    monitor(ctx, rc, M(st.console) - 32, CEIL + 30, 20, 14, (x, y, w, h) => {
+      // the shield: a bar, red and flashing when it's down and rebooting
+      const k = ours.down ? 0 : ours.shield / 1.5;
+      if (ours.down) { if (Math.sin(t * 6) > 0) rect(ctx, LED.bad, x + 2, y + h - 4, w - 4, 2); }
+      else rect(ctx, [110, 170, 255], x + 2, y + h - 4, Math.max(1, (w - 4) * k), 2);
+      for (let i = 0; i < 3; i++) rect(ctx, [60, 110, 170], x + 3 + i * 5, y + 3, 3, 4);
+    });
+    monitor(ctx, rc, M(st.console) - 10, CEIL + 26, 20, 18, (x, y, w, h) => {
+      // the plot: us at the center, contacts round it, security in blue
+      px(ctx, [150, 240, 190], x + w / 2, y + h / 2);
+      if (!cb) { const a = t * 1.2; line(ctx, [40, 90, 70], x + w / 2, y + h / 2, x + w / 2 + Math.cos(a) * 8, y + h / 2 + Math.sin(a) * 8, 0.6); return; }
+      cb.foes.forEach((f, i) => { if (f.gone) return; const a = t * 0.35 + i * 2.1; px(ctx, i === cb.target ? [255, 220, 120] : [255, 90, 70], x + w / 2 + Math.sin(a) * 7, y + h / 2 + Math.cos(a * 0.7) * 6); });
+      if (cb.patrol && cb.patrol.here) for (let i = 0; i < cb.patrol.ships; i++) px(ctx, [120, 170, 255], x + w / 2 + Math.sin(t * 0.28 + i * 2.7) * 8, y + 3 + i * 2);
+    });
+    monitor(ctx, rc, M(st.console) + 12, CEIL + 30, 20, 14, (x, y, w, h) => {
+      // the six hardpoints: lit when firing, dim cannons when the magazine's empty
+      for (let i = 0; i < 6; i++) {
+        const cannon = i < 3;
+        const c = cb && cb.firing && Math.sin(t * 9 + i) > 0 ? [255, 170, 80] : cannon && ours.ammo <= 0 ? LED.off : [80, 200, 120];
+        rect(ctx, c, x + 2 + (i % 3) * 6, y + 3 + Math.floor(i / 3) * 5, 4, 3);
+      }
+    });
+    // the gimbal controllers: six motor units with their position needles, off true after a fight
+    rect(ctx, [60, 64, 72], M(st.gimbals) - 26, FLOOR - 62, 52, 40);
+    for (let i = 0; i < 6; i++) {
+      const cx = M(st.gimbals) - 18 + (i % 3) * 18, cy = FLOOR - 52 + Math.floor(i / 3) * 18;
+      disc(ctx, [34, 36, 40], cx, cy, 5);
+      const a = (cb ? t * (1 + i * 0.3) : 0) + i + (ours.serviceDue && i === 2 ? 0.6 : 0);
+      line(ctx, [200, 210, 220], cx, cy, cx + Math.cos(a) * 4, cy + Math.sin(a) * 4);
+    }
+    blinkLed(ctx, rc, M(st.gimbals) + 22, FLOOR - 58, ours.serviceDue ? LED.warn : LED.ok, ours.serviceDue ? 1 : 0.5);
+    text(ctx, 'FIRE CONTROL', M(st.mid) - 24, CEIL + 4, [120, 150, 200]);
+  },
+  armory(ctx, rc) {
+    const { M, d } = rc, st = d.rooms.armory.stations;
+    // the locked rack: long guns behind a mesh door, a sidearm on its hook
+    rect(ctx, [40, 42, 40], M(st.rack) - 28, CEIL + 14, 56, FLOOR - CEIL - 20);
+    for (let i = 0; i < 4; i++) { rect(ctx, [30, 30, 32], M(st.rack) - 22 + i * 12, CEIL + 22, 3, 70); rect(ctx, [80, 62, 44], M(st.rack) - 23 + i * 12, CEIL + 76, 5, 16); }
+    rect(ctx, [30, 30, 32], M(st.rack) + 16, CEIL + 30, 7, 4);
+    for (let x = M(st.rack) - 28; x <= M(st.rack) + 28; x += 4) vline(ctx, [96, 100, 96], x, CEIL + 14, FLOOR - 6);
+    blinkLed(ctx, rc, M(st.rack) + 24, CEIL + 18, LED.bad, 0.2); // locked
+    // the bench, with a rifle laid out for cleaning
+    rect(ctx, [86, 80, 70], M(st.bench) - 30, FLOOR - 26, 60, 4);
+    rect(ctx, [70, 64, 56], M(st.bench) - 28, FLOOR - 22, 3, 22); rect(ctx, [70, 64, 56], M(st.bench) + 25, FLOOR - 22, 3, 22);
+    rect(ctx, [36, 36, 40], M(st.bench) - 20, FLOOR - 29, 30, 2); rect(ctx, [80, 62, 44], M(st.bench) + 10, FLOOR - 30, 8, 3);
+    rect(ctx, [160, 150, 120], M(st.bench) - 4, FLOOR - 29, 2, 2);
+    // a suit rifle in its wall clamp, and the ammunition locker
+    rect(ctx, [52, 54, 58], M(6.9) - 3, CEIL + 20, 6, 50); rect(ctx, [90, 94, 98], M(6.9) - 5, CEIL + 34, 10, 3);
+    cabinet(ctx, M(0.9) - 12, FLOOR - 50, 24, 50, [86, 88, 80]);
+  },
+  magazine(ctx, rc) {
+    const { M, d, s, t } = rc, st = d.rooms.magazine.stations;
+    const ours = s.ship.combat || { ammo: 1 };
+    const cb = s.space && s.space.combat;
+    // blow-out panels in the deckhead, hazard striped
+    for (let x = M(1.5); x < M(7.5); x += 6) rect(ctx, (Math.floor(x / 6) % 2) ? [200, 170, 60] : [40, 40, 40], x, CEIL, 6, 2);
+    // the racks: a canister for each part of the magazine still full
+    const slots = 15, full = Math.ceil(ours.ammo * slots - 1e-6);
+    rect(ctx, [60, 58, 54], M(st.racks) - 48, CEIL + 24, 96, FLOOR - CEIL - 24);
+    for (let i = 0; i < slots; i++) {
+      const x = M(st.racks) - 44 + (i % 5) * 18, y = CEIL + 30 + Math.floor(i / 5) * 26;
+      rect(ctx, [44, 42, 40], x, y, 14, 20);
+      if (i < full) { rect(ctx, [120, 110, 80], x + 2, y + 2, 10, 16); rect(ctx, [190, 160, 70], x + 2, y + 2, 10, 2); }
+    }
+    // the hoist to the hardpoints: a shaft with its carriage, running when the guns are
+    const hx = M(st.hoist);
+    rect(ctx, [36, 36, 40], hx - 12, CEIL, 24, FLOOR - CEIL);
+    vline(ctx, [110, 110, 114], hx - 10, CEIL, FLOOR); vline(ctx, [110, 110, 114], hx + 10, CEIL, FLOOR);
+    const cy = cb && cb.firing ? CEIL + 20 + (Math.sin(t * 1.4) * 0.5 + 0.5) * (FLOOR - CEIL - 50) : FLOOR - 30;
+    rect(ctx, [150, 130, 70], hx - 8, cy, 16, 12);
+    for (let y = CEIL; y < cy; y += 3) px(ctx, [140, 140, 140], hx, y);
+    blinkLed(ctx, rc, hx + 14, CEIL + 10, cb && cb.firing ? LED.warn : LED.ok, 2);
+    blinkLed(ctx, rc, M(st.racks) + 50, CEIL + 28, ours.ammo < 0.25 ? LED.bad : ours.ammo < 0.6 ? LED.warn : LED.ok);
   },
   xeno(ctx, rc) {
     const { M, d, s, t } = rc, st = d.rooms.xeno.stations;

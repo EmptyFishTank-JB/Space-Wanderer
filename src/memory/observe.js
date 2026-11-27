@@ -51,14 +51,16 @@ export function appraise(state, ev) {
       if ((ev.met || 0) < 2) return null;
       return { w: 0.32, v: 0.65, subject: `an evening at the bar on ${ev.station}`, summary: `Talked with ${ev.met} people at the bar on ${ev.station}.`, tags: ['port', 'people'] };
     case 'combat_end': {
-      const what = { won: `brought down ${ev.foe}`, foe_fled: `drove ${ev.foe} off`, fled: `ran from ${ev.foe}`, robbed: `lost the cargo to ${ev.foe}` }[ev.result];
-      return { w: ev.result === 'won' ? 0.55 : 0.5, v: ev.result === 'won' || ev.result === 'foe_fled' ? 0.2 : -0.7, subject: `the fight with ${ev.foe}`, summary: `Pulled out of supercruise by a ${ev.cls}; ${what}${ev.bounty ? `, ${ev.bounty.toLocaleString('en-US')} credits on their head` : ''}.`, tags: ['combat', ev.result] };
+      const what = { won: `brought down ${ev.foe}`, foe_fled: `drove ${ev.foe} off`, fled: `ran from ${ev.foe}`, robbed: `lost the cargo to ${ev.foe}`, submitted: ev.toll ? `paid ${ev.foe} ${ev.toll.toLocaleString('en-US')} credits to go away` : `gave the cargo up to ${ev.foe}` }[ev.result];
+      const who = ev.wing ? `a ${ev.cls} and ${ev.wing === 1 ? 'a wingman' : `${ev.wing} wingmen`}` : `a ${ev.cls}`;
+      const help = ev.patrol ? `; ${ev.patrol} came in on our side` : '';
+      return { w: ev.result === 'won' ? 0.55 + 0.05 * (ev.downed || 0) : 0.5, v: ev.result === 'won' || ev.result === 'foe_fled' ? 0.2 : ev.result === 'submitted' ? -0.5 : -0.7, subject: `the fight with ${ev.foe}`, summary: `Pulled out of supercruise by ${who}${help}; ${what}${ev.bounty ? `, ${ev.bounty.toLocaleString('en-US')} credits in bounties` : ''}.`, tags: ['combat', ev.result] };
     }
     case 'conversation':
       if (ev.met < 2 && !ev.topic) return null;
       return { w: ev.met >= 3 ? 0.42 : 0.3, v: 0.65, subject: `talking with ${ev.who}`, summary: ev.met >= 2 ? `${ev.who} again${ev.topic ? `: we talked about ${ev.topic}` : ''}.` : `Met ${ev.who}${ev.topic ? ` and told them about ${ev.topic}` : ''}.`, tags: ['people', ev.role] };
     case 'mission_complete': return { w: 0.4, v: 0.6, subject: ev.title, summary: `Delivered: ${ev.title}, for ${ev.reward.toLocaleString('en-US')} credits.`, tags: ['mission', ev.kind] };
-    case 'mission_fail': return { w: 0.38, v: -0.6, subject: ev.title, summary: ev.reason === 'caught' ? `Caught with the cargo at ${ev.station}: ${ev.title}. Fined ${ev.fine} credits.` : `Ran out of time: ${ev.title}.`, tags: ['mission', 'hardship'] };
+    case 'mission_fail': return { w: 0.38, v: -0.6, subject: ev.title, summary: ev.reason === 'caught' ? `Caught with the cargo at ${ev.station}: ${ev.title}. Fined ${ev.fine} credits.` : ev.reason === 'robbed' || ev.reason === 'submitted' ? `Lost the cargo to pirates: ${ev.title}.` : ev.reason === 'gave_up' ? `Gave up the contract: ${ev.title}.` : `Ran out of time: ${ev.title}.`, tags: ['mission', 'hardship'] };
     case 'rover_end': {
       const f = ev.features || [];
       const special = f.find((k) => ['bio_mat', 'crystalline_spires', 'patterned_vents', 'geyser', 'fumarole', 'ice_ridge', 'scarp', 'ejecta_ray'].includes(k));

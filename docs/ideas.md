@@ -71,9 +71,16 @@ The hold already runs out to the belly wall and has room for trade cargo. The co
   - the traveler fights from the helm, and the shield and hull take the damage;
   - they run with the jump drive when outmatched; the worst outcome is losing the cargo;
   - bounty contracts on named pilots; vouchers paid at ports.
+- **Combat with more to it:**
+  - pirates come with one or two wingmen in lighter ships, more often on the frontier; a gunship on a bounty contract always has an escort, a raider sometimes does;
+  - the traveler shoots the weakest first to thin the incoming fire; when the leader goes down, the wing runs;
+  - in settled systems, system security sometimes answers the call and flies in on our side (less often at outposts);
+  - the traveler weighs up the fight at the helm and again when the shield fails. Outgunned, they either run for it or submit: they cut the drive and drop the cargo, or pay a toll if the hold is empty. The pirates hold their fire and go. Contraband and valuable contracts make submitting less likely; stress and a battered hull make it more likely;
+  - fire control, the armory and the magazine are real rooms with cameras (CAM-33 to CAM-35). The fire-control screens show the shield, the hardpoints and the contacts plot. The magazine racks empty as the guns fire, and the hoist runs during a fight;
+  - firing uses ammunition. With the magazine empty only the lasers fire. Ports refill it;
+  - after a fight the traveler goes to fire control to realign the gimbals and reseat the shield capacitors. Until then the guns shoot a little worse.
 
 ### Still to come
 
-- Combat with more to it: the fire-control room in the game, choosing to submit, more than one attacker, wingmen.
 - Prisoners in the brig, for bounties that want the target alive.
 - Passengers with their own small stories: requests, complaints, a farewell.

@@ -847,7 +847,7 @@
    "origin": -7.4,
    "view": "port",
    "role": "security",
-   "new": true,
+   "new": false,
    "name": "Armory",
    "info": "Small arms, a suit-mounted rifle and a sidearm in a locked rack, with a bench for cleaning and repair. For a ship this far out, mostly for wildlife and the odd unfriendly visitor."
   },
@@ -866,7 +866,7 @@
    "origin": -7.4,
    "view": "port",
    "role": "security",
-   "new": true,
+   "new": false,
    "name": "Fire control",
    "info": "The weapons and shield computers, targeting and the gimbal controllers for all six hardpoints, with a console for working on them. The traveler fights from the bridge; the systems live here."
   },
@@ -885,7 +885,7 @@
    "origin": -7.4,
    "view": "port",
    "role": "security",
-   "new": true,
+   "new": false,
    "name": "Magazine",
    "info": "Armored ammunition store with hoists to the ventral and dorsal hardpoints, and blow-out panels in the deck above it."
   },
@@ -1363,6 +1363,33 @@
     0
    ],
    "kind": "door"
+  },
+  {
+   "id": "h_armory",
+   "at": [
+    -7.7,
+    -15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_firecontrol",
+   "at": [
+    -3.3,
+    -15.9,
+    0
+   ],
+   "kind": "door"
+  },
+  {
+   "id": "h_magazine",
+   "at": [
+    1.4,
+    -15.9,
+    0
+   ],
+   "kind": "door"
   }
  ],
  "doors": [
@@ -1550,39 +1577,6 @@
    "at": [
     2.6,
     5.2,
-    0
-   ]
-  },
-  {
-   "between": [
-    "armory",
-    "gallery_p"
-   ],
-   "at": [
-    -7.7,
-    -15.9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "firecontrol",
-    "gallery_p"
-   ],
-   "at": [
-    -3.3,
-    -15.9,
-    0
-   ]
-  },
-  {
-   "between": [
-    "magazine",
-    "gallery_p"
-   ],
-   "at": [
-    1.4,
-    -15.9,
     0
    ]
   },

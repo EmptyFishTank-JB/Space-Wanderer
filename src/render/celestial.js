@@ -511,38 +511,74 @@ export function drawSpaceScene(ctx, view, t, { yaw = 0, pitch = 0, parallax = 0,
   }
 }
 
-/** The attacker wheeling round the ship, the guns' fire both ways, and the end of it. */
+/** Where attacker number i is, wheeling round the ship on its own looping path. */
+function foeAt(i, t, yaw, pitch) {
+  const k = i * 2.1;
+  const bearing = Math.sin(t * 0.35 + k) * 0.9 + Math.sin(t * 0.13 + i) * 0.4;
+  const elev = 0.06 + Math.sin(t * 0.5 + i * 1.7) * 0.08 + (i ? (i % 2 ? 0.05 : -0.05) : 0);
+  return project(bearing, elev, yaw, pitch);
+}
+
+function wedge(ctx, p, s, dir, hull, drive) {
+  ctx.fillStyle = css(hull);
+  ctx.beginPath(); ctx.moveTo(p.x + dir * s, p.y); ctx.lineTo(p.x - dir * s, p.y - s * 0.45); ctx.lineTo(p.x - dir * s * 0.7, p.y); ctx.lineTo(p.x - dir * s, p.y + s * 0.45); ctx.closePath(); ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  glow(ctx, drive, p.x - dir * s, p.y, 4, 0.7);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/** The attackers wheeling round the ship, the guns' fire both ways, security coming in, and the end of it. */
 function drawCombat(ctx, view, t, yaw, pitch) {
-  // the foe flies a looping path round us: a bearing and an elevation that keep changing
-  const bearing = Math.sin(t * 0.35) * 0.9 + Math.sin(t * 0.13) * 0.4;
-  const elev = 0.06 + Math.sin(t * 0.5) * 0.08;
-  const p = project(bearing, elev, yaw, pitch);
   if (view.boom !== undefined) {
-    if (!p) return;
-    const k = view.boom / 6;
-    ctx.globalCompositeOperation = 'lighter';
-    glow(ctx, [255, 200, 120], p.x, p.y, 10 + 60 * k, 0.8 * (1 - k));
-    for (let i = 0; i < 24; i++) { const a = hash(i, 1, 9) * Math.PI * 2, r = (6 + 50 * hash(i, 2, 9)) * k; px(ctx, [255, 220, 160], p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 1 - k); }
-    ctx.globalCompositeOperation = 'source-over';
-    return;
+    const p = foeAt(view.boomSlot || 0, t, yaw, pitch);
+    if (p) {
+      const k = view.boom / 6;
+      ctx.globalCompositeOperation = 'lighter';
+      glow(ctx, [255, 200, 120], p.x, p.y, 10 + 60 * k, 0.8 * (1 - k));
+      for (let i = 0; i < 24; i++) { const a = hash(i, 1, 9) * Math.PI * 2, r = (6 + 50 * hash(i, 2, 9)) * k; px(ctx, [255, 220, 160], p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 1 - k); }
+      ctx.globalCompositeOperation = 'source-over';
+    }
   }
   const c = view.combat;
-  if (p) {
-    // the attacker: a small dark wedge with a hot drive
-    const s = c.foe.cls === 'gunship' ? 9 : c.foe.cls === 'raider' ? 7 : 5;
-    const dir = Math.cos(t * 0.35) > 0 ? 1 : -1;
-    ctx.fillStyle = css([70, 74, 82]);
-    ctx.beginPath(); ctx.moveTo(p.x + dir * s, p.y); ctx.lineTo(p.x - dir * s, p.y - s * 0.45); ctx.lineTo(p.x - dir * s * 0.7, p.y); ctx.lineTo(p.x - dir * s, p.y + s * 0.45); ctx.closePath(); ctx.fill();
-    ctx.globalCompositeOperation = 'lighter';
-    glow(ctx, [255, 140, 60], p.x - dir * s, p.y, 4, 0.7);
-    // their fire, toward us
-    if (Math.sin(t * 5.3) > 0.2) line(ctx, [120, 255, 140], p.x, p.y, W / 2 + Math.sin(t * 7) * 60, H - 10, 0.7);
-    // ours, from the hardpoints
-    if (c.firing && Math.sin(t * 6.1 + 1) > -0.2) { line(ctx, [255, 120, 80], W / 2 - 70, H, p.x, p.y, 0.8); line(ctx, [255, 120, 80], W / 2 + 70, H, p.x, p.y, 0.6); glow(ctx, [255, 160, 100], p.x, p.y, 6, 0.5); }
-    ctx.globalCompositeOperation = 'source-over';
+  if (!c) return;
+  const live = c.foes.filter((f) => !f.gone);
+  let tp = null;
+  for (const f of live) {
+    const p = foeAt(f.slot, t, yaw, pitch);
+    if (!p) continue;
+    // an attacker: a small dark wedge with a hot drive; the wing in lighter ships
+    const s = f.cls === 'gunship' ? 9 : f.cls === 'raider' ? 7 : f.role === 'wing' ? 4 : 5;
+    const dir = Math.cos(t * 0.35 + f.slot * 2.1) > 0 ? 1 : -1;
+    wedge(ctx, p, s, dir, [70, 74, 82], [255, 140, 60]);
+    if (f.slot === c.target) tp = p;
+    // their fire, toward us (held while we drop the cargo)
+    if (!c.submitting && Math.sin(t * 5.3 + f.slot * 1.3) > 0.2) { ctx.globalCompositeOperation = 'lighter'; line(ctx, [120, 255, 140], p.x, p.y, W / 2 + Math.sin(t * 7 + f.slot) * 60, H - 10, 0.7); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  ctx.globalCompositeOperation = 'lighter';
+  // ours, from the hardpoints, into the current target
+  if (tp && c.firing && Math.sin(t * 6.1 + 1) > -0.2) { line(ctx, [255, 120, 80], W / 2 - 70, H, tp.x, tp.y, 0.8); line(ctx, [255, 120, 80], W / 2 + 70, H, tp.x, tp.y, 0.6); glow(ctx, [255, 160, 100], tp.x, tp.y, 6, 0.5); }
+  ctx.globalCompositeOperation = 'source-over';
+  // system security: pale ships with blue drives, working the same target
+  for (let i = 0; i < (c.patrol || 0); i++) {
+    const p = project(Math.sin(t * 0.28 + i * 2.7 + 1) * 1.1, 0.12 + Math.sin(t * 0.4 + i) * 0.06, yaw, pitch);
+    if (!p) continue;
+    const dir = Math.cos(t * 0.28 + i * 2.7 + 1) > 0 ? 1 : -1;
+    wedge(ctx, p, 6, dir, [200, 206, 214], [120, 170, 255]);
+    if (tp && Math.sin(t * 4.7 + i * 2) > 0) { ctx.globalCompositeOperation = 'lighter'; line(ctx, [140, 190, 255], p.x, p.y, tp.x, tp.y, 0.7); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  // dropping the cargo: canisters tumbling away below the ship
+  if (c.submitting) {
+    for (let i = 0; i < 8; i++) {
+      const u = (t * 0.12 + i / 8) % 1, sz = Math.max(1, Math.round(4 * (1 - u * 0.7)));
+      const q = project((hash(i, 4, 7) - 0.5) * 0.7 * u + 0.05, 0.015 + 0.09 * u + 0.02 * hash(i, 5, 7), yaw, pitch);
+      if (!q) continue;
+      const x = q.x, y = q.y + Math.sin(t + i) * 1.5;
+      ctx.fillStyle = css([190, 170, 110], 1 - u * 0.8); ctx.fillRect(Math.round(x), Math.round(y), sz + 1, sz);
+      if (Math.sin(t * 4 + i * 1.7) > 0.6) px(ctx, [255, 120, 80], x + sz, y, 1 - u); // each canister's locator beacon
+    }
   }
   // hits on our shield: a blue ripple across the view (or sparks off the plating with the shield down)
-  if (Math.sin(t * 5.3) > 0.85) {
+  if (!c.submitting && live.length && Math.sin(t * 5.3) > 0.85) {
     ctx.globalCompositeOperation = 'lighter';
     if (!c.shieldDown) glow(ctx, [110, 170, 255], W / 2 + Math.sin(t * 7) * 60, H - 30, 70, 0.22);
     else for (let i = 0; i < 20; i++) px(ctx, [255, 200, 120], W / 2 + (hash(i, Math.floor(t * 9), 3) - 0.5) * 160, H - 20 - hash(i, 2, Math.floor(t * 9)) * 40, 0.8);

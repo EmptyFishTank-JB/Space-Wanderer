@@ -609,7 +609,8 @@
    "cartridge": 30,
    "seal": 12,
    "kcal1000": 6,
-   "barMeal": 18
+   "barMeal": 18,
+   "ammoFull": 900
   }
  }
 }

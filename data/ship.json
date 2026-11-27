@@ -25,6 +25,9 @@
     { "id": "securecargo"   , "name": "Secure Cargo"                   , "width": 8.4 , "floor": "deck_plate", "stations": { "mid": 4.2, "vault": 4.2 } },
     { "id": "biolab"        , "name": "Biology Lab"                    , "width": 7.8 , "floor": "tile"      , "stations": { "mid": 3.9, "glovebox": 1.8, "incubator": 3.6, "microscope": 5.4 } },
     { "id": "xeno"          , "name": "Xeno Containment"               , "width": 3.4 , "floor": "tile"      , "stations": { "mid": 1.7, "enclosure": 1.7 } },
+    { "id": "armory"        , "name": "Armory"                         , "width": 8.4 , "floor": "deck_plate", "stations": { "mid": 4.2, "rack": 2.4, "bench": 5.6 } },
+    { "id": "firecontrol"   , "name": "Fire Control"                   , "width": 8.4 , "floor": "deck_plate", "stations": { "mid": 4.2, "console": 3, "gimbals": 5.8 } },
+    { "id": "magazine"      , "name": "Magazine"                       , "width": 8.4 , "floor": "deck_plate", "stations": { "mid": 4.2, "racks": 3.6, "hoist": 6.4 } },
     { "id": "surface",       "name": "Planetary Surface (EVA)",        "width": 4000, "floor": "regolith", "exterior": true, "stations": { "ramp": 0 } },
     { "id": "port",          "name": "Station Concourse",              "width": 100, "floor": "deck_plate", "exterior": true, "stations": { "gate": 2, "market": 22, "bar": 46, "board": 68, "viewdeck": 90 } }
   ],
@@ -53,6 +56,9 @@
     { "id": "h_cabin_c"     , "a": "cabin_c"     , "ax": 6   , "b": "gallery_s"   , "bx": 13.7, "seconds": 4 },
     { "id": "h_paxlounge"   , "a": "paxlounge"   , "ax": 6   , "b": "gallery_s"   , "bx": 9   , "seconds": 4 },
     { "id": "h_biolab"      , "a": "biolab"      , "ax": 3.2 , "b": "cross_main"  , "bx": 29  , "seconds": 4 },
-    { "id": "h_xeno"        , "a": "xeno"        , "ax": 2.9 , "b": "biolab"      , "bx": 0.5 , "seconds": 4 }
+    { "id": "h_xeno"        , "a": "xeno"        , "ax": 2.9 , "b": "biolab"      , "bx": 0.5 , "seconds": 4 },
+    { "id": "h_armory"      , "a": "armory"      , "ax": 7.9 , "b": "gallery_p"   , "bx": 2.3 , "seconds": 4 },
+    { "id": "h_firecontrol" , "a": "firecontrol" , "ax": 7.9 , "b": "gallery_p"   , "bx": 6.7 , "seconds": 4 },
+    { "id": "h_magazine"    , "a": "magazine"    , "ax": 7.9 , "b": "gallery_p"   , "bx": 11.4, "seconds": 4 }
   ]
 }

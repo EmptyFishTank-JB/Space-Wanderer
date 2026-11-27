@@ -10,6 +10,7 @@ const SECTION_OF = {
   engineering: 'Engineering', workshop: 'Engineering', storage: 'Service', airlock: 'Service', corridor_fore: 'Passages', corridor_aft: 'Passages',
   fwd_main: 'Passages', cross_main: 'Passages', gallery_s: 'Living', gallery_p: 'Living', cabin_a: 'Passengers', cabin_b: 'Passengers', cabin_c: 'Passengers', paxlounge: 'Passengers',
   brig: 'Missions', securecargo: 'Missions', biolab: 'Science', xeno: 'Science',
+  armory: 'Weapons', firecontrol: 'Weapons', magazine: 'Weapons',
 };
 export const sectionOf = (f) => (f.room ? SECTION_OF[f.room] || 'Service' : f.rover || f.exterior === 'bay' ? 'Vehicles' : f.port ? 'Station' : 'Exterior');
 const feedName = (f) => (f.id === 'EVA-POV' ? 'EVA-POV HELMET' : `${f.id} ${f.label}`);

@@ -141,7 +141,17 @@ export function writeLog({ state, data, facts, entry }) {
     lines.find.push(`Walked ${Math.round(e.walkedM)} m out${feats.length ? ` to the ${feats[feats.length - 1]}` : ''} and back.${samples.length ? ` Brought in ${listJoin(samples)}.` : ''}`);
   }
   for (const p of (v.ports || []).slice(0, 1)) lines.find.push(p.first ? `Put in at ${p.station}, ${p.system}. ${p.faction} territory. People everywhere, after all this time.` : `Docked at ${p.station} again.`);
-  for (const fgt of (v.fights || []).slice(0, 1)) lines.find.push({ won: `A ${fgt.cls} called ${fgt.foe} pulled us out of cruise. They didn't leave.${fgt.bounty ? ` ${fgt.bounty.toLocaleString('en-US')} on their head.` : ''}`, foe_fled: `${fgt.foe} jumped us and then thought better of it.`, fled: `Ran from ${fgt.foe}. The shield bought the seconds the drive needed.`, robbed: `${fgt.foe} took the cargo. Hands still shaking.` }[fgt.result]);
+  for (const fgt of (v.fights || []).slice(0, 1)) {
+    const pack = fgt.wing ? ` and ${fgt.wing === 1 ? 'a wingman' : `${fgt.wing} wingmen`}` : '';
+    lines.find.push({
+      won: `A ${fgt.cls} called ${fgt.foe}${pack} pulled us out of cruise. ${fgt.downed > 1 ? 'None of them' : 'They'} didn't leave.${fgt.bounty ? ` ${fgt.bounty.toLocaleString('en-US')} in bounties.` : ''}`,
+      foe_fled: `${fgt.foe}${pack} jumped us and then thought better of it.`,
+      fled: `Ran from ${fgt.foe}${pack}. The shield bought the seconds the drive needed.`,
+      robbed: `${fgt.foe} took the cargo. Hands still shaking.`,
+      submitted: fgt.toll ? `${fgt.foe}${pack} had us outgunned. Paid them ${fgt.toll.toLocaleString('en-US')} to leave. Cheaper than a hull.` : `${fgt.foe}${pack} had us outgunned. Cut the drive and dropped the cargo. They took it and went.`,
+    }[fgt.result]);
+    if (fgt.patrol) lines.find.push(`${fgt.patrol} answered the call. Owe them a drink.`);
+  }
   const talk = (v.talks || []).find((x) => x.met >= 2) || (v.talks || [])[0];
   if (talk) lines.find.push(talk.met >= 2 ? `${talk.who} remembered me.${talk.topic ? ` We ended up on ${talk.topic} again.` : ''}` : `Met ${talk.who}${talk.role === 'passenger' ? ', one of the passengers' : talk.role === 'bartender' ? ', who runs the bar' : ''}.`);
   for (const m of (v.missions || []).slice(0, 2)) lines.find.push(m.done ? `Handed over ${m.title}. ${m.reward.toLocaleString('en-US')} credits.` : m.reason === 'caught' ? `They scanned the hold. That's the end of that job: ${m.title}.` : `Missed the deadline: ${m.title}.`);

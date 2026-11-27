@@ -145,6 +145,37 @@ export const SCENARIOS = {
     runUntil(s, d, (x) => x.space.combat && x.space.combat.firing && x.space.combat.t > 30, 3600);
     return { s, feeds: ['CAM-08', 'CAM-14', 'CAM-01'] };
   },
+  // a raider and two wingmen; system security answers a minute in
+  pack(d) {
+    const s = createInitialState(d, { seed: 'gallery-pack' });
+    runUntil(s, d, (x) => x.t > 4 * 3600);
+    startCombat(s, d, [{ name: 'Sable', cls: 'raider', wanted: true, bounty: 2400 }, { name: 'Pike', cls: 'interceptor', wanted: true, bounty: 450, role: 'wing' }, { name: 'Moss', cls: 'interceptor', wanted: true, bounty: 400, role: 'wing' }], 'pirate');
+    s.space.combat.patrol = { dueT: s.t + 60, here: false, name: 'Concord security', ships: 2 };
+    runUntil(s, d, (x) => x.space.combat && x.space.combat.patrol && x.space.combat.patrol.here && x.space.combat.t > 75, 3600);
+    return { s, feeds: ['CAM-08', 'CAM-34', 'CAM-14'] };
+  },
+  // outgunned with a hold full of somebody else's cargo: cut the drive and let them have it
+  submit(d) {
+    let s;
+    for (let k = 0; k < 8; k++) {
+      s = createInitialState(d, { seed: `gallery-submit-${k}` });
+      runUntil(s, d, (x) => x.t > 4 * 3600);
+      s.traveler.needs.stress = 0.85;
+      s.space.missions = [{ id: 'gallery-cargo', kind: 'cargo', title: 'Reactor spares for Halden 2210', tons: 14, reward: 1900, to: { starId: 'none', system: 'Halden 2210' }, deadlineT: s.t + 6 * 86400, acceptedT: s.t }];
+      startCombat(s, d, [{ name: 'Grieve', cls: 'gunship', wanted: true, bounty: 4200 }, { name: 'Rook', cls: 'interceptor', role: 'wing' }], 'pirate');
+      if (runUntil(s, d, (x) => x.space.combat && x.space.combat.submitT && x.t > x.space.combat.submitT - 15, 1800)) break;
+    }
+    return { s, feeds: ['CAM-08', 'CAM-35', 'CAM-14'] };
+  },
+  // the morning after a fight: realigning the gimbals in fire control
+  firecontrol(d) {
+    const s = createInitialState(d, { seed: 'gallery-firecontrol' });
+    runUntil(s, d, (x) => x.t > 4 * 3600);
+    startCombat(s, d, { name: 'Lark', cls: 'interceptor', wanted: true, bounty: 1200 }, 'pirate');
+    runUntil(s, d, (x) => !x.space.combat, 3600);
+    runUntil(s, d, (x) => x.traveler.activity && x.traveler.activity.id === 'service_weapons' && x.traveler.activity.phase === 'perform' && x.traveler.activity.elapsed > 60, 86400);
+    return { s, feeds: ['CAM-34', 'CAM-35', 'CAM-33'] };
+  },
   passengers(d) {
     const s = createInitialState(d, { seed: 'gallery-pax' });
     const m = { id: 'gallery-pax', passengers: 3, to: { system: 'Halden 2210' } };
