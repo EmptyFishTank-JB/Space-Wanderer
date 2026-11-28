@@ -10,7 +10,7 @@ const STYLE = `
 .sel { position: fixed; pointer-events: none; z-index: 6; }
 .sel .bk { position: absolute; display: none; }
 .sel .bk i { position: absolute; top: 0; bottom: 0; width: 5px; border: 2px solid rgba(150, 240, 200, 0.55); }
-.sel .bk i:first-child { left: 0; border-right: 0; } .sel .bk i:last-child { right: 0; border-left: 0; }
+.sel .bk i:first-of-type { left: 0; border-right: 0; } .sel .bk i:last-of-type { right: 0; border-left: 0; } /* of-type: the hover box ends with its name tag */
 .sel .bk.pin i { border-color: rgba(255, 196, 120, 0.95); }
 .sel .tag { position: absolute; left: 0; bottom: calc(100% + 3px); white-space: nowrap; font: 10px ui-monospace, Menlo, Consolas, monospace; color: rgba(190, 245, 220, 0.9); text-shadow: 0 0 3px #000; }
 .sel .panel { position: absolute; top: 8px; width: min(260px, 70%); display: none; background: rgba(2, 10, 8, 0.55); border: 1px solid rgba(255, 196, 120, 0.45);

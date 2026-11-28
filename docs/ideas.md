@@ -107,6 +107,14 @@ The hold already runs out to the belly wall and has room for trade cargo. The co
 - **People** stand where the sim has them, drawn with the feeds' own figure routine, walking toward the door they're about to go through and climbing the ladders. The prisoners in the brig are behind the bars.
 - **HUD:** the room and deck, heading, crosshair, what you're looking at (named the same way as the selection in the feeds), what E and Q would do, where the traveler is and what they're doing, the deck plan (P). Telemetry (T) works as with the cameras.
 - A door the layout was missing, between the cold store and the science stores, so that every space can be reached.
+- **Furniture in 3D:** every station the feeds draw is now an object standing against the wall: solids (cabinets, consoles, machines, bunks) faced with their own live drawing, tables and desks on legs, cut-out cards for open things (plants, chairs, the easel). You can't walk through them. What isn't furniture (pipes, wall screens, signs) stays flat on the wall. The 3D-only rooms' furniture is laid out the same way.
+- **Real spaces inside rooms:** the brig's two cells (bars, a barred door, a bunk and a toilet; an empty cell can be opened and walked into, an occupied one is locked), the xeno containment's two sealed enclosures behind glass, the secure cargo vault behind its cage, the washroom's shower and toilet stalls. They're in the layout data and on the 3D viewer's deck plans.
+- **Plant rooms:** an HVAC plant beside engineering (air handlers, filter banks; the overhead duct starts there) and a water plant on the lower deck by the passage (pumps, the hot-water tank, valve manifolds). The power room was already the electrical room.
+- **Duct fans** turning behind grilles at every dead end of the ductwork, like the vents in a horror film.
+- **The ladder wells** moved against the port wall of their passages, ladders on that wall, so the walkway beside them is clear.
+- **The drone launch hatch** the drone bay always mentioned: a tube up through the overhead to a hatch in the top deck. Its inner hatch opens (E).
+- **The freight lift works like a lift:** call it at a landing, its doors open, step in (or don't), pick a deck on the panel, ride with the doors shut, step out.
+- **Doorway thresholds**, so there is no gap underfoot between rooms; **skylight shutters** that slide across and can be worked by looking up at them; the corridor handrails and conduits are 3D on the walls.
 
 ### Still to come
 

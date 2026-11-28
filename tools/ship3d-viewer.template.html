@@ -128,6 +128,7 @@ svg .room.far { fill-opacity: 0.22; stroke-opacity: 0.3; }
 svg .room.mission { stroke-dasharray: 1.5 2; stroke-width: 1.4; }
 svg .room.bay { fill-opacity: 0.32; stroke-dasharray: 2 2; }
 svg .pony { stroke: var(--ink); stroke-width: 2.6; vector-effect: non-scaling-stroke; pointer-events: none; }
+svg .space { fill: none; stroke: var(--ink); stroke-opacity: 0.75; stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
 svg .well { fill: var(--glass); fill-opacity: 0.12; stroke: var(--glass); stroke-width: 1; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; pointer-events: none; }
 svg .ghost { fill: none; stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 0.8; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; pointer-events: none; }
 svg .ghost.hull { fill: none; stroke-dasharray: none; stroke-opacity: 0.3; }
@@ -332,7 +333,7 @@ const ROLE_NAME = { hab: 'Living', life: 'Life support', service: 'Service', pas
 const SHORT = {
   bridge: 'Bridge', lounge: 'Lounge', quarters: 'Quarters', galley: 'Galley', corridor_fore: 'Living spine', corridor_aft: 'Service spine', hydro: 'Hydroponics', lifesupport: 'Life support',
   storage: 'Storage', airlock: 'Airlock', workshop: 'Workshop', engineering: 'Engineering', gym: 'Gym', fwd_living: 'Lookout', medbay: 'Medbay', washroom: 'Washroom', fwd_main: 'Fwd passage',
-  lab: 'Geo lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores', armory: 'Armory', brig: 'Brig', securecargo: 'Secure cargo', cabin_a: 'Cabin 1', cabin_b: 'Cabin 2', cabin_c: 'Cabin 3', paxlounge: 'Pax lounge', xeno: 'Xeno', mapping: 'Mapping', gravroom: 'Gravity gen', firecontrol: 'Fire control', magazine: 'Magazine', shieldroom: 'Shield gen', cmstore: 'Countermeasures',
+  lab: 'Geo lab', datacore: 'Data core', spares: 'Spares', refinery: 'Refinery', lower_passage: 'Lower passage', hold: 'Hold', roverbay: 'Rover bay', flyerbay: 'Skiff bay', gallery_s: 'Stbd gallery', gallery_p: 'Port gallery', cross_main: 'Cross passage', airlock_passage: 'Airlock passage', suitlock: 'Suit lock', biolab: 'Bio lab', coldstore: 'Cold store', observatory: 'Observatory', dronebay: 'Drone bay', study: 'Study', powerroom: 'Power room', shelter: 'Shelter', laundry: 'Laundry', pantry: 'Pantry', isolation: 'Isolation', comms: 'Comms', scistores: 'Sci stores', armory: 'Armory', brig: 'Brig', securecargo: 'Secure cargo', cabin_a: 'Cabin 1', cabin_b: 'Cabin 2', cabin_c: 'Cabin 3', paxlounge: 'Pax lounge', xeno: 'Xeno', mapping: 'Mapping', gravroom: 'Gravity gen', firecontrol: 'Fire control', magazine: 'Magazine', shieldroom: 'Shield gen', cmstore: 'Countermeasures', hvac: 'HVAC', waterplant: 'Water plant',
 };
 const DECK_NAME = Object.fromEntries(S.decks.map((d) => [d.id, d.name]));
 const deckOf = Object.fromEntries(S.decks.map((d) => [d.id, d]));
@@ -1374,9 +1375,19 @@ function drawPlan(deckId) {
     const w = r.x[1] - r.x[0], h = r.y[1] - r.y[0];
     g += rect(roomCls(r), r.id, r.x[0], r.y[0], w, h, fillOf(r.role));
     if (simRoom[r.id]) g += cameraCone(r);
-    const label = SHORT[r.id];
+    const label = SHORT[r.id] || r.name || r.id;
     if (fits(label, fs, w) && h > fs * 1.3) labels += text(r.x[0] + w / 2, r.y[0] + h / 2 + fs * 0.35, label, fs);
     else if (fits(label, fs, h) && w > fs * 1.3) labels += `<text class="lbl" font-size="${fs}" stroke-width="${n2(fs * 0.2)}" text-anchor="middle" transform="translate(${n2(r.x[0] + w / 2 + fs * 0.35)} ${n2(r.y[0] + h / 2)}) rotate(-90)">${label}</text>`;
+  }
+  // the spaces inside rooms: the brig's cells, the xeno enclosures, the vault, the washroom's stalls
+  for (const r of rooms.filter((q) => q.deck === deckId && q.spaces)) {
+    const A = { '+x': [1, 0], '-x': [-1, 0], '+y': [0, 1], '-y': [0, -1] }[r.axis], V = [A[1], -A[0]];
+    const backAt = V[0] > 0 ? r.x[1] : V[0] < 0 ? r.x[0] : V[1] > 0 ? r.y[1] : r.y[0];
+    const P = (u, dd) => (A[0] ? [r.origin + A[0] * u, backAt - V[1] * dd] : [backAt - V[0] * dd, r.origin + A[1] * u]);
+    for (const sp of r.spaces) {
+      const a = P(sp.u[0], sp.d[0]), b = P(sp.u[1], sp.d[1]);
+      g += rect('space', `${r.id}`, Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+    }
   }
   const zCut = d.z[0] + 1.5;
   for (const bay of BAYS.filter((b) => roomById[b.room].deck === deckId)) {

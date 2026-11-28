@@ -17,7 +17,8 @@ import { isShut } from '../render/shutters.js';
 import { activityLabel } from '../ui/telemetry-model.js';
 import { Raster, pack } from './raster.js';
 import { TextureStore, personSprite, BAND, FPPM } from './textures.js';
-import { roomPoint, DOOR_W, DOOR_H, PROP_DEPTH } from './world.js';
+import { roomPoint, DOOR_W, DOOR_H } from './world.js';
+import { liftPanel } from './textures.js';
 
 const ROLE_C = {
   hab: [79, 179, 191], life: [102, 181, 108], service: [140, 153, 163], passage: [93, 108, 116], power: [224, 160, 58], drive: [110, 114, 180],
@@ -83,6 +84,12 @@ export class WalkView {
     this.helpUntil = 0;
   }
 
+  /** A room's deck, by name (the lift car is on whichever deck it's at, or between them). */
+  deckName(r) {
+    if (r.car) return r.car.dockDeck ? `${this.world.decks[r.car.dockDeck].name} (in the lift)` : 'In the lift';
+    return this.world.decks[r.deck] ? this.world.decks[r.deck].name : '';
+  }
+
   // ───────── static geometry, built once per room ─────────
   roomGeo(r) {
     let g = this.geo.get(r.id);
@@ -94,8 +101,10 @@ export class WalkView {
       const wallY = b.kind === 'bay' ? (b.side > 0 ? r.y[1] : r.y[0]) : null, zc = r.z[1];
       const P = (x, [y, z]) => [x, y, z];
       const onOpening = (p, q) => (b.kind === 'bay' ? Math.abs(p[1] - wallY) < 0.03 && Math.abs(q[1] - wallY) < 0.03 : Math.abs(p[2] - zc) < 0.03 && Math.abs(q[2] - zc) < 0.03);
-      const zs = b.glass.flat().map((q) => q[2]);
-      const gz = [Math.min(...zs), Math.max(...zs)];
+      const zs = b.glass.flat().map((q) => q[2]), gys = b.glass.flat().map((q) => q[1]);
+      const gz = [Math.min(...zs), Math.max(...zs)], gy = [Math.min(...gys), Math.max(...gys)];
+      // the order the shutters cover the glass in: down from the top of a bay, across a skylight
+      const rank = (c) => (b.kind === 'well' ? (c[1] - gy[0]) / Math.max(0.1, gy[1] - gy[0]) : (gz[1] - c[2]) / Math.max(0.1, gz[1] - gz[0]));
       const S0 = b.slices;
       for (let i = 0; i < S0.length - 1; i++) {
         const A = S0[i], B = S0[i + 1];
@@ -110,7 +119,7 @@ export class WalkView {
             const ctr = lerp3(lerp3(p0, p2, 0.5), lerp3(p1, p3, 0.5), 0.5);
             const glass = onGlass(b.glass, ctr);
             const pts = [p0, p1, p2, p3];
-            g.bays.push({ pts, glass, win: b.win, zf: glass ? (gz[1] - ctr[2]) / Math.max(0.1, gz[1] - gz[0]) : 0, color: flatShade(pts, mul(th.trim, 1.15)), name: b.name, info: b.info });
+            g.bays.push({ pts, glass, win: b.win, zf: glass ? Math.min(0.999, rank(ctr)) : 0, color: flatShade(pts, mul(th.trim, 1.15)), name: b.name, info: b.info });
           }
         }
       }
@@ -148,10 +157,54 @@ export class WalkView {
     }
     // ladders in the room's wells, and the lift car's walls
     for (const sh of r.shafts) {
-      const clip = (b) => ({ ...b, z: [Math.max(b.z[0], r.z[0] - 1.5), Math.min(b.z[1], r.z[1] + 1.5)] });
-      for (const b of [...sh.parts.rails, ...sh.parts.rungs]) if (b.z[1] > r.z[0] - 1.5 && b.z[0] < r.z[1] + 1.5) for (const f of boxFaces(b.x, b.y, clip(b).z)) g.ladders.push({ pts: f, color: flatShade(f, STEEL), name: sh.name, info: sh.info });
+      const top = sh.stops && sh.stops[sh.stops.length - 1] === r.id && sh.kind === 'ladder';
+      const clip = (b) => ({ ...b, z: [Math.max(b.z[0], r.z[0] - 1.5), Math.min(b.z[1], top ? r.z[0] + 1.0 : r.z[1] + 1.5)] });
+      for (const b of [...sh.parts.rails, ...sh.parts.rungs]) if (b.z[1] > r.z[0] - 1.5 && b.z[0] < (top ? r.z[0] + 1.0 : r.z[1] + 1.5)) for (const f of boxFaces(b.x, b.y, clip(b).z)) g.ladders.push({ pts: f, color: flatShade(f, STEEL), name: sh.name, info: sh.info });
       for (const b of sh.parts.frames) if (b.z[1] > r.z[0] - 0.2 && b.z[0] < r.z[1] + 0.2) for (const f of boxFaces(b.x, b.y, b.z)) g.ladders.push({ pts: f, color: flatShade(f, [200, 160, 60], 0.8), name: sh.name, info: sh.info });
       if (sh.kind === 'lift' && sh.x[0] < r.x[1] && sh.x[1] > r.x[0] && sh.y[0] < r.y[1] && sh.y[1] > r.y[0]) g.lifts.push(sh); // a car standing in the room
+    }
+    // handrails along the passages' walls, and conduits up by the ceiling on the back wall
+    g.rails = [];
+    if (r.role === 'passage' && !r.car) {
+      for (const w of r.walls) {
+        if (w.len < 3) continue;
+        const spans = subtract(0.15, w.len - 0.15, r.openings[w.side].map((o) => [o.s0 - 0.12, o.s1 + 0.12]));
+        const at = (sv, off, z) => [w.a[0] + w.dir[0] * sv + w.n[0] * off, w.a[1] + w.dir[1] * sv + w.n[1] * off, r.z[0] + z];
+        const railBox = (s0, s1, o0, o1, z0, z1, c) => {
+          const pa = at(s0, o0, 0), pb = at(s1, o1, 0);
+          for (const f of boxFaces([Math.min(pa[0], pb[0]), Math.max(pa[0], pb[0])], [Math.min(pa[1], pb[1]), Math.max(pa[1], pb[1])], [r.z[0] + z0, r.z[0] + z1])) g.rails.push({ pts: f, color: flatShade(f, c), name: 'Handrail', info: 'For when the gravity generator hiccups.' });
+        };
+        for (const [s0, s1] of spans) {
+          if (s1 - s0 < 0.3) continue;
+          railBox(s0, s1, 0.05, 0.09, 0.98, 1.02, [150, 156, 162]);
+          for (let sv = s0 + 0.1; sv < s1; sv += 1.6) railBox(sv, sv + 0.03, 0, 0.06, 0.99, 1.01, [110, 114, 120]);
+          if (w.side === r.back) { railBox(s0, s1, 0, 0.05, r.h - 0.22, r.h - 0.18, [120, 100, 70]); railBox(s0, s1, 0, 0.05, r.h - 0.32, r.h - 0.28, [80, 100, 120]); }
+        }
+      }
+    }
+    // the enclosed spaces: cells behind bars, sealed enclosures behind glass, the vault's cage, washroom stalls
+    g.spaces = [];
+    for (const sp of r.spaces) {
+      const P = (u, d, z) => roomPoint(r, u, d, z);
+      const wallC = mul(th.wall, 0.92);
+      const part = (u, d0, d1) => { const a = P(u - 0.04, d0, 0), b = P(u + 0.04, d1, 0); for (const f of boxFaces([Math.min(a[0], b[0]), Math.max(a[0], b[0])], [Math.min(a[1], b[1]), Math.max(a[1], b[1])], [r.z[0], r.z[1]])) g.spaces.push({ sp, pts: f, color: flatShade(f, wallC), part: 'wall' }); };
+      part(sp.u[0], sp.d[0], sp.d[1]); part(sp.u[1], sp.d[0], sp.d[1]);
+      // the front above the door, and either side of it
+      const fd = sp.d[1];
+      const front = (u0, u1, z0, z1, kind) => g.spaces.push({ sp, kind, pts: [P(u0, fd, z0), P(u1, fd, z0), P(u1, fd, z1), P(u0, fd, z1)], uv: [[0, (z1 - z0) * 32], [(u1 - u0) * 32, (z1 - z0) * 32], [(u1 - u0) * 32, 0], [0, 0]], part: 'front' });
+      const doorTop = Math.min(DOOR_H, r.h - 0.2);
+      const fk = sp.kind === 'cell' ? 'bars' : sp.kind === 'enclosure' ? 'glass' : sp.kind === 'vault' ? 'mesh' : 'solid';
+      front(sp.u[0], sp.door.u[0], 0, r.h, fk); front(sp.door.u[1], sp.u[1], 0, r.h, fk); front(sp.door.u[0], sp.door.u[1], doorTop, r.h, fk);
+      // frames: a sill, a head, posts at the door
+      const beam = (u0, u1, z0, z1) => { const a = P(u0, fd - 0.05, 0), b = P(u1, fd + 0.05, 0); for (const f of boxFaces([Math.min(a[0], b[0]), Math.max(a[0], b[0])], [Math.min(a[1], b[1]), Math.max(a[1], b[1])], [r.z[0] + z0, r.z[0] + z1])) g.spaces.push({ sp, pts: f, color: flatShade(f, [70, 74, 80]), part: 'frame' }); };
+      beam(sp.u[0], sp.u[1], doorTop, doorTop + 0.06); beam(sp.door.u[0] - 0.05, sp.door.u[0], 0, doorTop); beam(sp.door.u[1], sp.door.u[1] + 0.05, 0, doorTop);
+      if (fk === 'bars') for (let u = sp.u[0] + 0.07; u < sp.u[1] - 0.04; u += 0.14) if (u < sp.door.u[0] - 0.03 || u > sp.door.u[1] + 0.03) { const a = P(u - 0.015, fd - 0.015, 0), b = P(u + 0.015, fd + 0.015, 0); for (const f of boxFaces([Math.min(a[0], b[0]), Math.max(a[0], b[0])], [Math.min(a[1], b[1]), Math.max(a[1], b[1])], [r.z[0], r.z[1]])) g.spaces.push({ sp, pts: f, color: flatShade(f, [150, 154, 160]), part: 'bar' }); }
+      // what's inside
+      const inBox = (u0, u1, d0, d1, z0, z1, c, name) => { const a = P(u0, d0, 0), b = P(u1, d1, 0); for (const f of boxFaces([Math.min(a[0], b[0]), Math.max(a[0], b[0])], [Math.min(a[1], b[1]), Math.max(a[1], b[1])], [r.z[0] + z0, r.z[0] + z1])) g.spaces.push({ sp, pts: f, color: flatShade(f, c), part: 'inside', name }); };
+      if (sp.kind === 'cell') { inBox(sp.u[0] + 0.1, sp.u[1] - 0.6, 0.05, 0.8, 0, 0.42, [80, 76, 70], 'Bunk'); inBox(sp.u[0] + 0.12, sp.u[1] - 0.62, 0.08, 0.78, 0.42, 0.5, [190, 186, 176], 'Bunk'); inBox(sp.u[1] - 0.5, sp.u[1] - 0.12, 0.1, 0.55, 0, 0.45, [130, 132, 136], 'Toilet'); }
+      if (sp.kind === 'enclosure') inBox(sp.u[0] + 0.05, sp.u[1] - 0.05, 0.05, sp.d[1] - 0.1, 0, 0.18, [70, 60, 44], 'Substrate');
+      if (sp.kind === 'stall' && sp.id === 'toilet') inBox((sp.u[0] + sp.u[1]) / 2 - 0.22, (sp.u[0] + sp.u[1]) / 2 + 0.22, 0.05, 0.65, 0, 0.45, [200, 204, 206], 'Toilet');
+      if (sp.kind === 'stall' && sp.id === 'shower') { inBox(sp.u[0] + 0.1, sp.u[1] - 0.1, 0.1, sp.d[1] - 0.1, 0, 0.06, [150, 170, 180], 'Shower tray'); inBox((sp.u[0] + sp.u[1]) / 2 - 0.08, (sp.u[0] + sp.u[1]) / 2 + 0.08, 0.02, 0.2, 2.0, 2.1, [180, 184, 190], 'Shower head'); }
     }
     // a ladder well's own walls, in the voids between the decks it joins
     g.wells = [];
@@ -170,7 +223,7 @@ export class WalkView {
   ductGeoOf(d) {
     let g = this.ductGeo.get(d.id);
     if (g) return g;
-    g = { polys: [], grilles: [], rungs: [] };
+    g = { polys: [], grilles: [], rungs: [], fans: [] };
     const zf = d.floor, zt = d.top;
     for (const sg of d.segs) {
       const ax = sg.alongX ? 0 : 1;
@@ -195,15 +248,22 @@ export class WalkView {
       // the ends, unless something carries on
       for (const a of [lo, hi]) {
         const open = [...others, ...vents].some((b) => { const r2 = b[ax === 0 ? 'x' : 'y']; return r2[0] <= a + 0.05 && r2[1] >= a - 0.05; });
-        if (!open) g.polys.push({ pts: [P(a, cr[0], zf), P(a, cr[1], zf), P(a, cr[1], zt), P(a, cr[0], zt)], uv: [[0, 29], [29, 29], [29, 0], [0, 0]], shade: 0.4 });
+        if (!open) {
+          // a dead end: a fan in its housing, behind a grille, turning
+          g.polys.push({ pts: [P(a, cr[0], zf), P(a, cr[1], zf), P(a, cr[1], zt), P(a, cr[0], zt)], uv: [[0, 32], [32, 32], [32, 0], [0, 0]], shade: 0.55, tex: 'fan' });
+          const into = a === lo ? 1 : -1;
+          g.fans.push({ c: P(a + into * 0.06, (cr[0] + cr[1]) / 2, (zf + zt) / 2), ax, into, r: (cr[1] - cr[0]) / 2 - 0.05, seed: g.fans.length, grille: [P(a + into * 0.1, cr[0], zf), P(a + into * 0.1, cr[1], zf), P(a + into * 0.1, cr[1], zt), P(a + into * 0.1, cr[0], zt)] });
+        }
       }
     }
     // the vent shafts' walls between the duct levels, and their rungs
     for (const v of d.vents) {
       const levels = v.levels.map((id) => this.world.ducts.find((q) => q.id === id));
-      const spans = subtract(v.z[0], v.z[1], levels.map((q) => [q.floor, q.top]));
-      for (const [z0, z1] of spans) for (const [p, q] of [[[v.x[0], v.y[0]], [v.x[1], v.y[0]]], [[v.x[1], v.y[0]], [v.x[1], v.y[1]]], [[v.x[1], v.y[1]], [v.x[0], v.y[1]]], [[v.x[0], v.y[1]], [v.x[0], v.y[0]]]]) {
-        g.polys.push({ pts: [[p[0], p[1], z0], [q[0], q[1], z0], [q[0], q[1], z1], [p[0], p[1], z1]], uv: [[0, (z1 - z0) * 32], [29, (z1 - z0) * 32], [29, 0], [0, 0]], shade: 0.42 });
+      // each face of the shaft, open only where a duct run comes in through it
+      for (const [p, q] of [[[v.x[0], v.y[0]], [v.x[1], v.y[0]]], [[v.x[1], v.y[0]], [v.x[1], v.y[1]]], [[v.x[1], v.y[1]], [v.x[0], v.y[1]]], [[v.x[0], v.y[1]], [v.x[0], v.y[0]]]]) {
+        const alongX = Math.abs(p[1] - q[1]) < 1e-6, line = alongX ? p[1] : p[0];
+        const cuts = levels.filter((lv) => lv.segs.some((sg) => (alongX ? sg.box.y[0] < line - 0.01 && sg.box.y[1] > line + 0.01 && sg.box.x[0] < Math.max(p[0], q[0]) && sg.box.x[1] > Math.min(p[0], q[0]) : sg.box.x[0] < line - 0.01 && sg.box.x[1] > line + 0.01 && sg.box.y[0] < Math.max(p[1], q[1]) && sg.box.y[1] > Math.min(p[1], q[1])))).map((lv) => [lv.floor, lv.top]);
+        for (const [z0, z1] of subtract(v.z[0], v.z[1], cuts)) g.polys.push({ pts: [[p[0], p[1], z0], [q[0], q[1], z0], [q[0], q[1], z1], [p[0], p[1], z1]], uv: [[0, (z1 - z0) * 32], [29, (z1 - z0) * 32], [29, 0], [0, 0]], shade: 0.42 });
       }
       for (const b of [...v.parts.rails, ...v.parts.rungs]) for (const f of boxFaces(b.x, b.y, b.z)) g.rungs.push({ pts: f, color: flatShade(f, STEEL, 0.8), name: v.name, info: v.info });
     }
@@ -266,6 +326,7 @@ export class WalkView {
 
   /** Where someone the sim has at (room, x) stands in 3D, walking toward the door they're about to go through. */
   placePerson(state, room, x, move, depth = 0.95) {
+    depth = Math.max(0.4, depth);
     const W2 = this.world, r = W2.rooms[room];
     const seg = move && move.segs[move.i];
     if (seg && seg.kind === 'hatch') {
@@ -311,8 +372,9 @@ export class WalkView {
     let outside = false;
 
     for (const r of vis.rooms) {
+      if (r.car) this.geo.delete(r.id); // the lift car moves: its geometry is built fresh
       const g = this.roomGeo(r), L = this.light(state, r, t), lit = 0.12 + 0.88 * L.L;
-      const roomT = tg({ kind: 'room', name: r.name, sub: this.world.decks[r.deck].name, info: r.info });
+      const roomT = tg({ kind: 'room', name: r.name, sub: this.deckName(r), info: r.info });
       const [x0, x1] = r.x, [y0, y1] = r.y, [z0, z1] = r.z;
       // floor and ceiling
       if (eye[2] > z0) { const tx = this.tex.floor(r); R.poly([[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [[0, 0], [tx.w, 0], [tx.w, tx.h], [0, tx.h]], { tex: tx, shade: lit * 0.82 }, roomT); }
@@ -321,6 +383,7 @@ export class WalkView {
       for (const [list, z, dz] of [[r.openings.floor, z0, 0.01], [r.openings.ceil, z1, -0.01]]) for (const o of list) {
         if (o.kind === 'shaft' && !o.shaft.lidOpen) R.poly([[o.x[0], o.y[0], z + dz], [o.x[1], o.y[0], z + dz], [o.x[1], o.y[1], z + dz], [o.x[0], o.y[1], z + dz]], [[0, 0], [16, 0], [16, 16], [0, 16]], { tex: this.tex.shared.lid, shade: lit * 0.8 }, tg({ kind: 'hatch', name: `Hatch: ${o.shaft.name}`, sub: r.name, info: o.shaft.info }));
         if (o.kind === 'well' || o.kind === 'shaft') outside = outside || o.kind === 'well';
+        if (o.kind === 'bayhatch') this.bayHatch(r, o, z, dz, lit, tg);
       }
       // walls
       for (const w of r.walls) {
@@ -331,11 +394,8 @@ export class WalkView {
         const sideShade = w.side === r.back ? 1 : Math.abs(w.n[0]) > 0.5 ? 0.9 : 0.84;
         if (w.side === r.back) {
           const b = this.tex.back(r, m);
-          const bt = tg({ kind: 'back', room: r, picks: b.picks, name: r.name, sub: this.world.decks[r.deck].name, info: r.info, k: b.lenPx / w.len });
+          const bt = tg({ kind: 'back', room: r, picks: b.picks, name: r.name, sub: this.deckName(r), info: r.info, k: b.lenPx / w.len });
           R.poly(pts, [[0, BAND], [b.shell.w, BAND], [b.shell.w, 0], [0, 0]], { tex: b.shell, shade: lit }, bt);
-          const o = PROP_DEPTH;
-          const pp = pts.map((p) => [p[0] + w.n[0] * o, p[1] + w.n[1] * o, p[2]]);
-          R.poly(pp, [[0, BAND], [b.props.w, BAND], [b.props.w, 0], [0, 0]], { tex: b.props, shade: lit * 0.97 }, bt);
         } else {
           const tx = this.tex.wall(r, w.side);
           R.poly(pts, [[0, BAND], [tx.w, BAND], [tx.w, 0], [0, 0]], { tex: tx, shade: lit * sideShade }, roomT);
@@ -358,7 +418,12 @@ export class WalkView {
         const o = wp.o, zt = o.z1, zb = o.z1 - (o.z1 - o.z0) * sh;
         R.poly([wp.at(o.s0, zb), wp.at(o.s1, zb), wp.at(o.s1, zt), wp.at(o.s0, zt)], [[0, (zt - zb) * 32], [(o.s1 - o.s0) * 32, (zt - zb) * 32], [(o.s1 - o.s0) * 32, 0], [0, 0]], { tex: this.tex.shared.armor, shade: lit }, tg({ kind: 'shutter', win: wp.id, name: `${wp.name}: shutters`, sub: r.name, info: 'Armored shutters over the glass.' }));
       }
-      for (const p of [...g.solids, ...g.ladders]) R.poly(p.pts, null, { color: p.color }, tg({ kind: 'thing', name: p.name, sub: r.name, info: p.info }));
+      for (const p of [...g.solids, ...g.ladders, ...g.rails]) R.poly(p.pts, null, { color: p.color }, tg({ kind: 'thing', name: p.name, sub: r.name, info: p.info }));
+      // the furniture: each piece a solid, a card or a table, faced with its own live drawing
+      this.furniture(r, lit, m, tg);
+      // the enclosed spaces, their doors sliding aside
+      this.spaces(state, r, g, lit, tg);
+      if (r.car) this.carInside(r, lit, tg);
       for (const p of g.wells) if (walker.move || p.pts.some((q) => Math.abs(q[2] - eye[2]) < 6)) R.poly(p.pts, p.uv, { tex: this.tex.shared.duct, shade: 0.4 * lit + 0.1 }, tg({ kind: 'thing', name: p.name, sub: 'Ladder well', info: p.info }));
       // the freight lift's car, its doors on every face
       for (const s of g.lifts) {
@@ -375,11 +440,25 @@ export class WalkView {
       drawn.add(d);
       const L = this.light(state, r, t), lit = 0.12 + 0.88 * L.L;
       const P = (u, v, z) => [d.at[0] + d.along[0] * u + d.n[0] * v, d.at[1] + d.along[1] * u + d.n[1] * v, d.z + z];
-      const dep = d.gap / 2 + 0.07, hw = DOOR_W / 2;
+      const dep = d.gap / 2 + 0.07, hw = d.w / 2;
       const other = d.a === r.id ? d.b : d.a;
-      const dt2 = tg({ kind: 'door', door: d, name: `Door to ${this.world.rooms[other].name}`, sub: r.name, info: d.open > 0.5 ? 'Open.' : 'Shut.' });
+      const dt2 = tg(d.lift ? { kind: 'liftdoor', door: d, name: d.lift.name, sub: r.name, info: d.open > 0.5 ? 'Doors open.' : 'Doors shut.' } : { kind: 'door', door: d, name: `Door to ${this.world.rooms[other].name}`, sub: r.name, info: d.open > 0.5 ? 'Open.' : 'Shut.' });
       const box = (u0, u1, zz0, zz1) => { for (const f of boxFaces([0, 1], [0, 1], [0, 1])) { const pts = f.map(([a, b, c]) => P(a ? u1 : u0, b ? dep : -dep, c ? zz1 : zz0)); R.poly(pts, null, { color: flatShade(pts, [36, 38, 42], lit) }, dt2); } };
       box(-hw - 0.09, -hw, 0, DOOR_H); box(hw, hw + 0.09, 0, DOOR_H); box(-hw - 0.09, hw + 0.09, DOOR_H, DOOR_H + 0.09);
+      // the threshold: deck plate across the wall's thickness, so there's no gap underfoot
+      R.poly([P(-hw, -dep, 0.004), P(hw, -dep, 0.004), P(hw, dep, 0.004), P(-hw, dep, 0.004)], null, { color: pack(mul([70, 72, 78], lit)) }, dt2);
+      if (d.lift) {
+        // a lift: two leaves at the landing and two on the car, sliding apart
+        const op = d.open;
+        // the landing's own leaves here; the car's ride with the car (see carInside)
+        if (op < 0.995) for (const v of [d.gap / 2 - 0.02]) for (const sgn of [-1, 1]) {
+          // each leaf slides into the wall beside the opening; what's still in the doorway shows
+          const c0 = sgn < 0 ? -hw : op * hw, c1 = sgn < 0 ? -op * hw : hw;
+          if (c1 - c0 < 0.01) continue;
+          R.poly([P(c0, v, 0), P(c1, v, 0), P(c1, v, DOOR_H), P(c0, v, DOOR_H)], [[0, 66], [(22 * (c1 - c0)) / hw, 66], [(22 * (c1 - c0)) / hw, 0], [0, 0]], { tex: this.tex.shared.half, shade: lit }, dt2);
+        }
+        continue;
+      }
       if (d.open < 0.995) {
         const zb = d.open * DOOR_H, row = d.open * 66;
         R.poly([P(-hw, 0, zb), P(hw, 0, zb), P(hw, 0, DOOR_H), P(-hw, 0, DOOR_H)], [[0, 66], [30, 66], [30, row], [0, row]], { tex: this.tex.shared.door, shade: lit }, dt2);
@@ -389,7 +468,19 @@ export class WalkView {
     for (const d of vis.ducts) {
       const g = this.ductGeoOf(d);
       const dtg = tg({ kind: 'duct', name: d.name, sub: 'Ductwork', info: d.info });
-      for (const p of g.polys) R.poly(p.pts, p.uv, { tex: this.tex.shared.duct, shade: p.shade }, dtg);
+      for (const p of g.polys) R.poly(p.pts, p.uv, { tex: p.tex === 'fan' ? this.tex.shared.fan : this.tex.shared.duct, shade: p.shade }, dtg);
+      // the fans at the runs' dead ends, turning behind their grilles
+      for (const f of g.fans) {
+        const ft = tg({ kind: 'thing', name: 'Duct fan', sub: d.name, info: 'Keeps the air moving down this run. Behind a grille, and turning.' });
+        const spin = t * 7 + f.seed;
+        const pt = (rr, a) => (f.ax === 0 ? [f.c[0], f.c[1] + rr * Math.cos(a), f.c[2] + rr * Math.sin(a)] : [f.c[0] + rr * Math.cos(a), f.c[1], f.c[2] + rr * Math.sin(a)]);
+        for (let i = 0; i < 5; i++) {
+          const a0 = spin + (i / 5) * Math.PI * 2;
+          const pts = [pt(0.05, a0), pt(f.r, a0 - 0.1), pt(f.r, a0 + 0.45), pt(0.06, a0 + 0.3)];
+          R.poly(pts, null, { color: pack([96, 100, 108]) }, ft);
+        }
+        R.poly(f.grille, [[0, 14], [14, 14], [14, 0], [0, 0]], { tex: this.tex.shared.grille, shade: 0.8 }, ft);
+      }
       for (const p of g.grilles) R.poly(p.pts, p.uv, { tex: this.tex.shared.grille, shade: 0.7 }, tg({ kind: 'grille', name: `Grille into the ${this.world.rooms[p.room].name}`, sub: d.name, info: 'E or Q to climb through.' }));
       for (const p of g.rungs) R.poly(p.pts, null, { color: p.color }, tg({ kind: 'thing', name: p.name, sub: 'Vent shaft', info: p.info }));
     }
@@ -438,16 +529,25 @@ export class WalkView {
       const a = [at[0] - dir[0] * w, at[1] - dir[1] * w, at[2]], b = [at[0] + dir[0] * w, at[1] + dir[1] * w, at[2]];
       R.poly([a, b, [b[0], b[1], at[2] + h], [a[0], a[1], at[2] + h]], [[0, 80], [64, 80], [64, 0], [0, 0]], { tex, shade: 0.95 }, tg(info));
     };
+    // where to stand at a station: just in front of whatever's there; where to lie: on top of it
+    const standAt = (r, u) => {
+      const it = r.items.find((q) => u >= q.u0 - 0.15 && u <= q.u1 + 0.15 && q.z0 < 1.1);
+      return it ? Math.min(it.d + 0.32, (r.back[0] === 'x' ? r.x[1] - r.x[0] : r.y[1] - r.y[0]) - 0.3) : 0.75;
+    };
+    const lieOn = (r, u) => {
+      const it = r.items.find((q) => u >= q.u0 - 0.2 && u <= q.u1 + 0.2 && /bunk|torpor|couch|medbed/.test(q.kind));
+      return it ? roomPoint(r, u, it.d * 0.5, it.z1 - 0.12) : roomPoint(r, u, 0.5, 0.45);
+    };
     // the traveler
     const tr = state.traveler;
     if (pos && this.world.rooms[pos.room] && (inView.has(pos.room) || tr.move)) {
-      const p = this.placePerson(state, pos.room, pos.x, tr.move);
+      const p = this.placePerson(state, pos.room, pos.x, tr.move, standAt(this.world.rooms[pos.room], pos.x));
       if (p && inView.has(p.room)) {
         const k = travelerPose(state, data, tracker, pos, t);
         if (k) {
           const r = this.world.rooms[p.room];
           const lying = k.pose === 'lie';
-          const at = lying ? roomPoint(r, pos.x, 0.55, (FLOOR_PX - k.y) / PPM) : p.at;
+          const at = lying ? lieOn(r, pos.x) : p.at;
           sprite(at, k, { kind: 'person', name: 'The traveler', sub: r.name, info: activityLabel(tr.activity) }, !!k.privacy, r.axis);
         }
       }
@@ -458,13 +558,133 @@ export class WalkView {
       const r = this.world.rooms[q.pos.room];
       const asleep = q.doing === 'asleep' && data.rooms[q.pos.room] && Math.abs(q.pos.x - data.rooms[q.pos.room].stations.bunk) < 0.3;
       const k = { pose: asleep ? 'lie' : q.moving ? 'walk' : 'stand', facing: 1, phase: q.pos.x * 3, fatigue: 0, yawn: 0, alpha: 1, outfit: q.look, skin: q.look.skin, hair: q.look.hair };
-      sprite(roomPoint(r, q.pos.x, asleep ? 0.55 : 1.25, asleep ? 0.62 : 0), k, { kind: 'person', name: q.name, sub: `Passenger · going to ${q.going}`, info: q.doing }, false, r.axis);
+      sprite(asleep ? lieOn(r, q.pos.x) : roomPoint(r, q.pos.x, standAt(r, q.pos.x) + 0.35), k, { kind: 'person', name: q.name, sub: `Passenger · going to ${q.going}`, info: q.doing }, false, r.axis);
     }
     for (const q of (state.space && state.space.prisoners) || []) {
-      if (!q.pos || q.state === 'held' || !inView.has(q.pos.room)) continue;
+      if (!q.pos || !inView.has(q.pos.room)) continue;
+      if (q.state === 'held') {
+        // in their cell: on the bunk, at the bars, pacing
+        const r = this.world.rooms[q.pos.room], sp = r.spaces.find((x) => x.id === q.cell);
+        if (!sp) continue;
+        const lying = q.doing === 'asleep' || q.doing === 'lying on the bunk, awake';
+        const um = (sp.u[0] + sp.u[1]) / 2 - 0.2, pace = q.doing === 'pacing the cell' ? Math.sin(t * 0.5 + sp.u[0]) * 0.5 : 0;
+        const at = lying ? roomPoint(r, um, 0.42, 0.5) : roomPoint(r, um + pace, q.doing === 'at the bars' ? sp.d[1] - 0.3 : 1.1, q.doing === 'sitting on the bunk' ? 0.05 : 0);
+        const k = { pose: lying ? 'lie' : q.doing === 'pacing the cell' ? 'walk' : q.doing === 'sitting on the bunk' ? 'sit_side' : 'stand', facing: Math.cos(t * 0.5 + sp.u[0]) > 0 ? 1 : -1, phase: t * 3, fatigue: 0, yawn: 0, alpha: 1, outfit: q.look, skin: q.look.skin, hair: q.look.hair };
+        sprite(at, k, { kind: 'person', name: q.name, sub: `Prisoner · ${sp.name}`, info: q.doing }, false, r.axis);
+        continue;
+      }
       const r = this.world.rooms[q.pos.room];
       const k = { pose: q.moving ? 'walk' : 'stand', facing: q.dir || -1, phase: q.pos.x * 3, fatigue: 0, yawn: 0, alpha: 1, outfit: q.look, skin: q.look.skin, hair: q.look.hair, suited: q.state === 'at_lock' };
       sprite(roomPoint(r, q.pos.x, 1.1), k, { kind: 'person', name: q.name, sub: `Prisoner · pilot of a ${q.cls}`, info: q.doing }, false, r.axis);
+    }
+  }
+
+  /** A room's furniture: solids, cut-out cards and tables, each faced with its live drawing. */
+  furniture(r, lit, m, tg) {
+    if (!r.items.length) return;
+    const R = this.raster, b = this.tex.back(r, m);
+    for (const it of r.items) {
+      const ti = b.items[it.id];
+      if (!ti) continue;
+      const pick = b.picks.find((p) => p.id === `st:${r.id}:${it.station}`);
+      const t2 = tg(pick ? { kind: 'station', name: pick.info().name, sub: pick.info().sub, lines: pick.info().lines } : { kind: 'thing', name: it.name || it.kind, sub: r.name });
+      const P = (u, d, z) => roomPoint(r, u, d, z);
+      const { u0, u1, z0, z1 } = ti, D = it.d;
+      const uv = [[0, ti.tex.h], [ti.tex.w, ti.tex.h], [ti.tex.w, 0], [0, 0]];
+      const topC = pack(mul(ti.top, lit * 0.95)), sideC = pack(mul(ti.side, lit * 0.72)), darker = pack(mul(ti.side, lit * 0.55));
+      if (it.shape === 'card') {
+        R.poly([P(u0, D * 0.5, z0), P(u1, D * 0.5, z0), P(u1, D * 0.5, z1), P(u0, D * 0.5, z1)], uv, { tex: ti.tex, shade: lit }, t2);
+        continue;
+      }
+      if (it.shape === 'table') {
+        // a top on legs, the drawing (and whatever stands on it) at the front edge
+        const tt = Math.min(0.05, (z1 - z0) / 3);
+        R.poly([P(u0, 0.04, z1), P(u1, 0.04, z1), P(u1, D, z1), P(u0, D, z1)], null, { color: topC }, t2);
+        R.poly([P(u0, D, z1 - tt), P(u1, D, z1 - tt), P(u1, D, z1), P(u0, D, z1)], null, { color: sideC }, t2);
+        for (const [uu, dd] of [[u0 + 0.04, 0.08], [u1 - 0.07, 0.08]]) for (const f of boxFaces([0, 1], [0, 1], [0, 1])) { const pts = f.map(([a, c, e]) => P(uu + a * 0.03, dd + c * 0.03, e ? z1 - tt : 0)); R.poly(pts, null, { color: darker }, t2); }
+        R.poly([P(u0, D - 0.02, z0), P(u1, D - 0.02, z0), P(u1, D - 0.02, z1), P(u0, D - 0.02, z1)], uv, { tex: ti.tex, shade: lit }, t2);
+        continue;
+      }
+      // a solid: the drawing on its face, its top and sides in the drawing's own colors
+      R.poly([P(u0, D, z0), P(u1, D, z0), P(u1, D, z1), P(u0, D, z1)], uv, { tex: ti.tex, shade: lit }, t2);
+      R.poly([P(u0, 0, z1), P(u1, 0, z1), P(u1, D, z1), P(u0, D, z1)], null, { color: topC }, t2);
+      R.poly([P(u0, 0, z0), P(u0, D, z0), P(u0, D, z1), P(u0, 0, z1)], null, { color: sideC }, t2);
+      R.poly([P(u1, 0, z0), P(u1, D, z0), P(u1, D, z1), P(u1, 0, z1)], null, { color: sideC }, t2);
+      if (z0 > 0.05) R.poly([P(u0, 0, z0), P(u1, 0, z0), P(u1, D, z0), P(u0, D, z0)], null, { color: darker }, t2);
+    }
+  }
+
+  /** Cells, enclosures, the vault, stalls: their walls, fronts (bars, glass, mesh, a partition) and doors. */
+  spaces(state, r, g, lit, tg) {
+    const R = this.raster;
+    for (const p of g.spaces) {
+      const sp = p.sp;
+      const t2 = tg({ kind: 'space', space: sp, name: p.name || sp.name, sub: r.name, info: sp.kind === 'cell' ? 'A cell: a bunk, a toilet, a monitored door.' : sp.kind === 'enclosure' ? 'A sealed enclosure with its own air, heat and light.' : sp.kind === 'vault' ? 'The shielded, scan-resistant vault.' : '' });
+      if (p.part === 'front') {
+        if (p.kind === 'bars') continue; // the bars themselves are drawn
+        const tex = p.kind === 'glass' ? this.tex.shared.glass : p.kind === 'mesh' ? this.tex.shared.mesh : null;
+        if (tex) R.poly(p.pts, p.uv, { tex, shade: lit }, t2);
+        else R.poly(p.pts, null, { color: flatShade(p.pts, this.tex.theme(r).wall, lit * 0.95) }, t2);
+        continue;
+      }
+      R.poly(p.pts, null, { color: p.color }, t2);
+    }
+    // the doors: barred, glazed, caged or solid, sliding aside along the front
+    for (const sp of r.spaces) {
+      sp.open += Math.sign((sp.wantOpen ? 1 : 0) - sp.open) * Math.min(Math.abs((sp.wantOpen ? 1 : 0) - sp.open), 0.04);
+      const u0 = sp.door.u[0] + (sp.door.u[1] - sp.door.u[0]) * sp.open, u1 = sp.door.u[1] + (sp.door.u[1] - sp.door.u[0]) * sp.open * 0.9;
+      const hi = Math.min(DOOR_H, r.h - 0.2), fd = sp.d[1] + 0.03;
+      const P = (u, z) => roomPoint(r, Math.min(u, sp.u[1] - 0.02), fd, z);
+      const t2 = tg({ kind: 'space', space: sp, name: `${sp.name}: door`, sub: r.name, info: sp.open > 0.5 ? 'Open.' : 'Shut.' });
+      if (sp.kind === 'cell') {
+        for (let u = u0 + 0.06; u < Math.min(u1, sp.u[1] - 0.05); u += 0.14) { const a = P(u - 0.015, 0), b = P(u + 0.015, 0); for (const f of boxFaces([Math.min(a[0], b[0]), Math.max(a[0], b[0])], [Math.min(a[1], b[1]) - 0.015, Math.max(a[1], b[1]) + 0.015], [r.z[0], r.z[0] + hi])) R.poly(f, null, { color: flatShade(f, [170, 174, 180], lit) }, t2); }
+        R.poly([P(u0, hi - 0.06), P(u1, hi - 0.06), P(u1, hi), P(u0, hi)], null, { color: pack(mul([150, 154, 160], lit)) }, t2);
+        R.poly([P(u0, 0.95), P(u1, 0.95), P(u1, 1.05), P(u0, 1.05)], null, { color: pack(mul([110, 114, 120], lit)) }, t2);
+      } else {
+        const tex = sp.kind === 'enclosure' ? this.tex.shared.glass : sp.kind === 'vault' ? this.tex.shared.mesh : null;
+        const pts = [P(u0, 0), P(u1, 0), P(u1, hi), P(u0, hi)];
+        if (tex) R.poly(pts, [[0, hi * 32], [(u1 - u0) * 32, hi * 32], [(u1 - u0) * 32, 0], [0, 0]], { tex, shade: lit }, t2);
+        else R.poly(pts, null, { color: flatShade(pts, mul(this.tex.theme(r).trim, 1.2), lit) }, t2);
+      }
+    }
+  }
+
+  /** Inside the lift car: its control panel beside the doors. */
+  carInside(r, lit, tg) {
+    const car = r.car, face = r.walls.find((q) => r.openings[q.side].some((o) => o.kind === 'liftdoor'));
+    if (!face) return;
+    const o = r.openings[face.side][0];
+    const s = o.s1 + 0.25;
+    const at = (sv, z) => [face.a[0] + face.dir[0] * sv + face.n[0] * 0.03, face.a[1] + face.dir[1] * sv + face.n[1] * 0.03, r.z[0] + z];
+    // the car's doors, at the car, open only when it's docked and opening
+    const op = car.moving ? 0 : car.doors, hw = (o.s1 - o.s0) / 2, sc = (o.s0 + o.s1) / 2;
+    const leafAt = (sv, z) => [face.a[0] + face.dir[0] * sv + face.n[0] * 0.02, face.a[1] + face.dir[1] * sv + face.n[1] * 0.02, r.z[0] + z];
+    const lt = tg({ kind: 'liftdoor', name: car.name, sub: 'In the lift', info: op > 0.5 ? 'Doors open.' : 'Doors shut.' });
+    if (op < 0.995) for (const sgn of [-1, 1]) {
+      const c0 = sgn < 0 ? -hw : op * hw, c1 = sgn < 0 ? -op * hw : hw;
+      if (c1 - c0 < 0.01) continue;
+      this.raster.poly([leafAt(sc + c0, 0), leafAt(sc + c1, 0), leafAt(sc + c1, DOOR_H), leafAt(sc + c0, DOOR_H)], [[0, 66], [(22 * (c1 - c0)) / hw, 66], [(22 * (c1 - c0)) / hw, 0], [0, 0]], { tex: this.tex.shared.half, shade: Math.max(0.6, lit) }, lt);
+    }
+    const tex = liftPanel(car, this.world.decks);
+    this.raster.poly([at(s, 1.0), at(s + 0.32, 1.0), at(s + 0.32, 1.7), at(s, 1.7)], [[0, 40], [18, 40], [18, 0], [0, 0]], { tex, shade: Math.max(0.7, lit) }, tg({ kind: 'liftpanel', car, name: 'Lift controls', sub: car.name, info: 'E up, Q down.' }));
+  }
+
+  /** A big hatch in a floor or a ceiling: the drone launch hatch, the skiff's belly doors, the rover lift. Shut, unless opened. */
+  bayHatch(r, o, z, dz, lit, tg) {
+    const R = this.raster, h = o.hatch;
+    h.open += Math.sign((h.wantOpen ? 1 : 0) - h.open) * Math.min(Math.abs((h.wantOpen ? 1 : 0) - h.open), 0.03);
+    const t2 = tg({ kind: 'bayhatch', hatch: h, name: h.name, sub: r.name, info: h.info });
+    const [x0, x1] = o.x, [y0, y1] = o.y, zz = z + dz;
+    if (h.open < 0.99) {
+      // the lid slides aside along x as it opens
+      const xs = x0 + (x1 - x0) * h.open;
+      R.poly([[xs, y0, zz], [x1, y0, zz], [x1, y1, zz], [xs, y1, zz]], [[0, 0], [32, 0], [32, 32], [0, 32]], { tex: this.tex.shared.hazard, shade: lit }, t2);
+    }
+    if (h.open > 0.01 && o.where === 'ceiling') {
+      // up the launch tube to the outer hatch, shut
+      const zt = h.z[1];
+      for (const [p, q] of [[[x0, y0], [x1, y0]], [[x1, y0], [x1, y1]], [[x1, y1], [x0, y1]], [[x0, y1], [x0, y0]]]) R.poly([[p[0], p[1], z], [q[0], q[1], z], [q[0], q[1], zt], [p[0], p[1], zt]], [[0, (zt - z) * 32], [29, (zt - z) * 32], [29, 0], [0, 0]], { tex: this.tex.shared.duct, shade: 0.5 }, t2);
+      R.poly([[x0, y0, zt], [x1, y0, zt], [x1, y1, zt], [x0, y1, zt]], [[0, 0], [32, 0], [32, 32], [0, 32]], { tex: this.tex.shared.hazard, shade: 0.6 }, t2);
     }
   }
 
@@ -490,7 +710,7 @@ export class WalkView {
     const box = (x, y, w, h) => rect(ctx, [0, 0, 0], x, y, w, h, 0.55);
     // where you are
     const where = walker.mode === 'duct' ? walker.duct.name : walker.room ? walker.room.name : '';
-    const deck = walker.mode === 'duct' ? 'Ductwork' : walker.room ? this.world.decks[walker.room.deck].name : '';
+    const deck = walker.mode === 'duct' ? 'Ductwork' : walker.room ? this.deckName(walker.room) : '';
     const tag = `${where.toUpperCase()}`;
     box(2, 2, Math.max(textWidth(tag), textWidth(deck.toUpperCase())) + 6, 17);
     text(ctx, tag, 5, 4, [190, 225, 205]);
@@ -543,7 +763,7 @@ export class WalkView {
 
   /** The deck plan: every space on this deck, the doors, you and the traveler. */
   map(ctx, state, walker) {
-    const deck = walker.mode === 'room' && walker.room ? walker.room.deck : walker.duct && walker.duct.floor > 3 ? (walker.duct.floor > 8 ? 'living' : 'main') : 'main';
+    const deck = walker.mode === 'room' && walker.room ? (walker.room.car ? walker.room.car.dockDeck || walker.room.car.stops[0].deck : walker.room.deck) : walker.duct && walker.duct.floor > 3 ? (walker.duct.floor > 8 ? 'living' : 'main') : walker.duct && walker.duct.floor < -3 ? 'lower' : 'main';
     const rooms = Object.values(this.world.rooms).filter((r) => r.deck === deck);
     const xs = rooms.flatMap((r) => r.x), ys = rooms.flatMap((r) => r.y);
     const bx = [Math.min(...xs), Math.max(...xs)], by = [Math.min(...ys), Math.max(...ys)];

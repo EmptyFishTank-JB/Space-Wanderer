@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { data } from './helpers.mjs';
 import { buildWorld, walkable, roomAt, roomPoint, roomLocal, crawlable } from '../src/walk/world.js';
 import { Walker, EYE, EYE_CROUCH, EYE_CRAWL } from '../src/walk/walker.js';
+import { stepLifts, callLift, sendLift, liftNear } from '../src/walk/lift.js';
 import { Raster, pack } from '../src/walk/raster.js';
 import { isShut, setShut, manualShut } from '../src/render/shutters.js';
 
@@ -53,7 +54,7 @@ test('doors: shut, they stop you; opened, you walk through', () => {
   assert.equal(k.room.id, 'lounge');
 });
 
-test('ladders and the lift: from the living deck up to the bridge and down to the lower deck', () => {
+test('a ladder from the living deck up to the bridge', () => {
   const w = fresh();
   const k = new Walker(w);
   const well = w.shafts.find((s) => s.id === 'lw_bridge');
@@ -63,11 +64,33 @@ test('ladders and the lift: from the living deck up to the bridge and down to th
   run(k, 12);
   assert.equal(k.room.id, 'bridge');
   assert.equal(k.z, w.rooms.bridge.z[0]);
-  const lift = w.shafts.find((s) => s.kind === 'lift');
-  k.place(lift.stops[1], lift.x[0] - 0.4, (lift.y[0] + lift.y[1]) / 2);
-  assert.equal(k.go('down'), 'lift');
-  run(k, 12);
-  assert.equal(k.room.id, lift.stops[0]);
+});
+
+test('the freight lift: call it, the doors open, step in, pick a deck, ride, step out', () => {
+  const w = fresh();
+  const car = w.lifts[0];
+  assert.ok(car && car.stops.length === 3, 'three stops');
+  const k = new Walker(w);
+  const tick = (secs, input = {}) => { for (let i = 0; i < secs * 30; i++) { k.step(1 / 30, typeof input === 'function' ? input(k) : input); stepLifts(w, k, 1 / 30); } };
+  const st = car.stops[1], room = w.rooms[car.id];
+  k.place(st.room, st.door.at[0] + st.door.n[0] * 1.0, st.door.at[1] + st.door.n[1] * 1.0);
+  assert.equal(liftNear(w, k).stop, 1);
+  tick(3, headTo(st.door.at[0], st.door.at[1]));
+  assert.equal(k.room.id, st.room, 'walked through the shut lift doors');
+  callLift(car, 1);
+  tick(12);
+  assert.equal(car.at, 1);
+  assert.ok(car.doors > 0.95, 'the doors open when it arrives');
+  const mid = [(room.x[0] + room.x[1]) / 2, (room.y[0] + room.y[1]) / 2];
+  tick(6, headTo(...mid));
+  assert.equal(k.room.id, car.id, 'into the car');
+  assert.equal(sendLift(car, 0), 'going');
+  for (let i = 0; i < 30 * 20 && !(car.at === 0 && car.doors > 0.95); i++) tick(1 / 30);
+  assert.equal(car.at, 0);
+  assert.equal(k.z, car.stops[0].z, 'rode down with it');
+  const out = car.stops[0];
+  tick(8, headTo(out.door.at[0] + out.door.n[0] * 1.3, out.door.at[1] + out.door.n[1] * 1.3));
+  assert.equal(k.room.id, out.room, 'out at the deck picked');
 });
 
 test('the ductwork: up through a grille, crawl, up the vent rungs, out through a grille', () => {
@@ -137,4 +160,47 @@ test('shutters: the ship closes them in supercruise; a hand-set state holds unti
   assert.equal(manualShut('win_gal_s'), false);
   setShut('win_gal_s', null);
   assert.equal(isShut(st, 'win_gal_s'), true);
+});
+
+test('furniture is solid: walking at the galley counter stops in front of it', () => {
+  const w = fresh();
+  const r = w.rooms.galley;
+  const it = r.items.find((q) => q.kind === 'counter');
+  assert.ok(it && it.shape === 'box' && it.d > 0.4, 'the counter is a 3D object');
+  const k = new Walker(w);
+  const mid = (it.u0 + it.u1) / 2;
+  const start = roomPoint(r, mid, 2.0), wall = roomPoint(r, mid, 0);
+  k.place('galley', start[0], start[1]);
+  run(k, 4, headTo(wall[0], wall[1]));
+  assert.ok(roomLocal(r, k.x, k.y).d > it.d, `walked into the counter (${roomLocal(r, k.x, k.y).d.toFixed(2)} m off the wall)`);
+  assert.ok(w.rooms.bridge.items.some((q) => q.kind === 'helm'), 'the helm is furniture');
+  assert.ok(w.rooms.hvac.items.some((q) => q.kind === 'ahu'), 'the HVAC plant has its air handlers');
+});
+
+test('the brig has two real cells: shut, you cannot get in; opened, you can', () => {
+  const w = fresh();
+  const r = w.rooms.brig;
+  assert.equal(r.spaces.filter((s) => s.kind === 'cell').length, 2);
+  const sp = r.spaces[0];
+  const k = new Walker(w);
+  const um = (sp.door.u[0] + sp.door.u[1]) / 2;
+  const out = roomPoint(r, um, sp.d[1] + 1.0), inside = roomPoint(r, um, 0.9);
+  k.place('brig', out[0], out[1]);
+  run(k, 4, headTo(inside[0], inside[1]));
+  assert.ok(roomLocal(r, k.x, k.y).d > sp.d[1], 'walked through the bars');
+  sp.open = 1;
+  run(k, 4, headTo(inside[0], inside[1]));
+  assert.ok(roomLocal(r, k.x, k.y).d < sp.d[1] - 0.3, 'into the cell once its door is open');
+  for (const id of ['xeno', 'securecargo', 'washroom']) assert.ok(w.rooms[id].spaces.length, `${id} has its spaces`);
+});
+
+test('the ladders hang on a wall, the drone bay has its launch hatch, the plant rooms are there', () => {
+  const w = fresh();
+  const trunk = w.shafts.find((s) => s.id === 'lw_trunk');
+  assert.equal(trunk.ladderWall, '-y');
+  assert.equal(trunk.y[0], w.rooms.corridor_aft.y[0], 'the well is against the passage wall');
+  assert.ok(w.rooms.dronebay.openings.ceil.some((o) => o.kind === 'bayhatch' && o.hatch.id === 'drone_hatch'));
+  assert.ok(!w.rooms.quarters.openings.floor.some((o) => o.kind === 'bayhatch'), 'no bay hatch two decks away');
+  for (const id of ['hvac', 'waterplant']) assert.ok(w.rooms[id] && w.rooms[id].doors.length, id);
+  assert.ok(w.ducts.find((d) => d.id === 'duct_overhead').grilles.some((g) => g.room === 'hvac'), 'the overhead duct reaches the HVAC plant');
 });

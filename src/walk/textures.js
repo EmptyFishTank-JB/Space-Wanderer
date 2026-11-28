@@ -5,7 +5,7 @@
 // wall. Every other wall is the same plating, and the floors and ceilings are
 // the room's deck and trim. Openings are cut where the 3D layout puts them,
 // with frames and signs, like the feeds draw them. Needs a canvas (the browser).
-import { PPM, FLOOR, CEIL, rect, hline, vline, px, mul, text, textWidth, hash, glow } from '../render/gfx.js';
+import { PPM, FLOOR, CEIL, rect, hline, vline, px, mul, text, textWidth, hash, glow, disc } from '../render/gfx.js';
 import { drawRoomWalk, themeFor, floorFor, SHORT, LED } from '../render/rooms.js';
 import { drawTraveler } from '../render/traveler.js';
 import { registerRoomPicks, registerMugPick, picks } from '../render/picks.js';
@@ -57,6 +57,11 @@ function cutOpenings(ctx, props, room, list, lenPx, wallLen, top, rooms) {
       if (props) props.clearRect(x0 - 2, y0 - 2, x1 - x0 + 4, y1 - y0 + 2);
       sign(ctx, shortName(rooms[o.to]), (x0 + x1) / 2, y0 - 13);
       px(ctx, LED.ok, x1 + 2, y0 + 30);
+    } else if (o.kind === 'liftdoor') {
+      rect(ctx, [36, 38, 42], x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 4);
+      ctx.clearRect(x0, y0, x1 - x0, y1 - y0);
+      if (props) props.clearRect(x0 - 2, y0 - 2, x1 - x0 + 4, y1 - y0 + 2);
+      if (!room.car) { sign(ctx, 'LIFT', (x0 + x1) / 2, y0 - 13); rect(ctx, [60, 62, 68], x1 + 5, y0 + 26, 5, 12); px(ctx, [255, 200, 90], x1 + 7, y0 + 29); px(ctx, LED.ok, x1 + 7, y0 + 34); }
     } else if (o.kind === 'lift') {
       // the lift's own doors in the wall, shut, with its sign
       rect(ctx, [36, 38, 42], x0 - 3, y0 - 3, x1 - x0 + 6, y1 - y0 + 3);
@@ -121,8 +126,8 @@ export class TextureStore {
     const sc = ctx2(cache.shellC), pc = ctx2(cache.propsC);
     sc.clearRect(0, 0, lenPx, FLOOR + 2); pc.clearRect(0, 0, lenPx, FLOOR + 2);
     const back = room.walls.find((q) => q.side === room.back);
-    // furniture keeps clear of the doors in this wall
-    const avoid = room.openings[room.back].filter((o) => o.kind === 'door').map((o) => [(o.s0 * def.width) / back.len, (o.s1 * def.width) / back.len]);
+    // furniture keeps clear of the doors and the enclosed spaces in this wall
+    const avoid = [...room.openings[room.back].filter((o) => o.kind === 'door' || o.kind === 'liftdoor').map((o) => [(o.s0 * def.width) / back.len, (o.s1 * def.width) / back.len]), ...room.rawSpaces.map((q) => q.u)];
     const rc = {
       ctx: sc, state, s: state, data, d: data, room: room.id, ox: 0, M: (xm) => xm * PPM, t, alpha: alpha || 0,
       lights: [], lamps: [], windows: [], seed: 1, powerDim: state.ship.power.lightLevel ?? 1, flash: 0,
@@ -143,8 +148,37 @@ export class TextureStore {
       for (const l of rc.lights) if (!l.wide) glow(g, l.c, l.x, l.y, l.r, l.a);
       g.globalCompositeOperation = 'source-over';
     }
-    cutOpenings(sc, pc, room, room.openings[room.back], lenPx, back.len, CEIL, this.world.rooms);
-    const out = { shell: texOf(cache.shellC, 0, CEIL, lenPx, BAND), props: texOf(cache.propsC, 0, CEIL, lenPx, BAND), picks: found, at: t, lenPx, shellC: cache.shellC, propsC: cache.propsC };
+    // the furniture: each piece cut out of the drawing to face its own 3D object; the rest stays on the wall
+    const items = {};
+    const k = lenPx / back.len;
+    for (const it of room.items) {
+      const x0 = Math.max(0, Math.round(it.u0 * k) - 1), x1 = Math.min(lenPx, Math.round(it.u1 * k) + 1);
+      const y0 = Math.max(0, it.px[2] - 1), y1 = Math.min(FLOOR + 1, it.px[3]);
+      if (x1 - x0 < 2 || y1 - y0 < 2) continue;
+      const img = pc.getImageData(x0, y0, x1 - x0, y1 - y0), d = img.data, w = x1 - x0, h = y1 - y0;
+      // tighten to what's drawn, and take its colors for the top and the sides
+      let bx0 = w, bx1 = -1, by0 = h, by1 = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 127) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
+      if (bx1 < bx0) continue;
+      const avg = (pred) => { let r = 0, g = 0, b = 0, n = 0; for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) { const i = (y * w + x) * 4; if (d[i + 3] > 127 && pred(x, y)) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } } return n ? [r / n, g / n, b / n] : null; };
+      const top = avg((x, y) => y <= by0 + 1) || [90, 90, 96];
+      const side = avg((x) => x <= bx0 + 1 || x >= bx1 - 1) || top;
+      const tw = bx1 - bx0 + 1, th2 = by1 - by0 + 1;
+      const sub = pc.getImageData(x0 + bx0, y0 + by0, tw, th2);
+      if (it.shape === 'box') {
+        // a solid face: fill what the drawing leaves open with the side color, a little darker
+        const q = sub.data, fill = side.map((v) => v * 0.78);
+        for (let i = 0; i < q.length; i += 4) if (q[i + 3] < 128) { q[i] = fill[0]; q[i + 1] = fill[1]; q[i + 2] = fill[2]; q[i + 3] = 255; }
+      }
+      items[it.id] = {
+        tex: { w: tw, h: th2, data: new Uint32Array(sub.data.buffer.slice(0)) }, top, side,
+        u0: (x0 + bx0) / k, u1: (x0 + bx1 + 1) / k, z1: (FLOOR - (y0 + by0)) / PPM, z0: Math.max(0, (FLOOR - (y0 + by1 + 1)) / PPM),
+      };
+      pc.clearRect(x0 + bx0, y0 + by0, tw, th2);
+    }
+    sc.drawImage(cache.propsC, 0, 0); // what's left of the drawing: flat on the wall
+    cutOpenings(sc, null, room, room.openings[room.back], lenPx, back.len, CEIL, this.world.rooms);
+    const out = { shell: texOf(cache.shellC, 0, CEIL, lenPx, BAND), items, picks: found, at: t, lenPx, shellC: cache.shellC, propsC: cache.propsC };
     this.backs.set(room.id, out);
     return out;
   }
@@ -204,8 +238,8 @@ export class TextureStore {
         for (let x = x0 + 1; x < x1 - 1; x += 2) vline(g, [110, 114, 120], x, y0 + 1, y1 - 2);
         continue;
       }
-      // a well or a skylight: the hole, with a hazard-striped edge round a hatch
-      if (o.kind === 'shaft') for (let i = -2; i < x1 - x0 + 2; i += 2) { px(g, (i >> 1) % 2 ? [200, 160, 60] : [30, 30, 30], x0 + i, y0 - 1); px(g, (i >> 1) % 2 ? [200, 160, 60] : [30, 30, 30], x0 + i, y1); }
+      // a well, a skylight or a bay hatch: the hole, with a hazard-striped edge round a hatch
+      if (o.kind === 'shaft' || o.kind === 'bayhatch') for (let i = -2; i < x1 - x0 + 2; i += 2) { px(g, (i >> 1) % 2 ? [200, 160, 60] : [30, 30, 30], x0 + i, y0 - 1); px(g, (i >> 1) % 2 ? [200, 160, 60] : [30, 30, 30], x0 + i, y1); }
       g.clearRect(x0, y0, x1 - x0, y1 - y0);
     }
   }
@@ -235,11 +269,40 @@ export class TextureStore {
     const armor = canvas(32, 32), ag = ctx2(armor);
     rect(ag, [58, 60, 66], 0, 0, 32, 32);
     for (let y = 0; y < 32; y += 6) { hline(ag, [76, 78, 86], 0, 31, y); hline(ag, [40, 42, 46], 0, 31, y + 5); }
+    const half = canvas(22, 66), hg = ctx2(half);
+    rect(hg, [118, 122, 130], 0, 0, 22, 66); rect(hg, [140, 144, 152], 1, 2, 20, 2); vline(hg, [80, 84, 90], 21, 0, 65); rect(hg, [200, 160, 60], 2, 60, 18, 2);
+    const glass = canvas(32, 32), gl = ctx2(glass);
+    for (let i = 0; i < 5; i++) px(gl, [170, 215, 210], (i * 13) % 32, (i * 7 + 3) % 32, 1); for (let i = 0; i < 6; i++) px(gl, [215, 240, 236], 4 + i, 22 - i); // a glint
+    hline(gl, [120, 170, 165], 0, 31, 0);
+    const mesh = canvas(8, 8), mg = ctx2(mesh);
+    hline(mg, [96, 104, 96], 0, 7, 0); vline(mg, [96, 104, 96], 0, 0, 7);
+    const hz = canvas(32, 32), zg = ctx2(hz);
+    rect(zg, [90, 94, 100], 0, 0, 32, 32);
+    for (let i = 0; i < 32; i += 4) { rect(zg, (i >> 2) % 2 ? [200, 160, 60] : [30, 30, 30], i, 0, 4, 3); rect(zg, (i >> 2) % 2 ? [200, 160, 60] : [30, 30, 30], i, 29, 4, 3); }
+    rect(zg, [70, 74, 80], 14, 6, 4, 20); rect(zg, [70, 74, 80], 6, 14, 20, 4);
+    const fan = canvas(32, 32), fg2 = ctx2(fan);
+    rect(fg2, [44, 46, 52], 0, 0, 32, 32); disc(fg2, [20, 20, 24], 16, 16, 14); disc(fg2, [60, 62, 68], 16, 16, 3);
+    for (const [a, b] of [[0, 0], [31, 0], [0, 31], [31, 31]]) px(fg2, [110, 114, 120], a, b);
     return {
-      door: texOf(door, 0, 0, 30, 66), lid: texOf(lid, 0, 0, 16, 16), duct: texOf(duct, 0, 0, 32, 29, true),
+      door: texOf(door, 0, 0, 30, 66), half: texOf(half, 0, 0, 22, 66), glass: texOf(glass, 0, 0, 32, 32, true), mesh: texOf(mesh, 0, 0, 8, 8, true),
+      hazard: texOf(hz, 0, 0, 32, 32), fan: texOf(fan, 0, 0, 32, 32), lid: texOf(lid, 0, 0, 16, 16), duct: texOf(duct, 0, 0, 32, 29, true),
       grille: texOf(grille, 0, 0, 16, 16, true), lift: texOf(lift, 0, 0, 32, BAND), armor: texOf(armor, 0, 0, 32, 32, true),
     };
   }
+}
+
+/** The lift car's control panel: a button per stop, labeled by deck, the one the car is at lit. */
+const panelCanvas = canvas(18, 40);
+export function liftPanel(car, decks) {
+  const g = ctx2(panelCanvas);
+  rect(g, [60, 64, 72], 0, 0, 18, 40); rect(g, [40, 42, 48], 1, 1, 16, 38);
+  car.stops.slice().reverse().forEach((st, i) => {
+    const lit = car.at === car.stops.indexOf(st) && !car.moving;
+    const going = car.target === car.stops.indexOf(st);
+    rect(g, lit ? [120, 230, 160] : going ? [255, 200, 90] : [90, 94, 100], 3, 4 + i * 11, 4, 4);
+    text(g, decks[st.deck].name.slice(0, 2), 9, 4 + i * 11, [200, 210, 220]);
+  });
+  return texOf(panelCanvas, 0, 0, 18, 40);
 }
 
 /** A person, drawn by the feeds' own figure routine into a small sprite: 64×80 px, feet at the bottom middle. */

@@ -6,7 +6,8 @@
 // to wherever the traveler is, P shows the deck plan. On a touch screen: a
 // stick on the left, drag on the right to look, buttons for the rest.
 // Only a viewer: the walk never changes the simulation.
-import { buildWorld, doorNear, roomPoint } from '../walk/world.js';
+import { buildWorld, doorNear, roomPoint, roomLocal } from '../walk/world.js';
+import { stepLifts, liftNear, callLift, sendLift, nextStop } from '../walk/lift.js';
 import { Walker } from '../walk/walker.js';
 import { WalkView } from '../walk/render.js';
 import { setShut, setAllShut, isShut, manualShut } from '../render/shutters.js';
@@ -79,7 +80,11 @@ export function mountWalk({ canvas, data, ship3d, onChange = () => {} }) {
       const cos = (d[0] * f[0] + d[1] * f[1] + d[2] * f[2]) / L;
       if (cos > bd) { bd = cos; best = { id, name }; }
     };
-    for (const b of r.bays) { const pts = b.glass.flat(); consider(b.win, b.name, [0, 1, 2].map((i) => pts.reduce((a, p) => a + p[i], 0) / pts.length)); }
+    for (const b of r.bays) {
+      const pts = b.glass.flat(), c = [0, 1, 2].map((i) => pts.reduce((a, p) => a + p[i], 0) / pts.length);
+      if (b.kind === 'well' && Math.hypot(c[0] - eye[0], c[1] - eye[1]) < 2.2 && walker.pitch > 0.35) { if (!best || bd < 0.99) { best = { id: b.win, name: b.name }; bd = 0.99; } continue; }
+      consider(b.win, b.name, c);
+    }
     for (const w of r.walls) for (const o of r.openings[w.side]) if (o.win) { const s = (o.s0 + o.s1) / 2; consider(o.win.id, o.win.name, [w.a[0] + w.dir[0] * s, w.a[1] + w.dir[1] * s, r.z[0] + (o.z0 + o.z1) / 2]); }
     return best;
   }
@@ -89,6 +94,33 @@ export function mountWalk({ canvas, data, ship3d, onChange = () => {} }) {
     if (walker.busy) return [];
     const out = [];
     const lk = view.look;
+    // the lift: call it at a landing, open it if it's here; inside, pick a deck
+    const ln = liftNear(world, walker);
+    if (ln) {
+      const car = ln.car, deckOf = (i) => world.decks[car.stops[i].deck].name.toUpperCase();
+      if (ln.inside) {
+        for (const [key, dir] of [['E', 'up'], ['Q', 'down']]) {
+          const i = nextStop(car, dir);
+          if (i !== null && !car.moving) out.push({ key, label: `LIFT ${dir.toUpperCase()} TO ${deckOf(i)}`, run: () => { sendLift(car, i); say(`Lift: ${deckOf(i).toLowerCase()}`); } });
+        }
+        if (car.moving) out.push({ key: 'E', label: `RIDING TO ${deckOf(car.target)}`, run: () => {} });
+      } else if (!car.moving && car.at === ln.stop && car.doors < 0.5) out.push({ key: 'E', label: 'OPEN THE LIFT', run: () => callLift(car, ln.stop) });
+      else if (car.at !== ln.stop || car.moving) out.push({ key: 'E', label: car.target === ln.stop ? 'LIFT ON ITS WAY' : 'CALL THE LIFT', run: () => { callLift(car, ln.stop); say('Lift called'); } });
+    }
+    // a cell, an enclosure, the vault or a stall: its door
+    const sp = walker.mode === 'room' && walker.room && spaceAhead();
+    if (sp) {
+      const held = (s.space.prisoners || []).some((p) => p.state === 'held' && p.cell === sp.id && walker.room.id === 'brig');
+      if (sp.kind === 'cell' && held) out.push({ key: 'E', label: `${sp.name.toUpperCase()}: LOCKED`, run: () => say(`${sp.name}: locked. Someone is held in it.`) });
+      else if (sp.kind === 'enclosure') out.push({ key: 'E', label: `${sp.name.toUpperCase()}: SEALED`, run: () => say(`${sp.name}: sealed, with its own air. It opens from the bio lab's side.`) });
+      else out.push({ key: 'E', label: `${sp.wantOpen ? 'SHUT' : 'OPEN'} ${sp.name.toUpperCase()}`, run: () => { sp.wantOpen = !sp.wantOpen; } });
+    }
+    // a bay hatch overhead or underfoot: the drone launch hatch's inner hatch opens; the others are for vehicles
+    const bh = lk && lk.kind === 'bayhatch' && lk.dist < 4 ? lk.hatch : null;
+    if (bh) {
+      if (bh.id === 'drone_hatch') out.push({ key: 'E', label: `${bh.wantOpen ? 'SHUT' : 'OPEN'} THE INNER LAUNCH HATCH`, run: () => { bh.wantOpen = !bh.wantOpen; say(bh.wantOpen ? 'Inner hatch open: up the tube, the outer hatch is shut.' : 'Inner hatch shut'); } });
+      else out.push({ key: 'E', label: `${bh.name.toUpperCase()}: SHUT`, run: () => say(`${bh.name}: opened from the vehicle's controls, not by hand.`) });
+    }
     const doorLabel = (d) => `${d.wantOpen ? 'SHUT' : 'OPEN'} DOOR TO ${roomName(walker.room && d.a === walker.room.id ? d.b : d.a)}`;
     const door = (d) => ({ key: 'E', label: doorLabel(d), run: () => { d.wantOpen = !d.wantOpen; } });
     if (walker.mode === 'room' && lk && lk.kind === 'door' && lk.dist < 2.6) out.push(door(lk.door));
@@ -107,6 +139,17 @@ export function mountWalk({ canvas, data, ship3d, onChange = () => {} }) {
     const near = walker.mode === 'room' && doorNear(world, walker.deck, walker.x, walker.y, walker.yaw);
     if (near && !out.some((o) => o.label === doorLabel(near))) out.push(door(near));
     return out;
+  }
+  /** The enclosed space whose door is ahead (or that you're standing in), within reach. */
+  function spaceAhead() {
+    const r = walker.room;
+    const lk = view.look;
+    if (lk && lk.kind === 'space' && lk.dist < 2.6) return lk.space;
+    for (const sp of r.spaces) {
+      const l = roomLocal(r, walker.x, walker.y);
+      if (l.u > sp.u[0] - 0.4 && l.u < sp.u[1] + 0.4 && l.d < sp.d[1] + 1.0) return sp;
+    }
+    return null;
   }
   function prompts(s) {
     if (walker.busy) return [walker.move.kind === 'lift' ? 'RIDING THE LIFT' : walker.move.kind === 'grille' ? 'THROUGH THE GRILLE' : 'CLIMBING'];
@@ -196,6 +239,7 @@ export function mountWalk({ canvas, data, ship3d, onChange = () => {} }) {
       const side = (k('d') ? 1 : 0) - (k('a') ? 1 : 0) + touch.move[1];
       const turn = ((k('ArrowRight') ? 1 : 0) - (k('ArrowLeft') ? 1 : 0)) * 1.9;
       walker.step(dt, { fwd, side, run: k('shift'), turn, look });
+      stepLifts(world, walker, dt);
       look = [0, 0];
       if (walker.room && walker.room.sim) lastSim = walker.room.id;
       view.prompts = prompts(m.state);

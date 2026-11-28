@@ -38,7 +38,9 @@ step into the ship in first person; `Esc` steps back out to the cameras. It is
 drawn in the same 320×180 pixel style as the camera feeds: each room's back
 wall is its own feed drawing, live, with its furniture standing a little off
 the wall, and through the glass you see the same sky and hull as the hull
-cameras. The traveler, passengers and prisoners stand where the sim has them.
+cameras. The furniture is solid: each piece is a 3D object faced with its own
+live drawing from the feed. The traveler, passengers and prisoners stand
+where the sim has them.
 You are only a visitor: nothing you do changes the voyage.
 
 | Input | Effect |
@@ -47,15 +49,17 @@ You are only a visitor: nothing you do changes the voyage.
 | mouse (click to capture it), drag | look |
 | `Shift` | run |
 | `C` | crouch / stand |
-| `E` | open or shut the door ahead, open or close the shutters of the window ahead, climb up a ladder, ride the lift up, climb up through a duct grille, out of a duct |
-| `Q` | climb or ride down, drop through a floor grille |
+| `E` | open or shut the door ahead (a cell, the vault, a stall too), open or close the shutters of the window ahead (look up at a skylight), climb up a ladder or through a duct grille, out of a duct, call the lift, open the drone launch hatch |
+| `Q` | climb down, drop through a floor grille |
+| in the lift | `E` up a deck, `Q` down a deck |
 | `H` | every shutter at once: closed by hand, open by hand, back to automatic |
 | `G` | go to wherever the traveler is |
 | `P` | the deck plan |
 | `T`, `F`, `M` | telemetry, fullscreen, mute, as with the cameras |
 
-The whole 3D layout is walkable: all 56 spaces and 53 doors, the ladder wells
-and the freight lift between decks, and the crawlable ductwork (the main-deck
+The whole 3D layout is walkable: all 58 spaces and 55 doors, the ladder wells
+and the freight lift between decks (called to a landing, then sent from inside
+like a lift), the brig's cells, the vault and the washroom stalls, and the crawlable ductwork (the main-deck
 overhead and under-floor runs, the deckhouse roof duct and the lower-deck
 crawl) with grilles into the rooms they pass and vent shafts with rungs
 between them. In the ducts you crawl. Shutters on their own close for

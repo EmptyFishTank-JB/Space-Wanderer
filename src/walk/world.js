@@ -9,13 +9,13 @@
 //
 // Coordinates are the ship frame: x fore, y starboard, z up, in meters.
 import { withDecks, roomU, roomLength, windowBays, windowQuads, ladderParts, hullParts, station, moduleExtent, segmentBox } from '../ship3d/geometry.js';
+import { furnitureOf } from './furniture.js';
 
 export const DOOR_W = 0.95;
 export const DOOR_H = 2.05;
 export const BODY_R = 0.25; // the walker's radius
-export const PROP_DEPTH = 0.35; // the props layer stands this far off the back wall
 export const CRAWL_R = 0.2; // half a body's width, on hands and knees in a duct
-const PROP_KEEP = 0.62; // and the walker keeps this far from the back wall
+export const LIFT_DOOR_W = 1.4; // the freight lift's doors
 
 const AXIS = { '+x': [1, 0], '-x': [-1, 0], '+y': [0, 1], '-y': [0, -1] };
 const EPS = 1e-6;
@@ -65,7 +65,7 @@ export function buildWorld(S, data) {
       id: r.id, name: (sim && sim.name) || r.name || r.id, info: r.info || '', role: r.role, deck: r.deck, sim: !!sim,
       x: r.x, y: r.y, z: r.zRange, h: r.zRange[1] - r.zRange[0], axis: A, look: V, origin: r.origin, axisName: r.axis,
       len: roomLength(r), walls, back: back.side, openings: { x0: [], x1: [], y0: [], y1: [], floor: [], ceil: [] },
-      doors: [], shafts: [], bays: [], solids: [], blocks: [],
+      doors: [], shafts: [], bays: [], solids: [], blocks: [], spaces: [], items: [], rawSpaces: r.spaces || [],
     };
   }
   const R = (id) => rooms[id];
@@ -87,9 +87,8 @@ export function buildWorld(S, data) {
     const gap = Math.abs((wb.wall.a[0] - wa.wall.a[0]) * n[0] + (wb.wall.a[1] - wa.wall.a[1]) * n[1]);
     const mid = [pa[0] - (n[0] * gap) / 2, pa[1] - (n[1] * gap) / 2]; // halfway through the wall(s)
     // the slot through the doorway reaches as far into each room as the walker has to keep off that wall
-    const keep = (room, side) => (room.sim && room.back === side ? PROP_KEEP : BODY_R);
-    const reach = gap / 2 + Math.max(keep(A, wa.wall.side), keep(B, wb.wall.side)) + 0.12;
-    const d = { id, a, b, simHatch, at: mid, z: Math.max(A.z[0], B.z[0]), n, along, gap, reach, wallA: wa.wall.side, wallB: wb.wall.side, sA: wa.s, sB: wb.s, open: 0 };
+    const reach = gap / 2 + BODY_R + 0.15;
+    const d = { id, a, b, simHatch, at: mid, z: Math.max(A.z[0], B.z[0]), n, along, gap, reach, w: DOOR_W, wallA: wa.wall.side, wallB: wb.wall.side, sA: wa.s, sB: wb.s, open: 0 };
     doors.push(d);
     A.doors.push(d); B.doors.push(d);
     A.openings[wa.wall.side].push({ kind: 'door', s0: wa.s - DOOR_W / 2, s1: wa.s + DOOR_W / 2, z0: 0, z1: DOOR_H, to: b, door: d });
@@ -147,6 +146,18 @@ export function buildWorld(S, data) {
       const half = Math.min(0.7, (side[0] === 'y' ? s.x[1] - s.x[0] : s.y[1] - s.y[0]) / 2);
       r.shafts.push(sh);
       r.openings[side].push({ kind: 'lift', s0: Math.max(0.2, sc - half), s1: Math.min(wall.len - 0.2, sc + half), z0: 0, z1: DOOR_H, shaft: sh });
+    }
+  }
+
+  // ───── bay hatches: big doors to the outside in a floor or a ceiling (the drone launch hatch, the skiff's doors, the rover lift) ─────
+  for (const s of (S.shafts || []).filter((q) => q.kind === 'bay-lift')) {
+    for (const r of Object.values(rooms)) {
+      if (!(s.x[0] < r.x[1] && s.x[1] > r.x[0] && s.y[0] < r.y[1] && s.y[1] > r.y[0])) continue;
+      const bx = [Math.max(s.x[0], r.x[0] + 0.05), Math.min(s.x[1], r.x[1] - 0.05)], by = [Math.max(s.y[0], r.y[0] + 0.05), Math.min(s.y[1], r.y[1] - 0.05)];
+      const hatch = { id: s.id, name: s.name, info: s.info || '', x: bx, y: by, z: s.z, open: 0, wantOpen: false, room: r.id };
+      // only where it meets this room's own ceiling or floor
+      if (Math.abs(s.z[0] - r.z[1]) < 0.3) r.openings.ceil.push({ kind: 'bayhatch', x: bx, y: by, hatch, where: 'ceiling' });
+      else if (s.z[0] < r.z[0] + 0.1 && s.z[1] > r.z[0] - 0.3 && s.z[1] < r.z[1]) r.openings.floor.push({ kind: 'bayhatch', x: bx, y: by, hatch, where: 'floor' });
     }
   }
 
@@ -250,12 +261,80 @@ export function buildWorld(S, data) {
     r.shafts.push(sh);
   }
 
+  // ───── the freight lift: a car that rides between its stops, doors at each landing ─────
+  const lifts = [];
+  for (const sh of shafts.filter((q) => q.kind === 'lift')) {
+    const stops = [];
+    for (const id of sh.stops) {
+      const r = R(id), o = r && Object.values(r.openings).flat().find((q) => q.kind === 'lift' && q.shaft === sh);
+      if (!r || !o) continue;
+      const side = Object.keys(r.openings).find((k) => r.openings[k].includes(o));
+      const wall = r.walls.find((q) => q.side === side);
+      const sc = (o.s0 + o.s1) / 2;
+      const at = [wall.a[0] + wall.dir[0] * sc, wall.a[1] + wall.dir[1] * sc];
+      stops.push({ room: id, deck: r.deck, z: r.z[0], side, wall, at, opening: o });
+    }
+    if (stops.length < 2) continue;
+    stops.sort((a, b) => a.z - b.z);
+    const carH = 2.7;
+    const carBox = { id: `lift:${sh.id}`, x: sh.x, y: sh.y, axisName: '+x', origin: sh.x[0] };
+    const walls = roomWalls(carBox);
+    const s0 = stops[0];
+    // the car's doors: in its face toward the landings
+    const n0 = s0.wall.n; // into the stop room
+    const faceSide = n0[0] > 0.5 ? 'x1' : n0[0] < -0.5 ? 'x0' : n0[1] > 0.5 ? 'y1' : 'y0';
+    const car = { id: `lift:${sh.id}`, name: sh.name, info: sh.info, deck: `lift:${sh.id}`, shaft: sh, stops, z: s0.z, at: 0, target: null, doors: 0, wantDoors: false, holdT: 0, moving: false, dockDeck: s0.deck };
+    const room = {
+      id: car.id, name: sh.name, info: sh.info, role: 'service', deck: car.deck, sim: false, x: sh.x, y: sh.y, z: [s0.z, s0.z + carH], h: carH, axis: [1, 0], look: [0, -1], origin: sh.x[0], axisName: '+x',
+      len: sh.x[1] - sh.x[0], walls, back: faceSide === 'y0' ? 'y1' : 'y0', openings: { x0: [], x1: [], y0: [], y1: [], floor: [], ceil: [] },
+      doors: [], shafts: [], bays: [], solids: [], blocks: [], spaces: [], items: [], rawSpaces: [], car,
+    };
+    const face = walls.find((q) => q.side === faceSide);
+    const sc = (s0.at[0] - face.a[0]) * face.dir[0] + (s0.at[1] - face.a[1]) * face.dir[1];
+    room.openings[faceSide].push({ kind: 'liftdoor', s0: sc - LIFT_DOOR_W / 2, s1: sc + LIFT_DOOR_W / 2, z0: 0, z1: DOOR_H, car });
+    rooms[room.id] = room;
+    // a doorway between the car and each landing, open while the car is there with its doors open
+    for (const st of stops) {
+      const r = R(st.room);
+      const n = st.wall.n; // into the stop room
+      const gap = Math.abs((face.a[0] - st.wall.a[0]) * n[0] + (face.a[1] - st.wall.a[1]) * n[1]);
+      const mid = [st.at[0] - (n[0] * gap) / 2, st.at[1] - (n[1] * gap) / 2];
+      const d = { id: `${car.id}:${st.room}`, a: st.room, b: room.id, lift: car, stop: st, at: mid, z: st.z, n, along: [-n[1], n[0]], gap, reach: gap / 2 + BODY_R + 0.15, w: LIFT_DOOR_W, open: 0 };
+      st.door = d;
+      doors.push(d); r.doors.push(d); room.doors.push(d);
+      st.opening.kind = 'liftdoor'; st.opening.car = car; st.opening.s0 = st.opening.s0 + (st.opening.s1 - st.opening.s0 - LIFT_DOOR_W) / 2; st.opening.s1 = st.opening.s0 + LIFT_DOOR_W;
+    }
+    lifts.push(car);
+  }
+
+  // ───── what stands in each room: its enclosed spaces (cells, enclosures, the vault, stalls) and its furniture ─────
+  for (const r of Object.values(rooms)) {
+    if (r.car) continue;
+    for (const sp of r.rawSpaces) {
+      const corners = [roomPoint(r, sp.u[0], sp.d[0]), roomPoint(r, sp.u[1], sp.d[1])];
+      const x = [Math.min(corners[0][0], corners[1][0]), Math.max(corners[0][0], corners[1][0])], y = [Math.min(corners[0][1], corners[1][1]), Math.max(corners[0][1], corners[1][1])];
+      const um = (sp.u[0] + sp.u[1]) / 2, dw = Math.min(0.85, sp.u[1] - sp.u[0] - 0.3);
+      r.spaces.push({ ...sp, room: r.id, x, y, door: { u: [um - dw / 2, um + dw / 2], d: sp.d[1] }, open: 0, wantOpen: false });
+    }
+    const back = r.walls.find((q) => q.side === r.back);
+    const avoid = [...r.openings[r.back].filter((o) => o.kind === 'door' || o.kind === 'liftdoor').map((o) => [o.s0, o.s1]), ...r.rawSpaces.map((q) => q.u)];
+    void back;
+    r.items = furnitureOf(r, r.sim ? data.rooms[r.id] : null, avoid);
+    // anything standing on the floor is in the way; a shelf up on the wall isn't
+    for (const it of r.items) {
+      if (it.z0 > 1.1) continue;
+      const a = roomPoint(r, it.u0, 0), b = roomPoint(r, it.u1, it.d);
+      r.blocks.push({ x: [Math.min(a[0], b[0]), Math.max(a[0], b[0])], y: [Math.min(a[1], b[1]), Math.max(a[1], b[1])], what: it });
+    }
+  }
+
   // ───── who can get where: doors, and the ladders and the lift ─────
   const links = Object.fromEntries(Object.keys(rooms).map((id) => [id, new Set()]));
   for (const d of doors) { links[d.a].add(d.b); links[d.b].add(d.a); }
   for (const s of shafts) for (let i = 0; i < (s.stops || []).length - 1; i++) { links[s.stops[i]].add(s.stops[i + 1]); links[s.stops[i + 1]].add(s.stops[i]); }
 
-  return { rooms, doors, shafts, ducts, decks, problems, links, hatchDoors: Object.fromEntries(doors.filter((d) => d.simHatch).map((d) => [d.id, d])) };
+  for (const c of lifts) for (const st of c.stops) { links[st.room].add(c.stops.find((q) => q !== st).room); }
+  return { rooms, doors, shafts, ducts, lifts, decks, problems, links, hatchDoors: Object.fromEntries(doors.filter((d) => d.simHatch).map((d) => [d.id, d])) };
 }
 
 // ───── room-local coordinates: the sim's position along a room, and depth off its back wall ─────
@@ -283,41 +362,46 @@ export function roomLocal(r, x, y) {
   return { u: roomU({ axis: r.axisName, origin: r.origin }, [x, y]), d: (x - p[0]) * n[0] + (y - p[1]) * n[1] };
 }
 
+/** Is a room on this deck right now? (The lift car is on whichever deck it's docked at.) */
+const onDeck = (r, deck) => r.deck === deck || (r.car && r.car.dockDeck === deck);
+
 /** The room a point on a deck is in (inside its box), or null. */
 export function roomAt(world, deck, x, y, margin = 0) {
-  for (const r of Object.values(world.rooms)) if (r.deck === deck && inBox(r, x, y, margin)) return r;
+  for (const r of Object.values(world.rooms)) if (onDeck(r, deck) && inBox(r, x, y, margin)) return r;
   return null;
 }
 
-/** Can the walker stand here? Inside a room clear of its walls and props, or in a doorway; never in a well or machinery. */
+/** Can the walker stand here? Inside a room clear of its walls and furniture, or in a doorway; never in machinery, or through a shut door or the bars of a cell. */
 export function walkable(world, deck, x, y) {
   let ok = false, here = null;
   for (const r of Object.values(world.rooms)) {
-    if (r.deck !== deck || !inBox(r, x, y, 0.4)) continue;
-    // keep clear of the walls, and of the furniture along a drawn back wall
-    let m = [r.x[0] + BODY_R, r.x[1] - BODY_R, r.y[0] + BODY_R, r.y[1] - BODY_R];
-    if (r.sim) {
-      const keep = Math.min(PROP_KEEP, (r.back[0] === 'x' ? r.x[1] - r.x[0] : r.y[1] - r.y[0]) / 2 - BODY_R);
-      if (r.back === 'x0') m[0] = r.x[0] + keep; if (r.back === 'x1') m[1] = r.x[1] - keep;
-      if (r.back === 'y0') m[2] = r.y[0] + keep; if (r.back === 'y1') m[3] = r.y[1] - keep;
-    }
-    if (x >= m[0] && x <= m[1] && y >= m[2] && y <= m[3]) { ok = true; here = r; break; }
+    if (!onDeck(r, deck) || !inBox(r, x, y, 0.4)) continue;
+    if (x >= r.x[0] + BODY_R && x <= r.x[1] - BODY_R && y >= r.y[0] + BODY_R && y <= r.y[1] - BODY_R) { ok = true; here = r; break; }
   }
   if (!ok) {
     // a doorway: a slot through the wall (or walls) between two rooms
     for (const d of world.doors) {
-      if (world.rooms[d.a].deck !== deck && world.rooms[d.b].deck !== deck) continue;
+      if (!onDeck(world.rooms[d.a], deck) && !onDeck(world.rooms[d.b], deck)) continue;
+      if (d.open < 0.85) continue; // a shut door is a wall
       const rx = x - d.at[0], ry = y - d.at[1];
       const across = Math.abs(rx * d.n[0] + ry * d.n[1]), along = Math.abs(rx * d.along[0] + ry * d.along[1]);
-      if (d.open < 0.85) continue; // a shut door is a wall
-      if (along <= DOOR_W / 2 - BODY_R + 0.05 && across <= d.reach) { ok = true; break; }
+      if (along <= d.w / 2 - BODY_R + 0.05 && across <= d.reach) { ok = true; break; }
     }
   }
   if (!ok) return false;
-  // nothing solid underfoot or in the way: open wells, the lift car, machinery
   for (const r of Object.values(world.rooms)) {
-    if (r.deck !== deck || !inBox(r, x, y, 0.5)) continue;
+    if (!onDeck(r, deck) || !inBox(r, x, y, 0.5)) continue;
+    // nothing solid in the way: furniture, machinery, the lift car's walls
     for (const b of r.blocks) if (x > b.x[0] - BODY_R && x < b.x[1] + BODY_R && y > b.y[0] - BODY_R && y < b.y[1] + BODY_R) return false;
+    // an enclosed space: in only through its open door, then clear of its walls
+    for (const sp of r.spaces) {
+      if (!(x > sp.x[0] - BODY_R && x < sp.x[1] + BODY_R && y > sp.y[0] - BODY_R && y < sp.y[1] + BODY_R)) continue;
+      if (sp.open < 0.85) return false;
+      const inside = x > sp.x[0] + 0.2 && x < sp.x[1] - 0.2 && y > sp.y[0] + 0.2 && y < sp.y[1] - 0.2;
+      const l = roomLocal(r, x, y);
+      const inDoor = l.u > sp.door.u[0] + 0.12 && l.u < sp.door.u[1] - 0.12 && l.d > sp.d[0] && l.d < sp.d[1] + BODY_R + 0.2;
+      if (!inside && !inDoor) return false;
+    }
   }
   return here || true;
 }
@@ -329,7 +413,7 @@ export function climbsNear(world, room, x, y) {
   if (!room) return [];
   const out = [];
   for (const s of room.shafts) {
-    if (reachOf(s, x, y) > 0.9) continue;
+    if (s.kind === 'lift' || reachOf(s, x, y) > 0.9) continue; // the lift is called, not climbed
     if (s.kind === 'stub') { out.push({ shaft: s, dir: 'up', to: null, sealed: true }); continue; }
     const i = s.stops.indexOf(room.id);
     if (i < 0) continue;
@@ -368,6 +452,7 @@ export function ductExits(world, duct, x, y) {
 export function doorNear(world, deck, x, y, yaw) {
   let best = null, bd = 1.8;
   for (const d of world.doors) {
+    if (d.lift) continue; // the lift's doors are the lift's
     if (world.rooms[d.a].deck !== deck && world.rooms[d.b].deck !== deck) continue;
     const dx = d.at[0] - x, dy = d.at[1] - y, dist = Math.hypot(dx, dy);
     if (dist > bd) continue;
